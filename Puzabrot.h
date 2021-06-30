@@ -8,7 +8,12 @@
     * Copyright © 2021 Artem Puzankov. All rights reserved.                    *
     *///------------------------------------------------------------------------
 
+#ifndef PUZABROT_H_INCLUDED
+#define PUZABROT_H_INCLUDED
+
 #define _CRT_SECURE_NO_WARNINGS
+
+#include "InputBox.h"
 
 #include <SFML/Graphics.hpp>
 #include <assert.h>
@@ -69,3 +74,5 @@ private:
 };
 
 //------------------------------------------------------------------------------
+
+#endif // PUZABROT_H_INCLUDED

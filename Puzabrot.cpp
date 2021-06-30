@@ -40,12 +40,16 @@ void Puzabrot::run ()
 {
     window_->setVerticalSyncEnabled(true);
 
+    InputBox input_box(sf::Vector2f(10, 10), sf::Vector2f(200, 50), sf::Color(128, 128, 128, 128), sf::Color::White, 20);
+    input_box.setText("123 test");
+    input_box.draw(window_);
+
     while (window_->isOpen())
     {
         sf::Event event;
         while (window_->pollEvent(event))
         {
-            if ( ( event.type == sf::Event::Closed) || 
+            if ( ( event.type == sf::Event::Closed) ||
                  ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Escape)) )
             {
                 window_->close();
