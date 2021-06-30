@@ -38,26 +38,6 @@ public:
 
 private:
 
-    /*
-
-    sf::RenderWindow* window_ = nullptr;
-    sf::VertexArray*  pointmap_ = nullptr;
-    cmplxborders      borders_;
-    sf::Vector2i      winsizes_;
-
-    size_t delta_zoom_ = 3000;
-    double lim_        = 100;
-    size_t itrn_max_   = 3000;
-
-    void initBorders ();
-
-    int       GetNewScreen   (screen& newscreen);
-    void      DrawMandelbrot ();
-    void      changeBorders  (screen newscreen);
-    sf::Color getColor       (int32_t itrn);
-    void      savePict       ();
-    void      PointTrace     (sf::Vector2i point);
-    */
 };
 
 //------------------------------------------------------------------------------
