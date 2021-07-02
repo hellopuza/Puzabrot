@@ -49,6 +49,7 @@ void Puzabrot::run ()
     while (window_->isOpen())
     {
         sf::Event event;
+        Screen newscreen = {};
         while (window_->pollEvent(event))
         {
             if ( ( event.type == sf::Event::Closed) ||
@@ -89,6 +90,21 @@ void Puzabrot::run ()
             if (input_box.has_focus_ && (event.type == sf::Event::TextEntered) && (event.text.unicode < 128))
             {
                 input_box.setInput(event.text.unicode);
+            }
+
+            if (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right))
+            {
+                if (GetNewScreen(newscreen))
+                {
+                    changeBorders(newscreen);
+
+                    if (newscreen.zoom > 1)
+                        itrn_max_ = (int)(itrn_max_*(1 + newscreen.zoom/delta_zoom_));
+                    else
+                        itrn_max_ = (int)(itrn_max_*(1 - 1/(newscreen.zoom*delta_zoom_ + 1)));
+
+                    DrawSet();
+                }
             }
         }
 
@@ -233,6 +249,151 @@ sf::Color Puzabrot::getColor (int32_t itrn)
     }
 
     return sf::Color( 0, 0, 0 );
+}
+
+//------------------------------------------------------------------------------
+
+int Puzabrot::GetNewScreen (Screen& newscreen)
+{
+    int w = winsizes_.x;
+    int h = winsizes_.y;
+
+    char was_screenshot = 0;
+
+    sf::Vector2i start(-1, -1);
+    sf::Vector2i end  (-1, -1);
+
+    sf::RectangleShape rectangle;
+    rectangle.setOutlineThickness(1);
+    rectangle.setFillColor(sf::Color::Transparent);
+
+#ifdef __linux__
+
+    sf::Texture screen;
+    screen.create(w, h);
+    screen.update(*window_);
+
+    sf::Sprite sprite(screen);
+
+#endif // __linux__
+
+    while (1)
+    {
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right))
+        {
+            start = sf::Mouse::getPosition(*window_);
+            rectangle.setPosition(start.x, start.y);
+
+            while (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right))
+            {
+                end = sf::Mouse::getPosition(*window_) + sf::Vector2i(1, 1);
+
+                if ((abs(end.x - start.x) > 8) && (abs(end.y - start.y) > 8))
+                {
+                    double sx = start.x;
+                    double sy = start.y;
+                    double ex = end.x;
+                    double ey = end.y;
+
+
+                    if ( ((end.y > start.y) && (end.x > start.x)) ||
+                         ((end.y < start.y) && (end.x < start.x))   )
+                    {
+                        end.x = (int)((w*h*(ey - sy) + w*w*ex + h*h*sx)/(w*w + h*h));
+                        end.y = (int)((w*h*(ex - sx) + w*w*sy + h*h*ey)/(w*w + h*h));
+                    }
+                    else
+                    {
+                        end.x = (int)((w*h*(sy - ey) + w*w*ex + h*h*sx)/(w*w + h*h));
+                        end.y = (int)((w*h*(sx - ex) + w*w*sy + h*h*ey)/(w*w + h*h));
+                    }
+
+
+                    if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+                    {
+                        rectangle.setOutlineColor(sf::Color::Blue);
+                        newscreen.zoom = (double)w*h/abs(end.x - start.x)/abs(end.y - start.y);
+                    }
+                    else if (sf::Mouse::isButtonPressed(sf::Mouse::Right))
+                    {
+                        rectangle.setOutlineColor(sf::Color::Red);
+                        newscreen.zoom = (double)abs(end.x - start.x)*abs(end.y - start.y)/w/h;
+                    }
+
+                    rectangle.setSize(sf::Vector2f(end - start));
+
+                    #ifdef __linux__
+                    window_->draw(sprite);
+                    #else
+                    window_->draw(*pointmap_);
+                    #endif // __linux__
+
+                    window_->draw(rectangle);
+                    window_->display();
+                }
+                else end.x = -1;
+            }
+        }
+
+        #ifndef __linux__
+        window_->draw(*pointmap_);
+        #endif // __linux__
+
+        if (end.x != -1) break;
+        else return 0;
+    }
+
+
+    if (start.x > end.x)
+    {
+        newscreen.x2 = start.x;
+        newscreen.x1 = end.x;
+    }
+    else
+    {
+        newscreen.x1 = start.x;
+        newscreen.x2 = end.x;
+    }
+
+    if (start.y > end.y)
+    {
+        newscreen.y2 = start.y;
+        newscreen.y1 = end.y;
+    }
+    else
+    {
+        newscreen.y1 = start.y;
+        newscreen.y2 = end.y;
+    }
+
+    return 1;
+}
+
+//------------------------------------------------------------------------------
+
+void Puzabrot::changeBorders (Screen newscreen)
+{
+    double releft  = borders_.Re_left;
+    double reright = borders_.Re_right;
+    double imup    = borders_.Im_up;
+    double imdown  = borders_.Im_down;
+
+    if (newscreen.zoom > 1)
+    {
+        borders_.Re_left  = releft + (reright - releft) * newscreen.x1 / winsizes_.x;
+        borders_.Re_right = releft + (reright - releft) * newscreen.x2 / winsizes_.x;
+        borders_.Im_down  = imdown + (imup    - imdown) * newscreen.y1 / winsizes_.y;
+
+        borders_.Im_up = borders_.Im_down + (borders_.Re_right - borders_.Re_left) * winsizes_.y / winsizes_.x;
+    }
+    else
+    {
+        borders_.Re_left  = releft  - (reright - releft) *                newscreen.x1  / (newscreen.x2 - newscreen.x1);
+        borders_.Re_right = reright + (reright - releft) * (winsizes_.x - newscreen.x2) / (newscreen.x2 - newscreen.x1);
+        borders_.Im_down  = imdown  - (imup    - imdown) *                newscreen.y1  / (newscreen.y2 - newscreen.y1);
+
+        borders_.Im_up = borders_.Im_down + (borders_.Re_right - borders_.Re_left) * winsizes_.y / winsizes_.x;
+    }
 }
 
 //------------------------------------------------------------------------------

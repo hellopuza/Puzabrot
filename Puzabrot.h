@@ -69,10 +69,12 @@ private:
     double lim_        = 100;
     size_t itrn_max_   = 3000;
 
-    void updateWinSizes (size_t width, size_t height);
-    void toggleFullScreen ();
-    void DrawSet();
-    sf::Color getColor (int32_t itrn);
+    void      updateWinSizes   (size_t width, size_t height);
+    void      toggleFullScreen ();
+    void      DrawSet          ();
+    sf::Color getColor         (int32_t itrn);
+    int       GetNewScreen     (Screen& newscreen);
+    void      changeBorders    (Screen newscreen);
 };
 
 //------------------------------------------------------------------------------
