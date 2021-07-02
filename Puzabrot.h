@@ -16,6 +16,7 @@
 #include "InputBox.h"
 
 #include <SFML/Graphics.hpp>
+#include <stdio.h>/////////////
 #include <assert.h>
 #include <omp.h>
 

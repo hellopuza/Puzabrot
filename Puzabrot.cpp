@@ -40,9 +40,10 @@ void Puzabrot::run ()
 {
     window_->setVerticalSyncEnabled(true);
 
-    InputBox input_box(sf::Vector2f(10, 10), sf::Vector2f(200, 50), sf::Color(128, 128, 128, 128), sf::Color::White, 20);
-    input_box.setText("123 test");
-    input_box.draw(window_);
+    // DrawPuzabrot();
+
+    InputBox input_box(sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20);
+    input_box.setInput(sf::String("z^2+c"));
 
     while (window_->isOpen())
     {
@@ -67,6 +68,38 @@ void Puzabrot::run ()
                 window_->setView(sf::View(visibleArea));
                 updateWinSizes(window_->getSize().x, window_->getSize().y);
             }
+
+            if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Backslash))
+            {
+                input_box.is_visible_ = 1 - input_box.is_visible_;
+                if (not input_box.is_visible_)
+                    input_box.has_focus_ = false;
+            }
+
+            if (input_box.is_visible_ && (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
+            {
+                if ((input_box.getPos().x < event.mouseButton.x) && (event.mouseButton.x < input_box.getPos().x + input_box.getSize().x) &&
+                    (input_box.getPos().y < event.mouseButton.y) && (event.mouseButton.y < input_box.getPos().y + input_box.getSize().y))
+                    input_box.has_focus_ = true;
+                else
+                    input_box.has_focus_ = false;
+            }
+
+            if (input_box.has_focus_ && (event.type == sf::Event::TextEntered) && (event.text.unicode < 128))
+            {
+                input_box.setInput(event.text.unicode);
+            }
+        }
+
+        window_->clear();
+        if (input_box.is_visible_)
+        {
+            input_box.draw(window_);
+        }
+        else
+        {
+            window_->display();
+            // DrawPuzabrot();
         }
     }
 }
@@ -82,7 +115,8 @@ void Puzabrot::updateWinSizes (size_t width, size_t height)
     pointmap_ = new sf::VertexArray(sf::Points, winsizes_.x * winsizes_.y);
 
     borders_.Re_right = borders_.Re_left + (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y;
-    /*DrawMandelbrot();*/
+
+    // DrawPuzabrot();
 }
 
 //------------------------------------------------------------------------------

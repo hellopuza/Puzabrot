@@ -47,13 +47,17 @@ public:
 
         input_box.setFillColor(sf::Color(40, 40, 40));
         input_box.setOutlineThickness(2.0f);
-        input_box.setOutlineColor(sf::Color(200, 200, 200));
+        if (has_focus_)
+            input_box.setOutlineColor(sf::Color::Yellow);
+        else
+            input_box.setOutlineColor(sf::Color(200, 200, 200));
 
         sf::RectangleShape box;
         if (output_text_.getString().isEmpty())
-            box.setSize(sf::Vector2f(input_box.getSize().x + input_box.getSize().y, 1.5f * input_box.getSize().y));
+            box_size_ = sf::Vector2f(input_box.getSize().x + input_box.getSize().y, 1.5f * input_box.getSize().y);
         else
-            box.setSize(sf::Vector2f(1.5f * input_box.getSize().y + (input_box.getSize().x > 0.56f * font_size_ * output_text_.getString().getSize() ? input_box.getSize().x : 0.56f * font_size_ * output_text_.getString().getSize()), 1.5f * input_box.getSize().y + font_size_));
+            box_size_ = sf::Vector2f(1.5f * input_box.getSize().y + (input_box.getSize().x > 0.56f * font_size_ * output_text_.getString().getSize() ? input_box.getSize().x : 0.56f * font_size_ * output_text_.getString().getSize()), 1.5f * input_box.getSize().y + font_size_);
+        box.setSize(box_size_);
         box.setFillColor(box_color_);
 
         box.setPosition(box_pos_);
@@ -85,14 +89,34 @@ public:
         window->display();
     }
 
-    void setText (const sf::String& text)
+    void setInput (const sf::String& text)
+    {
+        sf::String input = input_text_.getString();
+        if (text == sf::String("\b"))
+            if (input.getSize() != 0) input.erase(input.getSize() - 1, 1); else;
+        else
+            input += text;
+        input_text_.setString(input);
+    }
+
+    void setOutput (const sf::String& text)
     {
         output_text_.setString(text);
     }
 
-    const sf::String& getText () const
+    const sf::String& getInput () const
     {
         return input_text_.getString();
+    }
+
+    const sf::Vector2f& getPos () const
+    {
+        return box_pos_;
+    }
+
+    const sf::Vector2f& getSize () const
+    {
+        return box_size_;
     }
 
 private:
@@ -100,10 +124,16 @@ private:
     sf::Text input_text_;
     sf::Text output_text_;
 
-    sf::Vector2f box_pos_;
+    sf::Vector2f box_pos_  = { 0, 0 };
+    sf::Vector2f box_size_ = { 0, 0 };
     sf::Color    box_color_;
     sf::Color    text_color_;
     size_t       font_size_;
+
+public:
+
+    bool has_focus_  = false;
+    bool is_visible_ = false;
 };
 
 //------------------------------------------------------------------------------
