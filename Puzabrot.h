@@ -16,7 +16,6 @@
 #include "InputBox.h"
 
 #include <SFML/Graphics.hpp>
-#include <stdio.h>/////////////
 #include <assert.h>
 #include <omp.h>
 
@@ -72,6 +71,8 @@ private:
 
     void updateWinSizes (size_t width, size_t height);
     void toggleFullScreen ();
+    void DrawSet();
+    sf::Color getColor (int32_t itrn);
 };
 
 //------------------------------------------------------------------------------

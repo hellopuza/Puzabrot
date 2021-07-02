@@ -40,10 +40,11 @@ void Puzabrot::run ()
 {
     window_->setVerticalSyncEnabled(true);
 
-    // DrawPuzabrot();
-
     InputBox input_box(sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20);
     input_box.setInput(sf::String("z^2+c"));
+
+    DrawSet();
+    window_->display();
 
     while (window_->isOpen())
     {
@@ -91,16 +92,11 @@ void Puzabrot::run ()
             }
         }
 
-        window_->clear();
+        window_->draw(*pointmap_);
         if (input_box.is_visible_)
-        {
             input_box.draw(window_);
-        }
         else
-        {
             window_->display();
-            // DrawPuzabrot();
-        }
     }
 }
 
@@ -116,7 +112,8 @@ void Puzabrot::updateWinSizes (size_t width, size_t height)
 
     borders_.Re_right = borders_.Re_left + (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y;
 
-    // DrawPuzabrot();
+    window_->draw(*pointmap_);
+    window_->display();
 }
 
 //------------------------------------------------------------------------------
@@ -136,6 +133,106 @@ void Puzabrot::toggleFullScreen ()
         window_ = new sf::RenderWindow(sf::VideoMode::getDesktopMode(), title_string, sf::Style::Fullscreen);
         updateWinSizes(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height);
     }
+}
+
+//------------------------------------------------------------------------------
+
+void Puzabrot::DrawSet ()
+{
+    assert(itrn_max_);
+    assert(lim_);
+
+    int width  = winsizes_.x;
+    int height = winsizes_.y;
+
+    double re_step = (borders_.Re_right - borders_.Re_left) / width;
+    double im_step = (borders_.Im_up    - borders_.Im_down) / height;
+
+    __m256d _m_lim = _mm256_set1_pd(lim_);
+    __m128i ones   = _mm_set1_epi32(1);
+    __m128i zeros  = _mm_set1_epi32(0);
+
+    __m128i mask32_128_1 = _mm_setr_epi32( 0, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF );
+    __m128i mask32_128_2 = _mm_setr_epi32( 0xFFFFFFFF, 0, 0xFFFFFFFF, 0xFFFFFFFF );
+    __m128i mask32_128_3 = _mm_setr_epi32( 0xFFFFFFFF, 0xFFFFFFFF, 0, 0xFFFFFFFF );
+    __m128i mask32_128_4 = _mm_setr_epi32( 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0 );
+
+
+    double im0 = borders_.Im_down;
+
+    int x_offset = 0;
+
+    for (int y = 0; y < height; (++y, im0 += im_step, x_offset += width))
+    {
+        __m256d _m_im0 = { im0, im0, im0, im0 };
+
+        #pragma omp parallel for
+        for (int x = 0; x < width; x += 4)
+        {
+            double re0 = x * re_step + borders_.Re_left;
+
+            __m256d _m_re0 = { re0, re0 + re_step, re0 + 2*re_step, re0 + 3*re_step };
+
+            __m256d _m_re2 = _mm256_mul_pd(_m_re0, _m_re0);
+            __m256d _m_im2 = _mm256_mul_pd(_m_im0, _m_im0);
+
+            __m256d _m_s = _mm256_mul_pd(_mm256_add_pd(_m_re0, _m_im0), _mm256_add_pd(_m_re0, _m_im0));
+
+            __m128i iterations = _mm_set1_epi32(0);
+            __m128i iter_mask  = _mm_set1_epi32(0xFFFFFFFF);
+
+            for (int i = 0; i < itrn_max_; ++i)
+            {
+                __m256d _m_re1 = _mm256_add_pd(_mm256_sub_pd(_m_re2, _m_im2), _m_re0);
+                __m256d _m_im1 = _mm256_add_pd(_mm256_sub_pd(_mm256_sub_pd(_m_s, _m_re2), _m_im2), _m_im0);
+                _m_re2 = _mm256_mul_pd(_m_re1, _m_re1);
+                _m_im2 = _mm256_mul_pd(_m_im1, _m_im1);
+
+                __m256d _m_rad2 = _mm256_add_pd(_m_re2, _m_im2);
+
+                __m128i rad_cmp = _mm_add_epi32(_mm256_cvtpd_epi32(_mm256_cmp_pd(_m_rad2, _m_lim, _CMP_GT_OS)), ones);
+                rad_cmp = _mm_abs_epi32(_mm_cmpgt_epi32(rad_cmp, zeros));
+
+                iterations = _mm_add_epi32(iterations, _mm_and_si128(iter_mask, rad_cmp));
+
+                if (*((int32_t*)&rad_cmp + 0) == 0) iter_mask = _mm_and_si128(iter_mask, mask32_128_1);
+                if (*((int32_t*)&rad_cmp + 1) == 0) iter_mask = _mm_and_si128(iter_mask, mask32_128_2);
+                if (*((int32_t*)&rad_cmp + 2) == 0) iter_mask = _mm_and_si128(iter_mask, mask32_128_3);
+                if (*((int32_t*)&rad_cmp + 3) == 0) iter_mask = _mm_and_si128(iter_mask, mask32_128_4);
+
+                if (_mm_test_all_zeros(iter_mask, iter_mask)) break;
+
+                _m_s  = _mm256_mul_pd(_mm256_add_pd(_m_re1, _m_im1), _mm256_add_pd(_m_re1, _m_im1));
+            }
+
+            for (int i = 0; i < 4; ++i)
+            {
+                (*pointmap_)[x_offset + x + i].position = sf::Vector2f(x + i, y);
+                (*pointmap_)[x_offset + x + i].color = getColor(*((int32_t*)&iterations + i));
+            }
+        }
+    }
+
+    window_->draw(*pointmap_);
+}
+
+//------------------------------------------------------------------------------
+
+sf::Color Puzabrot::getColor (int32_t itrn)
+{
+    if (itrn < itrn_max_)
+    {
+        itrn = itrn*4 % 1530;
+
+             if (itrn < 256 ) return sf::Color( 255,       itrn,      0         );
+        else if (itrn < 511 ) return sf::Color( 510-itrn,  255,       0         );
+        else if (itrn < 766 ) return sf::Color( 0,         255,       itrn-510  );
+        else if (itrn < 1021) return sf::Color( 0,         1020-itrn, 255       );
+        else if (itrn < 1276) return sf::Color( itrn-1020, 0,         255       );
+        else if (itrn < 1530) return sf::Color( 255,       0,         1529-itrn );
+    }
+
+    return sf::Color( 0, 0, 0 );
 }
 
 //------------------------------------------------------------------------------
