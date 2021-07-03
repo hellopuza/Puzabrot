@@ -141,9 +141,9 @@ void Puzabrot::run ()
                     changeBorders(newscreen);
 
                     if (newscreen.zoom > 1)
-                        itrn_max_ = (int)(itrn_max_*(1 + newscreen.zoom/delta_zoom_));
+                        itrn_max_ = (int)(itrn_max_*(1 + newscreen.zoom/DELTA_ZOOM));
                     else
-                        itrn_max_ = (int)(itrn_max_*(1 - 1/(newscreen.zoom*delta_zoom_ + 1)));
+                        itrn_max_ = (int)(itrn_max_*(1 - 1/(newscreen.zoom*DELTA_ZOOM + 1)));
 
                     DrawSet();
                 }
@@ -233,7 +233,7 @@ void Puzabrot::DrawSet ()
 
             int i = 1;
             calcs_[thread_num].trees_[0].root_->setData({ {re0, im0}, calcs_[thread_num].trees_[0].root_->getData().word, calcs_[thread_num].trees_[0].root_->getData().op_code, calcs_[thread_num].trees_[0].root_->getData().node_type });
-            for (; (i < itrn_max_) && (abs(calcs_[thread_num].trees_[0].root_->getData().number) < lim_); ++i)
+            for (; (i < itrn_max_) && (abs(calcs_[thread_num].trees_[0].root_->getData().number) < LIMIT); ++i)
             {
                 calcs_[thread_num].Calculate(calcs_[thread_num].trees_[0].root_);
                 calcs_[thread_num].variables_[calcs_[thread_num].variables_.getSize() - 1] = { calcs_[thread_num].trees_[0].root_->getData().number, "z" };
@@ -430,7 +430,7 @@ void Puzabrot::PointTrace (sf::Vector2i point)
 
     calcs_[0].trees_[0].root_->setData({ {x1, y1}, calcs_[0].trees_[0].root_->getData().word, calcs_[0].trees_[0].root_->getData().op_code, calcs_[0].trees_[0].root_->getData().node_type });
 
-    for (int i = 0; (i < 1000) && (abs(calcs_[0].trees_[0].root_->getData().number) < lim_); ++i)
+    for (int i = 0; (i < 1000) && (abs(calcs_[0].trees_[0].root_->getData().number) < LIMIT); ++i)
     {
         calcs_[0].Calculate(calcs_[0].trees_[0].root_);
         calcs_[0].variables_[calcs_[0].variables_.getSize() - 1] = { calcs_[0].trees_[0].root_->getData().number, "z" };

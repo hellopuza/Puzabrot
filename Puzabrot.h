@@ -77,8 +77,6 @@ private:
 
     Calculator calcs_[20] = {};
 
-    size_t delta_zoom_ = DELTA_ZOOM;
-    double lim_        = LIMIT;
     size_t itrn_max_   = MAX_ITERATION;
 
     void      updateWinSizes   (size_t width, size_t height);
