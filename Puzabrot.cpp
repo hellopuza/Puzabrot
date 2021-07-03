@@ -18,8 +18,8 @@ Puzabrot::Puzabrot () :
     pointmap_ = new sf::VertexArray(sf::Points, winsizes_.x * winsizes_.y);
     window_   = new sf::RenderWindow(sf::VideoMode(winsizes_.x, winsizes_.y), title_string);
     
-    borders_.Im_up   =  1.3;
-    borders_.Im_down = -1.3;
+    borders_.Im_up   =  UPPER_BORDER;
+    borders_.Im_down = -UPPER_BORDER;
 
     borders_.Re_left  = -(borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *3;
     borders_.Re_right =  (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *2;
@@ -83,11 +83,24 @@ void Puzabrot::run ()
                 updateWinSizes(window_->getSize().x, window_->getSize().y);
             }
 
-            if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Backslash))
+            if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::S))
             {
                 input_box.is_visible_ = 1 - input_box.is_visible_;
                 if (not input_box.is_visible_)
                     input_box.has_focus_ = false;
+            }
+
+            if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R))
+            {
+                borders_.Im_up   =  UPPER_BORDER;
+                borders_.Im_down = -UPPER_BORDER;
+
+                borders_.Re_left  = -(borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *3;
+                borders_.Re_right =  (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *2;
+
+                itrn_max_ = MAX_ITERATION;
+
+                DrawSet();
             }
 
             if (input_box.is_visible_ && (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))

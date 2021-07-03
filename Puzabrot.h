@@ -28,8 +28,14 @@
 #include <xmmintrin.h>
 */
 
-const int DEFAULT_WIDTH  = 640;
-const int DEFAULT_HEIGHT = 480;
+constexpr size_t DEFAULT_WIDTH  = 640;
+constexpr size_t DEFAULT_HEIGHT = 480;
+
+constexpr size_t DELTA_ZOOM    = 3000;
+constexpr size_t LIMIT         = 100;
+constexpr size_t MAX_ITERATION = 3000;
+
+constexpr double UPPER_BORDER = 1.3;
 
 const sf::String title_string = "Puzabrot";
 
@@ -71,9 +77,9 @@ private:
 
     Calculator calcs_[20] = {};
 
-    size_t delta_zoom_ = 3000;
-    double lim_        = 100;
-    size_t itrn_max_   = 3000;
+    size_t delta_zoom_ = DELTA_ZOOM;
+    double lim_        = LIMIT;
+    size_t itrn_max_   = MAX_ITERATION;
 
     void      updateWinSizes   (size_t width, size_t height);
     void      toggleFullScreen ();
