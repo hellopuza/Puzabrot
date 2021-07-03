@@ -43,6 +43,14 @@ void Puzabrot::run ()
     InputBox input_box(sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20);
     input_box.setInput(sf::String("z^2+c"));
 
+    std::string string = input_box.getInput().toAnsiString();
+    char* str = (char*)string.c_str();
+    char* expr = new char[MAX_STR_LEN] {};
+    strcpy(expr, str);
+    Expression expression = { expr, expr };
+    int err = Expr2Tree(expression, calc_.trees_[0]);
+    delete [] expr;
+
     DrawSet();
     window_->display();
 
@@ -92,6 +100,19 @@ void Puzabrot::run ()
                 input_box.setInput(event.text.unicode);
             }
 
+            if (input_box.has_focus_ && (event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Enter))
+            {
+                string = input_box.getInput().toAnsiString();
+                str = (char*)string.c_str();
+                expr = new char[MAX_STR_LEN] {};
+                strcpy(expr, str);
+                expression = { expr, expr };
+                err = Expr2Tree(expression, calc_.trees_[0]);
+                delete [] expr;
+
+                DrawSet();
+            }
+
             if (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right))
             {
                 if (GetNewScreen(newscreen))
@@ -108,6 +129,7 @@ void Puzabrot::run ()
             }
         }
 
+        window_->clear();
         window_->draw(*pointmap_);
         if (input_box.is_visible_)
             input_box.draw(window_);
@@ -128,8 +150,7 @@ void Puzabrot::updateWinSizes (size_t width, size_t height)
 
     borders_.Re_right = borders_.Re_left + (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y;
 
-    window_->draw(*pointmap_);
-    window_->display();
+    DrawSet();
 }
 
 //------------------------------------------------------------------------------
@@ -164,72 +185,40 @@ void Puzabrot::DrawSet ()
     double re_step = (borders_.Re_right - borders_.Re_left) / width;
     double im_step = (borders_.Im_up    - borders_.Im_down) / height;
 
-    __m256d _m_lim = _mm256_set1_pd(lim_);
-    __m128i ones   = _mm_set1_epi32(1);
-    __m128i zeros  = _mm_set1_epi32(0);
-
-    __m128i mask32_128_1 = _mm_setr_epi32( 0, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF );
-    __m128i mask32_128_2 = _mm_setr_epi32( 0xFFFFFFFF, 0, 0xFFFFFFFF, 0xFFFFFFFF );
-    __m128i mask32_128_3 = _mm_setr_epi32( 0xFFFFFFFF, 0xFFFFFFFF, 0, 0xFFFFFFFF );
-    __m128i mask32_128_4 = _mm_setr_epi32( 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0 );
-
-
     double im0 = borders_.Im_down;
 
     int x_offset = 0;
 
     for (int y = 0; y < height; (++y, im0 += im_step, x_offset += width))
     {
-        __m256d _m_im0 = { im0, im0, im0, im0 };
+        double re0 = borders_.Re_left;
 
-        #pragma omp parallel for
-        for (int x = 0; x < width; x += 4)
+        //#pragma omp parallel for
+        for (int x = 0; x < width; ++x)
         {
-            double re0 = x * re_step + borders_.Re_left;
+            calc_.variables_.Push({ {re0, im0}, "c" });
+            calc_.variables_.Push({ {re0, im0}, "z" });
 
-            __m256d _m_re0 = { re0, re0 + re_step, re0 + 2*re_step, re0 + 3*re_step };
-
-            __m256d _m_re2 = _mm256_mul_pd(_m_re0, _m_re0);
-            __m256d _m_im2 = _mm256_mul_pd(_m_im0, _m_im0);
-
-            __m256d _m_s = _mm256_mul_pd(_mm256_add_pd(_m_re0, _m_im0), _mm256_add_pd(_m_re0, _m_im0));
-
-            __m128i iterations = _mm_set1_epi32(0);
-            __m128i iter_mask  = _mm_set1_epi32(0xFFFFFFFF);
-
-            for (int i = 0; i < itrn_max_; ++i)
+            int i = 1;
+            calc_.trees_[0].root_->setData({ {re0, im0}, calc_.trees_[0].root_->getData().word, calc_.trees_[0].root_->getData().op_code, calc_.trees_[0].root_->getData().node_type });
+            for (; (i < itrn_max_) && (abs(calc_.trees_[0].root_->getData().number) < lim_); ++i)
             {
-                __m256d _m_re1 = _mm256_add_pd(_mm256_sub_pd(_m_re2, _m_im2), _m_re0);
-                __m256d _m_im1 = _mm256_add_pd(_mm256_sub_pd(_mm256_sub_pd(_m_s, _m_re2), _m_im2), _m_im0);
-                _m_re2 = _mm256_mul_pd(_m_re1, _m_re1);
-                _m_im2 = _mm256_mul_pd(_m_im1, _m_im1);
-
-                __m256d _m_rad2 = _mm256_add_pd(_m_re2, _m_im2);
-
-                __m128i rad_cmp = _mm_add_epi32(_mm256_cvtpd_epi32(_mm256_cmp_pd(_m_rad2, _m_lim, _CMP_GT_OS)), ones);
-                rad_cmp = _mm_abs_epi32(_mm_cmpgt_epi32(rad_cmp, zeros));
-
-                iterations = _mm_add_epi32(iterations, _mm_and_si128(iter_mask, rad_cmp));
-
-                if (*((int32_t*)&rad_cmp + 0) == 0) iter_mask = _mm_and_si128(iter_mask, mask32_128_1);
-                if (*((int32_t*)&rad_cmp + 1) == 0) iter_mask = _mm_and_si128(iter_mask, mask32_128_2);
-                if (*((int32_t*)&rad_cmp + 2) == 0) iter_mask = _mm_and_si128(iter_mask, mask32_128_3);
-                if (*((int32_t*)&rad_cmp + 3) == 0) iter_mask = _mm_and_si128(iter_mask, mask32_128_4);
-
-                if (_mm_test_all_zeros(iter_mask, iter_mask)) break;
-
-                _m_s  = _mm256_mul_pd(_mm256_add_pd(_m_re1, _m_im1), _mm256_add_pd(_m_re1, _m_im1));
+                calc_.Calculate(calc_.trees_[0].root_);
+                calc_.variables_[calc_.variables_.getSize() - 1] = { calc_.trees_[0].root_->getData().number, "z" };
             }
 
-            for (int i = 0; i < 4; ++i)
-            {
-                (*pointmap_)[x_offset + x + i].position = sf::Vector2f(x + i, y);
-                (*pointmap_)[x_offset + x + i].color = getColor(*((int32_t*)&iterations + i));
-            }
+            (*pointmap_)[x_offset + x].position = sf::Vector2f(x, y);
+            if (i < itrn_max_)
+                (*pointmap_)[x_offset + x].color = getColor(i);
+            else
+                (*pointmap_)[x_offset + x].color = sf::Color::Black;
+
+            calc_.variables_.Clean();
+            ADD_VAR(calc_.variables_);
+            
+            re0 += re_step;
         }
     }
-
-    window_->draw(*pointmap_);
 }
 
 //------------------------------------------------------------------------------
