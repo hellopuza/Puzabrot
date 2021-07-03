@@ -69,11 +69,11 @@ private:
     ComplexFrame      borders_;
     sf::Vector2i      winsizes_;
 
-    Calculator calc_;
+    Calculator calcs_[20] = {};
 
     size_t delta_zoom_ = 3000;
     double lim_        = 100;
-    size_t itrn_max_   = 300;
+    size_t itrn_max_   = 3000;
 
     void      updateWinSizes   (size_t width, size_t height);
     void      toggleFullScreen ();
@@ -81,6 +81,7 @@ private:
     sf::Color getColor         (int32_t itrn);
     int       GetNewScreen     (Screen& newscreen);
     void      changeBorders    (Screen newscreen);
+    void      PointTrace       (sf::Vector2i point);
 };
 
 //------------------------------------------------------------------------------

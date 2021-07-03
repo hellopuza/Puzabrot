@@ -45,11 +45,15 @@ void Puzabrot::run ()
 
     std::string string = input_box.getInput().toAnsiString();
     char* str = (char*)string.c_str();
-    char* expr = new char[MAX_STR_LEN] {};
-    strcpy(expr, str);
-    Expression expression = { expr, expr };
-    int err = Expr2Tree(expression, calc_.trees_[0]);
-    delete [] expr;
+    
+    #pragma omp parallel
+    {
+        char* expr = new char[MAX_STR_LEN] {};
+        strcpy(expr, str);
+        Expression expression = { expr, expr };
+        int err = Expr2Tree(expression, calcs_[omp_get_thread_num()].trees_[0]);
+        delete [] expr;
+    }
 
     DrawSet();
     window_->display();
@@ -104,11 +108,15 @@ void Puzabrot::run ()
             {
                 string = input_box.getInput().toAnsiString();
                 str = (char*)string.c_str();
-                expr = new char[MAX_STR_LEN] {};
-                strcpy(expr, str);
-                expression = { expr, expr };
-                err = Expr2Tree(expression, calc_.trees_[0]);
-                delete [] expr;
+
+                #pragma omp parallel
+                {
+                    char* expr = new char[MAX_STR_LEN] {};
+                    strcpy(expr, str);
+                    Expression expression = { expr, expr };
+                    int err = Expr2Tree(expression, calcs_[omp_get_thread_num()].trees_[0]);
+                    delete [] expr;
+                }
 
                 DrawSet();
             }
@@ -126,6 +134,16 @@ void Puzabrot::run ()
 
                     DrawSet();
                 }
+            }
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+            {
+                input_box.is_visible_ = false;
+                input_box.has_focus_  = false;
+
+                window_->clear();
+                window_->draw(*pointmap_);
+                PointTrace(sf::Mouse::getPosition(*window_));
             }
         }
 
@@ -185,26 +203,27 @@ void Puzabrot::DrawSet ()
     double re_step = (borders_.Re_right - borders_.Re_left) / width;
     double im_step = (borders_.Im_up    - borders_.Im_down) / height;
 
-    double im0 = borders_.Im_down;
-
-    int x_offset = 0;
-
-    for (int y = 0; y < height; (++y, im0 += im_step, x_offset += width))
+    #pragma omp parallel for
+    for (int y = 0; y < height; ++y)
     {
-        double re0 = borders_.Re_left;
+        int x_offset = width * y;
 
-        //#pragma omp parallel for
-        for (int x = 0; x < width; ++x)
+        double re0 = borders_.Re_left;
+        double im0 = borders_.Im_down + im_step * y;
+
+        int thread_num = omp_get_thread_num();
+
+        for (int x = 0; x < width; (++x, re0 += re_step))
         {
-            calc_.variables_.Push({ {re0, im0}, "c" });
-            calc_.variables_.Push({ {re0, im0}, "z" });
+            calcs_[thread_num].variables_.Push({ {re0, im0}, "c" });
+            calcs_[thread_num].variables_.Push({ {re0, im0}, "z" });
 
             int i = 1;
-            calc_.trees_[0].root_->setData({ {re0, im0}, calc_.trees_[0].root_->getData().word, calc_.trees_[0].root_->getData().op_code, calc_.trees_[0].root_->getData().node_type });
-            for (; (i < itrn_max_) && (abs(calc_.trees_[0].root_->getData().number) < lim_); ++i)
+            calcs_[thread_num].trees_[0].root_->setData({ {re0, im0}, calcs_[thread_num].trees_[0].root_->getData().word, calcs_[thread_num].trees_[0].root_->getData().op_code, calcs_[thread_num].trees_[0].root_->getData().node_type });
+            for (; (i < itrn_max_) && (abs(calcs_[thread_num].trees_[0].root_->getData().number) < lim_); ++i)
             {
-                calc_.Calculate(calc_.trees_[0].root_);
-                calc_.variables_[calc_.variables_.getSize() - 1] = { calc_.trees_[0].root_->getData().number, "z" };
+                calcs_[thread_num].Calculate(calcs_[thread_num].trees_[0].root_);
+                calcs_[thread_num].variables_[calcs_[thread_num].variables_.getSize() - 1] = { calcs_[thread_num].trees_[0].root_->getData().number, "z" };
             }
 
             (*pointmap_)[x_offset + x].position = sf::Vector2f(x, y);
@@ -213,10 +232,8 @@ void Puzabrot::DrawSet ()
             else
                 (*pointmap_)[x_offset + x].color = sf::Color::Black;
 
-            calc_.variables_.Clean();
-            ADD_VAR(calc_.variables_);
-            
-            re0 += re_step;
+            calcs_[thread_num].variables_.Clean();
+            ADD_VAR(calcs_[thread_num].variables_);
         }
     }
 }
@@ -383,6 +400,52 @@ void Puzabrot::changeBorders (Screen newscreen)
 
         borders_.Im_up = borders_.Im_down + (borders_.Re_right - borders_.Re_left) * winsizes_.y / winsizes_.x;
     }
+}
+
+//------------------------------------------------------------------------------
+
+void Puzabrot::PointTrace (sf::Vector2i point)
+{
+    double re0 = borders_.Re_left + (borders_.Re_right - borders_.Re_left) * point.x / winsizes_.x;
+    double im0 = borders_.Im_down + (borders_.Im_up    - borders_.Im_down) * point.y / winsizes_.y;
+
+    double x1 = re0;
+    double y1 = im0;
+
+    calcs_[0].variables_.Push({ {re0, im0}, "c" });
+    calcs_[0].variables_.Push({ {x1,  y1 }, "z" });
+
+    calcs_[0].trees_[0].root_->setData({ {x1, y1}, calcs_[0].trees_[0].root_->getData().word, calcs_[0].trees_[0].root_->getData().op_code, calcs_[0].trees_[0].root_->getData().node_type });
+
+    for (int i = 0; (i < 1000) && (abs(calcs_[0].trees_[0].root_->getData().number) < lim_); ++i)
+    {
+        calcs_[0].Calculate(calcs_[0].trees_[0].root_);
+        calcs_[0].variables_[calcs_[0].variables_.getSize() - 1] = { calcs_[0].trees_[0].root_->getData().number, "z" };
+
+        double x2 = real(calcs_[0].trees_[0].root_->getData().number);
+        double y2 = imag(calcs_[0].trees_[0].root_->getData().number);
+
+        sf::Vertex line[] =
+        {
+            sf::Vertex(sf::Vector2f((x1 - borders_.Re_left) / (borders_.Re_right - borders_.Re_left) * winsizes_.x,
+                                    (y1 - borders_.Im_down) / (borders_.Im_up    - borders_.Im_down) * winsizes_.y), sf::Color::White),
+
+            sf::Vertex(sf::Vector2f((x2 - borders_.Re_left) / (borders_.Re_right - borders_.Re_left) * winsizes_.x,
+                                    (y2 - borders_.Im_down) / (borders_.Im_up    - borders_.Im_down) * winsizes_.y), sf::Color::Black)
+        };
+
+        x1 = x2;
+        y1 = y2;
+
+        window_->draw(line, 2, sf::Lines);
+            
+        ++i;
+    }
+
+    calcs_[0].variables_.Clean();
+    ADD_VAR(calcs_[0].variables_);
+
+    window_->display();
 }
 
 //------------------------------------------------------------------------------
