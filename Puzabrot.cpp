@@ -15,7 +15,7 @@
 Puzabrot::Puzabrot () :
     winsizes_ ({DEFAULT_WIDTH, DEFAULT_HEIGHT})
 {
-    pointmap_ = new sf::VertexArray(sf::Points, winsizes_.x * winsizes_.y);
+    pointmap_ = new sf::VertexArray(sf::Points, (winsizes_.x + 1) * (winsizes_.y + 1));
     window_   = new sf::RenderWindow(sf::VideoMode(winsizes_.x, winsizes_.y), title_string);
     
     borders_.Im_up   =  UPPER_BORDER;
@@ -83,14 +83,14 @@ void Puzabrot::run ()
                 updateWinSizes(window_->getSize().x, window_->getSize().y);
             }
 
-            if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::S))
+            if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::S) && (not input_box.has_focus_))
             {
                 input_box.is_visible_ = 1 - input_box.is_visible_;
                 if (not input_box.is_visible_)
                     input_box.has_focus_ = false;
             }
 
-            if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R))
+            if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) && (not input_box.has_focus_))
             {
                 borders_.Im_up   =  UPPER_BORDER;
                 borders_.Im_down = -UPPER_BORDER;
@@ -177,7 +177,7 @@ void Puzabrot::updateWinSizes (size_t width, size_t height)
     winsizes_.y = height;
 
     delete pointmap_;
-    pointmap_ = new sf::VertexArray(sf::Points, winsizes_.x * winsizes_.y);
+    pointmap_ = new sf::VertexArray(sf::Points, (winsizes_.x + 1) * (winsizes_.y + 1));
 
     borders_.Re_right = borders_.Re_left + (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y;
 
@@ -225,8 +225,12 @@ void Puzabrot::DrawSet ()
         double im0 = borders_.Im_down + im_step * y;
 
         int thread_num = omp_get_thread_num();
+        bool prev_was_black = false;
 
-        for (int x = 0; x < width; (++x, re0 += re_step))
+        int x_step = 2;
+        double re0_step = re_step * 2;
+
+        for (int x = 0; x <= width; (x += x_step, re0 += re0_step))
         {
             calcs_[thread_num].variables_.Push({ {re0, im0}, "c" });
             calcs_[thread_num].variables_.Push({ {re0, im0}, "z" });
@@ -241,9 +245,40 @@ void Puzabrot::DrawSet ()
 
             (*pointmap_)[x_offset + x].position = sf::Vector2f(x, y);
             if (i < itrn_max_)
+            {
                 (*pointmap_)[x_offset + x].color = getColor(i);
+                
+                if (prev_was_black)
+                {
+                    x_step = -1;
+                    re0_step = -re_step;
+                }
+                else
+                {
+                    x_step = 1;
+                    re0_step = re_step;
+                }
+                prev_was_black = false;
+            }
             else
+            if (prev_was_black)
+            {
                 (*pointmap_)[x_offset + x].color = sf::Color::Black;
+
+                (*pointmap_)[x_offset + x - 1].position = sf::Vector2f(x - 1, y);
+                (*pointmap_)[x_offset + x - 1].color = sf::Color::Black;
+
+                x_step = 2;
+                re0_step = re_step * 2;
+            }
+            else
+            {
+                (*pointmap_)[x_offset + x].color = sf::Color::Black;
+
+                prev_was_black = true;
+                x_step = 2;
+                re0_step = re_step * 2;
+            }
 
             calcs_[thread_num].variables_.Clean();
             ADD_VAR(calcs_[thread_num].variables_);
