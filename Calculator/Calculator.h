@@ -32,6 +32,7 @@
 #include "Operations.h"
 #include <complex>
 #include <math.h>
+#include <omp.h>
 
 
 #define NUM_TYPE std::complex<double>
@@ -78,6 +79,7 @@ enum CalculatorErrors
     CALC_TREE_OPER_WRONG_ARGUMENTS                                         ,
     CALC_TREE_VAR_WRONG_ARGUMENT                                           ,
     CALC_UNIDENTIFIED_VARIABLE                                             ,
+    CALC_WRONG_VARIABLE                                                    ,
 };
 
 static const char* calc_errstr[] =
@@ -97,16 +99,18 @@ static const char* calc_errstr[] =
     "Operator node must have two children"                                 ,
     "Variable node must not have any children"                             ,
     "I do not solve equations"                                             ,
+    "Wrong variable detected"                                              ,
 };
 
 static const char* CALCULATOR_LOGNAME = "calculator.log";
 
-#define CHECK_SYNTAX(cond, err, expr, len) if (cond)                                                                          \
-                                           {                                                                                  \
-                                               CalcPrintError(CALCULATOR_LOGNAME, __FILE__, __LINE__, __FUNC_NAME__, err, 0); \
-                                               PrintBadExpr(CALCULATOR_LOGNAME, expr, len);                                   \
-                                               return 0;                                                                      \
-                                           } //
+#define CHECK_SYNTAX(cond, errcode, expr, len) if (cond)                                                                            \
+                                               {                                                                                    \
+                                                 CalcPrintError(CALCULATOR_LOGNAME, __FILE__, __LINE__, __FUNC_NAME__, errcode, 0); \
+                                                 PrintBadExpr(CALCULATOR_LOGNAME, expr, len);                                       \
+                                                 expr.err = errcode;                                                                \
+                                                 return nullptr;                                                                    \
+                                               } //
 
 #define CALC_ASSERTOK(cond, err) if (cond)                                                                        \
                                  {                                                                                \
@@ -137,6 +141,7 @@ struct Expression
 {
     char* str      = nullptr;
     char* symb_cur = nullptr;
+    int   err      = CALC_OK;
 };
 
 struct CalcNodeData
@@ -220,12 +225,13 @@ public:
 //------------------------------------------------------------------------------
 /*! @brief   Calculating process.
  *
- *  @param   node_cur    Current node
+ *  @param   node_cur      Current node
+ *  @param   with_new_var  If not all required variables are defined on the stack
  *
  *  @return  error code
  */
 
-    int Calculate (Node<CalcNodeData>* node_cur);
+    int Calculate (Node<CalcNodeData>* node_cur, bool with_new_var);
 
 /*------------------------------------------------------------------------------
                    Private functions                                           *

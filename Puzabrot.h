@@ -33,7 +33,7 @@ constexpr size_t DEFAULT_HEIGHT = 480;
 
 constexpr size_t DELTA_ZOOM    = 3000;
 constexpr size_t LIMIT         = 100;
-constexpr size_t MAX_ITERATION = 3000;
+constexpr size_t MAX_ITERATION = 300;
 
 constexpr double UPPER_BORDER = 1.3;
 
@@ -77,11 +77,12 @@ private:
 
     Calculator calcs_[20] = {};
 
-    size_t itrn_max_   = MAX_ITERATION;
+    size_t itrn_max_ = MAX_ITERATION;
+    size_t lim_      = LIMIT;
 
     void      updateWinSizes   (size_t width, size_t height);
     void      toggleFullScreen ();
-    void      DrawSet          ();
+    int       DrawSet          ();
     sf::Color getColor         (int32_t itrn);
     int       GetNewScreen     (Screen& newscreen);
     void      changeBorders    (Screen newscreen);

@@ -50,7 +50,7 @@ void Puzabrot::run ()
     {
         char* expr = new char[MAX_STR_LEN] {};
         strcpy(expr, str);
-        Expression expression = { expr, expr };
+        Expression expression = { expr, expr, CALC_OK };
         int err = Expr2Tree(expression, calcs_[omp_get_thread_num()].trees_[0]);
         delete [] expr;
     }
@@ -99,6 +99,7 @@ void Puzabrot::run ()
                 borders_.Re_right =  (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *2;
 
                 itrn_max_ = MAX_ITERATION;
+                lim_      = LIMIT;
 
                 DrawSet();
             }
@@ -119,6 +120,7 @@ void Puzabrot::run ()
 
             if (input_box.has_focus_ && (event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Enter))
             {
+                int err = 0;
                 string = input_box.getInput().toAnsiString();
                 str = (char*)string.c_str();
 
@@ -126,12 +128,18 @@ void Puzabrot::run ()
                 {
                     char* expr = new char[MAX_STR_LEN] {};
                     strcpy(expr, str);
-                    Expression expression = { expr, expr };
-                    int err = Expr2Tree(expression, calcs_[omp_get_thread_num()].trees_[0]);
+                    Expression expression = { expr, expr, CALC_OK };
+                    if (Expr2Tree(expression, calcs_[omp_get_thread_num()].trees_[0]))
+                        err = expression.err;
                     delete [] expr;
                 }
 
-                DrawSet();
+                if (!err) err = DrawSet();
+
+                if (err)
+                    input_box.setOutput(sf::String(calc_errstr[err + 1]));
+                else
+                    input_box.setOutput(sf::String());
             }
 
             if (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right))
@@ -205,7 +213,7 @@ void Puzabrot::toggleFullScreen ()
 
 //------------------------------------------------------------------------------
 
-void Puzabrot::DrawSet ()
+int Puzabrot::DrawSet ()
 {
     assert(itrn_max_);
     assert(lim_);
@@ -215,6 +223,8 @@ void Puzabrot::DrawSet ()
 
     double re_step = (borders_.Re_right - borders_.Re_left) / width;
     double im_step = (borders_.Im_up    - borders_.Im_down) / height;
+
+    int err = 0;
 
     #pragma omp parallel for
     for (int y = 0; y < height; ++y)
@@ -230,16 +240,17 @@ void Puzabrot::DrawSet ()
         int x_step = 2;
         double re0_step = re_step * 2;
 
-        for (int x = 0; x <= width; (x += x_step, re0 += re0_step))
+        for (int x = 0; (x <= width) && (!err); (x += x_step, re0 += re0_step))
         {
             calcs_[thread_num].variables_.Push({ {re0, im0}, "c" });
             calcs_[thread_num].variables_.Push({ {re0, im0}, "z" });
 
             int i = 1;
             calcs_[thread_num].trees_[0].root_->setData({ {re0, im0}, calcs_[thread_num].trees_[0].root_->getData().word, calcs_[thread_num].trees_[0].root_->getData().op_code, calcs_[thread_num].trees_[0].root_->getData().node_type });
-            for (; (i < itrn_max_) && (abs(calcs_[thread_num].trees_[0].root_->getData().number) < LIMIT); ++i)
+            for (; (i < itrn_max_) && (abs(calcs_[thread_num].trees_[0].root_->getData().number) < lim_); ++i)
             {
-                calcs_[thread_num].Calculate(calcs_[thread_num].trees_[0].root_);
+                err = calcs_[thread_num].Calculate(calcs_[thread_num].trees_[0].root_, false);
+                if (err) break;
                 calcs_[thread_num].variables_[calcs_[thread_num].variables_.getSize() - 1] = { calcs_[thread_num].trees_[0].root_->getData().number, "z" };
             }
 
@@ -284,6 +295,8 @@ void Puzabrot::DrawSet ()
             ADD_VAR(calcs_[thread_num].variables_);
         }
     }
+
+    return err;
 }
 
 //------------------------------------------------------------------------------
@@ -465,9 +478,9 @@ void Puzabrot::PointTrace (sf::Vector2i point)
 
     calcs_[0].trees_[0].root_->setData({ {x1, y1}, calcs_[0].trees_[0].root_->getData().word, calcs_[0].trees_[0].root_->getData().op_code, calcs_[0].trees_[0].root_->getData().node_type });
 
-    for (int i = 0; (i < 1000) && (abs(calcs_[0].trees_[0].root_->getData().number) < LIMIT); ++i)
+    for (int i = 0; (i < 1000) && (abs(calcs_[0].trees_[0].root_->getData().number) < lim_); ++i)
     {
-        calcs_[0].Calculate(calcs_[0].trees_[0].root_);
+        calcs_[0].Calculate(calcs_[0].trees_[0].root_, false);
         calcs_[0].variables_[calcs_[0].variables_.getSize() - 1] = { calcs_[0].trees_[0].root_->getData().number, "z" };
 
         double x2 = real(calcs_[0].trees_[0].root_->getData().number);

@@ -64,7 +64,7 @@ int Calculator::Run ()
             printf("\nEnter expression: ");
 
             char* expr = ScanExpr();
-            Expression expression = { expr, expr };
+            Expression expression = { expr, expr, CALC_OK };
 
             int err = Expr2Tree(expression, trees_[0]);
             delete [] expr;
@@ -72,7 +72,7 @@ int Calculator::Run ()
             {
                 printExprGraph(trees_[0]);
 
-                err = Calculate(trees_[0].root_);
+                err = Calculate(trees_[0].root_, true);
                 if (err)
                     printf("%s\n", calc_errstr[err + 1]);
                 else
@@ -96,7 +96,7 @@ int Calculator::Run ()
     {
         Text text(filename_);
         char* expr = text.text_;
-        Expression expression = { expr, expr };
+        Expression expression = { expr, expr, CALC_OK };
 
         int err = Expr2Tree(expression, trees_[0]);
         delete [] expr;
@@ -104,7 +104,7 @@ int Calculator::Run ()
 
         printExprGraph(trees_[0]);
 
-        err = Calculate(trees_[0].root_);
+        err = Calculate(trees_[0].root_, true);
         if (err)
             printf("%s\n", calc_errstr[err + 1]);
         else
@@ -116,7 +116,7 @@ int Calculator::Run ()
 
 //------------------------------------------------------------------------------
 
-int Calculator::Calculate (Node<CalcNodeData>* node_cur)
+int Calculator::Calculate (Node<CalcNodeData>* node_cur, bool with_new_var)
 {
     assert(node_cur != nullptr);
 
@@ -132,7 +132,7 @@ int Calculator::Calculate (Node<CalcNodeData>* node_cur)
     case NODE_FUNCTION:
     {
         assert((node_cur->right_ != nullptr) && (node_cur->left_ == nullptr));
-        int err = Calculate(node_cur->right_);
+        int err = Calculate(node_cur->right_, with_new_var);
         if (err) return err;
 
         number = node_cur->right_->getData().number;
@@ -175,14 +175,14 @@ int Calculator::Calculate (Node<CalcNodeData>* node_cur)
     {
         if (node_cur->left_ != nullptr)
         {
-            int err = Calculate(node_cur->left_);
+            int err = Calculate(node_cur->left_, with_new_var);
             if (err) return err;
 
             left_num = node_cur->left_->getData().number;
         }
         else left_num = 0;
 
-        int err = Calculate(node_cur->right_);
+        int err = Calculate(node_cur->right_, with_new_var);
         if (err) return err;
 
         right_num = node_cur->right_->getData().number;
@@ -214,6 +214,8 @@ int Calculator::Calculate (Node<CalcNodeData>* node_cur)
         
         if (index == -1)
         {
+            if (not with_new_var) return CALC_WRONG_VARIABLE;
+
             variables_.Push({ POISON<NUM_TYPE>, node_cur->getData().word });
             size_t size = variables_.getSize();
 
@@ -378,7 +380,7 @@ NUM_TYPE scanVar (Calculator& calc, char* varname)
     printf("Enter value of variable %s: ", varname);
 
     char* expr = ScanExpr();
-    Expression expression = { expr, expr };
+    Expression expression = { expr, expr, CALC_OK };
 
     Tree<CalcNodeData> vartree(varname);
     while (Expr2Tree(expression, vartree))
@@ -386,14 +388,14 @@ NUM_TYPE scanVar (Calculator& calc, char* varname)
         delete [] expr;
         printf("Try again: ");
         expr = ScanExpr();
-        Expression expression = { expr, expr };
+        Expression expression = { expr, expr, CALC_OK };
     }
     delete [] expr;
 
     printExprGraph(vartree);
     calc.trees_.Push(vartree);
     size_t trees_size = calc.trees_.getSize();
-    int err = calc.Calculate(calc.trees_[trees_size - 1].root_);
+    int err = calc.Calculate(calc.trees_[trees_size - 1].root_, true);
     if (err == CALC_UNIDENTIFIED_VARIABLE)
         return POISON<NUM_TYPE>;
 
@@ -608,12 +610,12 @@ int Expr2Tree (Expression& expr, Tree<CalcNodeData>& tree)
     del_spaces(expr.str);
 
     tree.root_ = pass_Plus_Minus(expr);
-    if (tree.root_ == nullptr) return -1;
+    if (tree.root_ == nullptr) return CALC_NOT_OK;
 
     tree.root_->recountPrev();
     tree.root_->recountDepth();
 
-    return 0;
+    return CALC_OK;
 }
 
 //------------------------------------------------------------------------------
@@ -627,12 +629,17 @@ Node<CalcNodeData>* pass_Plus_Minus (Expression& expr)
         ++expr.symb_cur;
 
         Node<CalcNodeData>* right = pass_Mul_Div(expr);
+        if (right == nullptr) return nullptr;
 
         node_cur = new Node<CalcNodeData>;
         node_cur->setData({ POISON<NUM_TYPE>, op_names[OP_SUB].word, op_names[OP_SUB].code, NODE_OPERATOR });
         node_cur->right_ = right;
     }
-    else node_cur = pass_Mul_Div(expr);
+    else
+    {
+        node_cur = pass_Mul_Div(expr);
+        if (node_cur == nullptr) return nullptr;
+    }
     
     while ( (*expr.symb_cur == '+') ||
             (*expr.symb_cur == '-')   )
@@ -642,6 +649,7 @@ Node<CalcNodeData>* pass_Plus_Minus (Expression& expr)
 
         Node<CalcNodeData>* left  = node_cur;
         Node<CalcNodeData>* right = pass_Mul_Div(expr);
+        if (right == nullptr) return nullptr;
 
         node_cur = new Node<CalcNodeData>;
         char op = (*symb_cur == '-') ? OP_SUB : OP_ADD;
@@ -668,6 +676,7 @@ Node<CalcNodeData>* pass_Plus_Minus (Expression& expr)
 Node<CalcNodeData>* pass_Mul_Div (Expression& expr)
 {
     Node<CalcNodeData>* node_cur = pass_Power(expr);
+    if (node_cur == nullptr) return nullptr;
 
     while ( (*expr.symb_cur == '*') ||
             (*expr.symb_cur == '/') )
@@ -677,6 +686,7 @@ Node<CalcNodeData>* pass_Mul_Div (Expression& expr)
 
         Node<CalcNodeData>* left  = node_cur;
         Node<CalcNodeData>* right = pass_Power(expr);
+        if (right == nullptr) return nullptr;
 
         node_cur = new Node<CalcNodeData>;
         char op = (*symb_cur == '*') ? OP_MUL : OP_DIV;
@@ -694,6 +704,7 @@ Node<CalcNodeData>* pass_Mul_Div (Expression& expr)
 Node<CalcNodeData>* pass_Power (Expression& expr)
 {
     Node<CalcNodeData>* node_cur = pass_Brackets(expr);
+    if (node_cur == nullptr) return nullptr;
 
     while (*expr.symb_cur == '^')
     {
@@ -701,6 +712,7 @@ Node<CalcNodeData>* pass_Power (Expression& expr)
 
         Node<CalcNodeData>* left  = node_cur;
         Node<CalcNodeData>* right = pass_Power(expr);
+        if (right == nullptr) return nullptr;
 
         node_cur = new Node<CalcNodeData>;
         node_cur->setData({ POISON<NUM_TYPE>, op_names[OP_POW].word, op_names[OP_POW].code, NODE_OPERATOR });
@@ -721,6 +733,7 @@ Node<CalcNodeData>* pass_Brackets (Expression& expr)
         ++expr.symb_cur;
 
         Node<CalcNodeData>* node_cur = pass_Plus_Minus(expr);
+        if (node_cur == nullptr) return nullptr;
 
         CHECK_SYNTAX((*expr.symb_cur != ')'), CALC_SYNTAX_NO_CLOSE_BRACKET, expr, 1);
         ++expr.symb_cur;
@@ -762,6 +775,7 @@ Node<CalcNodeData>* pass_Function (Expression& expr)
             CHECK_SYNTAX((code == 0), CALC_SYNTAX_UNIDENTIFIED_FUNCTION, old, index);
 
             Node<CalcNodeData>* arg = pass_Brackets(expr);
+            if (arg == nullptr) return nullptr;
 
             Node<CalcNodeData>* node_cur = new Node<CalcNodeData>;
             node_cur->setData({ POISON<NUM_TYPE>, op_names[code].word, op_names[code].code, NODE_FUNCTION });
