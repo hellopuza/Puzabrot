@@ -86,8 +86,6 @@ Tree<TYPE>::Tree (const Tree& obj)
 template <typename TYPE>
 Tree<TYPE>& Tree<TYPE>::operator = (const Tree& obj)
 {
-    TREE_CHECK;
-
     name_ = obj.name_;
 
     if (obj.root_ != nullptr)

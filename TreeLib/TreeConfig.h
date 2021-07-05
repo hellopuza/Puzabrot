@@ -35,15 +35,15 @@
 #define CONSOLE_PRINT  if(1)
 
 
-static const char* DUMP_NAME         = "graph.dot";
-static const char* DUMP_PICT_NAME    = "graph.png";
-static const char* DEFAULT_BASE_NAME = "Base.dat";
-static const char* TREE_LOGNAME      = "tree.log";
+char const * const DUMP_NAME         = "graph.dot";
+char const * const DUMP_PICT_NAME    = "graph.png";
+char const * const DEFAULT_BASE_NAME = "Base.dat";
+char const * const TREE_LOGNAME      = "tree.log";
 
 const char OPEN_BRACKET  = '[';
 const char CLOSE_BRACKET = ']';
 
-static const size_t MAX_TREES_NUM = 100;
+constexpr size_t MAX_TREES_NUM = 100;
 
 
 enum TreeErrors
@@ -67,7 +67,7 @@ enum TreeErrors
     TREE_WRONG_SYNTAX_INPUT_BASE                                    ,
 };
 
-static const char* tree_errstr[] =
+char const * const tree_errstr[] =
 {
     "ERROR"                                                         ,
     "OK"                                                            ,

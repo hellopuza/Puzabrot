@@ -82,7 +82,7 @@ enum CalculatorErrors
     CALC_WRONG_VARIABLE                                                    ,
 };
 
-static const char* calc_errstr[] =
+char const * const calc_errstr[] =
 {
     "ERROR"                                                                ,
     "OK"                                                                   ,
@@ -102,7 +102,7 @@ static const char* calc_errstr[] =
     "Wrong variable detected"                                              ,
 };
 
-static const char* CALCULATOR_LOGNAME = "calculator.log";
+char const * const CALCULATOR_LOGNAME = "calculator.log";
 
 #define CHECK_SYNTAX(cond, errcode, expr, len) if (cond)                                                                            \
                                                {                                                                                    \
@@ -126,7 +126,7 @@ static const char* CALCULATOR_LOGNAME = "calculator.log";
 //==============================================================================
 
 
-static const char* GRAPH_FILENAME = "Equation.dot";
+char const * const GRAPH_FILENAME = "Equation.dot";
 const size_t       MAX_STR_LEN    = 4096;
 
 enum NODE_TYPE 

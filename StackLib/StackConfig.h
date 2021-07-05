@@ -51,10 +51,10 @@
 #endif // NO_HASH
 
 
-static const char* STACK_LOGNAME = "stack.log";
+char const * const STACK_LOGNAME = "stack.log";
 
-static const size_t MAX_STACK_NUM = 100;
-static const size_t MAX_CAPACITY  = 100000;
+constexpr size_t MAX_STACK_NUM = 100;
+constexpr size_t MAX_CAPACITY  = 100000;
 
 
 enum StackErrors
@@ -81,7 +81,7 @@ enum StackErrors
     STACK_WRONG_INPUT_STACK_NAME                                    ,
 };
 
-static const char* stk_errstr[] =
+char const * const stk_errstr[] =
 {
     "ERROR"                                                         ,
     "OK"                                                            ,

@@ -70,7 +70,7 @@ int Calculator::Run ()
             delete [] expr;
             if (!err)
             {
-                printExprGraph(trees_[0]);
+                //printExprGraph(trees_[0]);
 
                 err = Calculate(trees_[0].root_, true);
                 if (err)
@@ -79,6 +79,7 @@ int Calculator::Run ()
                     Write();
             }
             char* tree_name = trees_[0].name_;
+
 
             trees_.Clean();
             variables_.Clean();
@@ -102,7 +103,7 @@ int Calculator::Run ()
         delete [] expr;
         if (err) return err;
 
-        printExprGraph(trees_[0]);
+        //printExprGraph(trees_[0]);
 
         err = Calculate(trees_[0].root_, true);
         if (err)
@@ -119,9 +120,6 @@ int Calculator::Run ()
 int Calculator::Calculate (Node<CalcNodeData>* node_cur, bool with_new_var)
 {
     assert(node_cur != nullptr);
-
-    int err = 0;
-    int index = -1;
 
     NUM_TYPE number    = 0;
     NUM_TYPE right_num = 0;
@@ -204,7 +202,7 @@ int Calculator::Calculate (Node<CalcNodeData>* node_cur, bool with_new_var)
     {
         assert((node_cur->right_ == nullptr) && (node_cur->left_ == nullptr));
 
-        index = -1;
+        int index = -1;
         for (int i = 0; i < variables_.getSize(); ++i)
             if (strcmp(variables_[i].name, node_cur->getData().word) == 0)
             {
@@ -392,7 +390,8 @@ NUM_TYPE scanVar (Calculator& calc, char* varname)
     }
     delete [] expr;
 
-    printExprGraph(vartree);
+    //printExprGraph(vartree);
+
     calc.trees_.Push(vartree);
     size_t trees_size = calc.trees_.getSize();
     int err = calc.Calculate(calc.trees_[trees_size - 1].root_, true);
@@ -771,8 +770,9 @@ Node<CalcNodeData>* pass_Function (Expression& expr)
             int code = findFunc(word);
             delete [] word;
 
-            Expression old = { expr.str, expr.symb_cur - index };
-            CHECK_SYNTAX((code == 0), CALC_SYNTAX_UNIDENTIFIED_FUNCTION, old, index);
+            expr = { expr.str, expr.symb_cur - index };
+            CHECK_SYNTAX((code == 0), CALC_SYNTAX_UNIDENTIFIED_FUNCTION, expr, index);
+            expr = { expr.str, expr.symb_cur + index };
 
             Node<CalcNodeData>* arg = pass_Brackets(expr);
             if (arg == nullptr) return nullptr;

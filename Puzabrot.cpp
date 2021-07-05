@@ -41,7 +41,7 @@ void Puzabrot::run ()
     window_->setVerticalSyncEnabled(true);
 
     InputBox input_box(sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20);
-    input_box.setInput(sf::String("z^2+c"));
+    input_box.setInput(sf::String("z^i"));
 
     std::string string = input_box.getInput().toAnsiString();
     char* str = (char*)string.c_str();
@@ -129,7 +129,7 @@ void Puzabrot::run ()
                     char* expr = new char[MAX_STR_LEN] {};
                     strcpy(expr, str);
                     Expression expression = { expr, expr, CALC_OK };
-                    if (Expr2Tree(expression, calcs_[omp_get_thread_num()].trees_[0]))
+                    if (Expr2Tree(expression, calcs_[omp_get_thread_num()].trees_[0]));
                         err = expression.err;
                     delete [] expr;
                 }
@@ -235,12 +235,8 @@ int Puzabrot::DrawSet ()
         double im0 = borders_.Im_down + im_step * y;
 
         int thread_num = omp_get_thread_num();
-        bool prev_was_black = false;
 
-        int x_step = 2;
-        double re0_step = re_step * 2;
-
-        for (int x = 0; (x <= width) && (!err); (x += x_step, re0 += re0_step))
+        for (int x = 0; (x <= width) && (!err); (x += 1, re0 += re_step))
         {
             calcs_[thread_num].variables_.Push({ {re0, im0}, "c" });
             calcs_[thread_num].variables_.Push({ {re0, im0}, "z" });
@@ -256,40 +252,9 @@ int Puzabrot::DrawSet ()
 
             (*pointmap_)[x_offset + x].position = sf::Vector2f(x, y);
             if (i < itrn_max_)
-            {
                 (*pointmap_)[x_offset + x].color = getColor(i);
-                
-                if (prev_was_black)
-                {
-                    x_step = -1;
-                    re0_step = -re_step;
-                }
-                else
-                {
-                    x_step = 1;
-                    re0_step = re_step;
-                }
-                prev_was_black = false;
-            }
             else
-            if (prev_was_black)
-            {
                 (*pointmap_)[x_offset + x].color = sf::Color::Black;
-
-                (*pointmap_)[x_offset + x - 1].position = sf::Vector2f(x - 1, y);
-                (*pointmap_)[x_offset + x - 1].color = sf::Color::Black;
-
-                x_step = 2;
-                re0_step = re_step * 2;
-            }
-            else
-            {
-                (*pointmap_)[x_offset + x].color = sf::Color::Black;
-
-                prev_was_black = true;
-                x_step = 2;
-                re0_step = re_step * 2;
-            }
 
             calcs_[thread_num].variables_.Clean();
             ADD_VAR(calcs_[thread_num].variables_);

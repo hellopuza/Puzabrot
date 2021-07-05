@@ -471,13 +471,13 @@ int StrCompare (Line line1, Line line2, int dir)
 
     while ((line1.str[i1] != '\0') && (line2.str[i2] != '\0'))
     {
-        if (not(isAlpha(line1.str[i1])))
+        if (not isAlpha(line1.str[i1]))
         {
             i1 += dir;
             continue;
         }
 
-        if (not(isAlpha(line2.str[i2])))
+        if (not isAlpha(line2.str[i2]))
         {
             i2 += dir;
             continue;
@@ -516,7 +516,6 @@ void Write (Line* lines, size_t num, const char* filename)
     assert(lines != nullptr);
     assert(num);
     assert(filename);
-    printf("file: [%s]\n", filename);
 
     FILE* fp = fopen(filename, "w");
 

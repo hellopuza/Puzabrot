@@ -33,7 +33,7 @@ constexpr size_t DEFAULT_HEIGHT = 480;
 
 constexpr size_t DELTA_ZOOM    = 3000;
 constexpr size_t LIMIT         = 100;
-constexpr size_t MAX_ITERATION = 300;
+constexpr size_t MAX_ITERATION = 3000;
 
 constexpr double UPPER_BORDER = 1.3;
 

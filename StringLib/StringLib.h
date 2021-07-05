@@ -66,7 +66,7 @@ enum StringErrors
     STR_TEXT_NOT_CONSTRUCTED                                           ,
 };
 
-static const char* str_errstr[] =
+char const * const str_errstr[] =
 {
     "ERROR"                                                            ,
     "OK"                                                               ,
@@ -87,7 +87,7 @@ static const char* str_errstr[] =
     "Text did not constructed, operation is impossible"                ,
 };
 
-static const char* STRING_LOGNAME = "string.log";
+char const * const STRING_LOGNAME = "string.log";
 
 #define STR_ASSERTOK(cond, err)  if (cond)                                                                \
                                  {                                                                        \
