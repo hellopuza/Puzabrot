@@ -41,7 +41,7 @@ void Puzabrot::run ()
     window_->setVerticalSyncEnabled(true);
 
     InputBox input_box(sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20);
-    input_box.setInput(sf::String("z^i"));
+    input_box.setInput(sf::String("z^2+c"));
 
     std::string string = input_box.getInput().toAnsiString();
     char* str = (char*)string.c_str();
@@ -226,6 +226,9 @@ int Puzabrot::DrawSet ()
 
     int err = 0;
 
+    ProgressBar prog_bar({winsizes_.x * 0.2f, winsizes_.y * 0.95f - 20.0f}, {winsizes_.x * 0.6f, 20.0f}, sf::Color::Blue);
+    int progress = 0;
+
     #pragma omp parallel for
     for (int y = 0; y < height; ++y)
     {
@@ -259,6 +262,10 @@ int Puzabrot::DrawSet ()
             calcs_[thread_num].variables_.Clean();
             ADD_VAR(calcs_[thread_num].variables_);
         }
+
+        ++progress;
+        prog_bar.setProgress((float)progress / height);
+        prog_bar.draw(window_);
     }
 
     return err;

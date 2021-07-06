@@ -16,6 +16,7 @@
 #include "Calculator/Calculator.h"
 
 #include "InputBox.h"
+#include "ProgressBar.h"
 
 #include <SFML/Graphics.hpp>
 #include <assert.h>
