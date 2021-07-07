@@ -69,7 +69,7 @@ public:
         progress_ = progress;
     }
 
-//private:
+private:
 
     sf::Vector2f pos_  = { 0, 0 };
     sf::Vector2f size_ = { 0, 0 };

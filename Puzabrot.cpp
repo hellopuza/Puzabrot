@@ -238,11 +238,10 @@ int Puzabrot::DrawSet ()
         int x_offset = winsizes_.x * y;
         double re0 = borders_.Re_left;
         double im0 = borders_.Im_up - im_step * y;
+        int thread_num = omp_get_thread_num();
 
         for (int x = 0; x < width; ++x, re0 += re_step)
         {
-            int thread_num = omp_get_thread_num();
-
             calcs_[thread_num].variables_.Push({ {re0, im0}, "c" });
             calcs_[thread_num].variables_.Push({ {re0, im0}, "z" });
 
