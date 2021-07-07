@@ -21,11 +21,14 @@ class ProgressBar
 {
 public:
 
-    ProgressBar (sf::Vector2f pos = { 0, 0 }, sf::Vector2f size = { 0, 0 }, sf::Color col = sf::Color::Black) :
+    ProgressBar (sf::Vector2f pos = { 0, 0 }, sf::Vector2f size = { 0, 0 }, sf::Color col = sf::Color::Blue) :
         pos_  (pos),
         size_ (size),
         col_  (col)
     {
+        font_.loadFromFile("consola.ttf");
+        prog_text_.setFont(font_);
+
         outer_rect_.setPosition(pos_);
         outer_rect_.setSize(size_);
 
@@ -39,9 +42,6 @@ public:
         inter_rect_.setFillColor(col_);
         inter_rect_.setOutlineThickness(0.0f);
 
-        font_.loadFromFile("consola.ttf");
-
-        prog_text_.setFont(font_);
         prog_text_.setPosition(pos_.x + size_.x/2 - size_.y * 1.6, pos_.y);
         prog_text_.setCharacterSize(size_.y * 0.8);
     }
@@ -57,8 +57,8 @@ public:
 
         char str[8] = "";
         sprintf(str, "%.1f%%", progress_ * 100);
-
         prog_text_.setString(str);
+
         window->draw(prog_text_);
 
         window->display();
@@ -69,11 +69,11 @@ public:
         progress_ = progress;
     }
 
-private:
+//private:
 
     sf::Vector2f pos_  = { 0, 0 };
     sf::Vector2f size_ = { 0, 0 };
-    sf::Color    col_  = sf::Color::Black;
+    sf::Color    col_  = sf::Color::Blue;
     float        progress_ = 0;
 
     sf::RectangleShape outer_rect_;

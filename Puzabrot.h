@@ -34,7 +34,7 @@ constexpr size_t DEFAULT_HEIGHT = 480;
 
 constexpr size_t DELTA_ZOOM    = 3000;
 constexpr size_t LIMIT         = 100;
-constexpr size_t MAX_ITERATION = 3000;
+constexpr size_t MAX_ITERATION = 300;
 
 constexpr double UPPER_BORDER = 1.3;
 
@@ -74,14 +74,14 @@ private:
     sf::RenderWindow* window_ = nullptr;
     sf::VertexArray*  pointmap_ = nullptr;
     ComplexFrame      borders_;
-    sf::Vector2i      winsizes_;
+    sf::Vector2u      winsizes_;
 
     Calculator calcs_[20] = {};
 
     size_t itrn_max_ = MAX_ITERATION;
     size_t lim_      = LIMIT;
 
-    void      updateWinSizes   (size_t width, size_t height);
+    void      updateWinSizes   (size_t new_width, size_t new_height);
     void      toggleFullScreen ();
     int       DrawSet          ();
     sf::Color getColor         (int32_t itrn);

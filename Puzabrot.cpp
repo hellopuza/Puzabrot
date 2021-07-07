@@ -15,7 +15,7 @@
 Puzabrot::Puzabrot () :
     winsizes_ ({DEFAULT_WIDTH, DEFAULT_HEIGHT})
 {
-    pointmap_ = new sf::VertexArray(sf::Points, (winsizes_.x + 1) * (winsizes_.y + 1));
+    pointmap_ = new sf::VertexArray(sf::Points, sf::VideoMode::getDesktopMode().width * sf::VideoMode::getDesktopMode().height);
     window_   = new sf::RenderWindow(sf::VideoMode(winsizes_.x, winsizes_.y), title_string);
     
     borders_.Im_up   =  UPPER_BORDER;
@@ -179,13 +179,16 @@ void Puzabrot::run ()
 
 //------------------------------------------------------------------------------
 
-void Puzabrot::updateWinSizes (size_t width, size_t height)
+void Puzabrot::updateWinSizes (size_t new_width, size_t new_height)
 {
-    winsizes_.x = width;
-    winsizes_.y = height;
+    size_t old_width  = winsizes_.x;
+    size_t old_height = winsizes_.y;
+
+    winsizes_.x = new_width;
+    winsizes_.y = new_height;
 
     delete pointmap_;
-    pointmap_ = new sf::VertexArray(sf::Points, (winsizes_.x + 1) * (winsizes_.y + 1));
+    pointmap_ = new sf::VertexArray(sf::Points, winsizes_.x * winsizes_.y);
 
     borders_.Re_right = borders_.Re_left + (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y;
 
@@ -225,22 +228,21 @@ int Puzabrot::DrawSet ()
     double im_step = (borders_.Im_up    - borders_.Im_down) / height;
 
     int err = 0;
-
-    ProgressBar prog_bar({winsizes_.x * 0.2f, winsizes_.y * 0.95f - 20.0f}, {winsizes_.x * 0.6f, 20.0f}, sf::Color::Blue);
     int progress = 0;
+
+    double im0 = borders_.Im_up;
 
     #pragma omp parallel for
     for (int y = 0; y < height; ++y)
     {
-        int x_offset = width * y;
-
+        int x_offset = winsizes_.x * y;
         double re0 = borders_.Re_left;
-        double im0 = borders_.Im_down + im_step * y;
+        double im0 = borders_.Im_up - im_step * y;
 
-        int thread_num = omp_get_thread_num();
-
-        for (int x = 0; (x <= width) && (!err); (x += 1, re0 += re_step))
+        for (int x = 0; x < width; ++x, re0 += re_step)
         {
+            int thread_num = omp_get_thread_num();
+
             calcs_[thread_num].variables_.Push({ {re0, im0}, "c" });
             calcs_[thread_num].variables_.Push({ {re0, im0}, "z" });
 
@@ -264,6 +266,7 @@ int Puzabrot::DrawSet ()
         }
 
         ++progress;
+        ProgressBar prog_bar({winsizes_.x * 0.2f, winsizes_.y * 0.95f - 20.0f}, {winsizes_.x * 0.6f, 20.0f}, sf::Color::Blue);
         prog_bar.setProgress((float)progress / height);
         prog_bar.draw(window_);
     }
@@ -421,7 +424,7 @@ void Puzabrot::changeBorders (Screen newscreen)
     {
         borders_.Re_left  = releft + (reright - releft) * newscreen.x1 / winsizes_.x;
         borders_.Re_right = releft + (reright - releft) * newscreen.x2 / winsizes_.x;
-        borders_.Im_down  = imdown + (imup    - imdown) * newscreen.y1 / winsizes_.y;
+        borders_.Im_down  = imup   - (imup    - imdown) * newscreen.y2 / winsizes_.y;
 
         borders_.Im_up = borders_.Im_down + (borders_.Re_right - borders_.Re_left) * winsizes_.y / winsizes_.x;
     }
@@ -429,7 +432,7 @@ void Puzabrot::changeBorders (Screen newscreen)
     {
         borders_.Re_left  = releft  - (reright - releft) *                newscreen.x1  / (newscreen.x2 - newscreen.x1);
         borders_.Re_right = reright + (reright - releft) * (winsizes_.x - newscreen.x2) / (newscreen.x2 - newscreen.x1);
-        borders_.Im_down  = imdown  - (imup    - imdown) *                newscreen.y1  / (newscreen.y2 - newscreen.y1);
+        borders_.Im_down  = imdown  - (imup    - imdown) * (winsizes_.y - newscreen.y2) / (newscreen.y2 - newscreen.y1);
 
         borders_.Im_up = borders_.Im_down + (borders_.Re_right - borders_.Re_left) * winsizes_.y / winsizes_.x;
     }
