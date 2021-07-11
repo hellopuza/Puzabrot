@@ -22,12 +22,6 @@
 #include <assert.h>
 #include <omp.h>
 
-/*
-#include <emmintrin.h>
-#include <immintrin.h>
-#include <smmintrin.h>
-#include <xmmintrin.h>
-*/
 
 constexpr size_t DEFAULT_WIDTH  = 640;
 constexpr size_t DEFAULT_HEIGHT = 480;
@@ -56,6 +50,13 @@ struct ComplexFrame
     double Re_right = 0;
     double Im_up    = 0;
     double Im_down  = 0;
+};
+
+enum Modes
+{
+    ZOOMING       ,
+    POINT_TRACING ,
+    SOUNDING      ,
 };
 
 //------------------------------------------------------------------------------

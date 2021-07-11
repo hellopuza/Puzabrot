@@ -56,7 +56,8 @@ void Puzabrot::run ()
     }
 
     DrawSet();
-    window_->display();
+
+    int mode = ZOOMING;
 
     while (window_->isOpen())
     {
@@ -64,6 +65,7 @@ void Puzabrot::run ()
         Screen newscreen = {};
         while (window_->pollEvent(event))
         {
+            //Close window
             if ( ( event.type == sf::Event::Closed) ||
                  ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Escape)) )
             {
@@ -71,26 +73,22 @@ void Puzabrot::run ()
                 return;
             }
 
-            if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::F11))
+            //Toggle fullscreen
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::F11))
             {
                 toggleFullScreen();
             }
 
-            if (event.type == sf::Event::Resized)
+            //Resize window
+            else if (event.type == sf::Event::Resized)
             {
                 sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
                 window_->setView(sf::View(visibleArea));
                 updateWinSizes(window_->getSize().x, window_->getSize().y);
             }
 
-            if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::S) && (not input_box.has_focus_))
-            {
-                input_box.is_visible_ = 1 - input_box.is_visible_;
-                if (not input_box.is_visible_)
-                    input_box.has_focus_ = false;
-            }
-
-            if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) && (not input_box.has_focus_))
+            //Reset set drawing
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) && (not input_box.has_focus_))
             {
                 borders_.Im_up   =  UPPER_BORDER;
                 borders_.Im_down = -UPPER_BORDER;
@@ -104,7 +102,16 @@ void Puzabrot::run ()
                 DrawSet();
             }
 
-            if (input_box.is_visible_ && (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
+            //Toggle input box visibility
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::I) && (not input_box.has_focus_))
+            {
+                input_box.is_visible_ = 1 - input_box.is_visible_;
+                if (not input_box.is_visible_)
+                    input_box.has_focus_ = false;
+            }
+
+            //Toggle input box focus
+            else if (input_box.is_visible_ && (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
             {
                 if ((input_box.getPos().x < event.mouseButton.x) && (event.mouseButton.x < input_box.getPos().x + input_box.getSize().x) &&
                     (input_box.getPos().y < event.mouseButton.y) && (event.mouseButton.y < input_box.getPos().y + input_box.getSize().y))
@@ -113,12 +120,14 @@ void Puzabrot::run ()
                     input_box.has_focus_ = false;
             }
 
-            if (input_box.has_focus_ && (event.type == sf::Event::TextEntered) && (event.text.unicode < 128))
+            //Input text expression to input box
+            else if (input_box.has_focus_ && (event.type == sf::Event::TextEntered) && (event.text.unicode < 128))
             {
                 input_box.setInput(event.text.unicode);
             }
 
-            if (input_box.has_focus_ && (event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Enter))
+            //Enter expression from input box
+            else if (input_box.has_focus_ && (event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Enter))
             {
                 int err = 0;
                 string = input_box.getInput().toAnsiString();
@@ -142,7 +151,19 @@ void Puzabrot::run ()
                     input_box.setOutput(sf::String());
             }
 
-            if (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right))
+            //Toggle modes
+            else if (event.type == sf::Event::KeyPressed)
+            {
+                switch (event.key.code)
+                {
+                case sf::Keyboard::Z: mode = ZOOMING;       break;
+                case sf::Keyboard::P: mode = POINT_TRACING; break;
+                case sf::Keyboard::S: mode = SOUNDING;      break;
+                }
+            }
+
+            //Zooming
+            else if ((mode == ZOOMING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right)))
             {
                 if (GetNewScreen(newscreen))
                 {
@@ -157,19 +178,24 @@ void Puzabrot::run ()
                 }
             }
 
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+            //Point tracing
+            else if (mode == POINT_TRACING)
             {
-                input_box.is_visible_ = false;
-                input_box.has_focus_  = false;
+                while (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+                {
+                    input_box.is_visible_ = false;
+                    input_box.has_focus_  = false;
 
-                window_->clear();
-                window_->draw(*pointmap_);
-                PointTrace(sf::Mouse::getPosition(*window_));
+                    window_->clear();
+                    window_->draw(*pointmap_);
+                    PointTrace(sf::Mouse::getPosition(*window_));
+                }
             }
         }
 
         window_->clear();
         window_->draw(*pointmap_);
+
         if (input_box.is_visible_)
             input_box.draw(window_);
         else
@@ -452,7 +478,7 @@ void Puzabrot::PointTrace (sf::Vector2i point)
 
     calcs_[0].trees_[0].root_->setData({ {x1, y1}, calcs_[0].trees_[0].root_->getData().word, calcs_[0].trees_[0].root_->getData().op_code, calcs_[0].trees_[0].root_->getData().node_type });
 
-    for (int i = 0; (i < 1000) && (abs(calcs_[0].trees_[0].root_->getData().number) < lim_); ++i)
+    for (int i = 0; (i < itrn_max_) && (abs(calcs_[0].trees_[0].root_->getData().number) < lim_); ++i)
     {
         calcs_[0].Calculate(calcs_[0].trees_[0].root_, false);
         calcs_[0].variables_[calcs_[0].variables_.getSize() - 1] = { calcs_[0].trees_[0].root_->getData().number, "z" };
@@ -473,14 +499,13 @@ void Puzabrot::PointTrace (sf::Vector2i point)
         y1 = y2;
 
         window_->draw(line, 2, sf::Lines);
-            
         ++i;
     }
 
+    window_->display();
     calcs_[0].variables_.Clean();
     ADD_VAR(calcs_[0].variables_);
 
-    window_->display();
 }
 
 //------------------------------------------------------------------------------
