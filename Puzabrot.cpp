@@ -49,7 +49,10 @@ void Puzabrot::run ()
 
     DrawSet();
 
-    int mode = ZOOMING;
+    int action_mode = ZOOMING;
+    int drawing_mode = MAIN;
+
+    sf::Vector2f julia_point = sf::Vector2f(0, 0);
 
     while (window_->isOpen())
     {
@@ -69,6 +72,12 @@ void Puzabrot::run ()
             else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::F11))
             {
                 toggleFullScreen();
+
+                switch (drawing_mode)
+                {
+                case MAIN: DrawSet();  break;
+                case JULIA: DrawJulia(julia_point); break;
+                }
             }
 
             //Resize window
@@ -77,6 +86,12 @@ void Puzabrot::run ()
                 sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
                 window_->setView(sf::View(visibleArea));
                 updateWinSizes(window_->getSize().x, window_->getSize().y);
+
+                switch (drawing_mode)
+                {
+                case MAIN: DrawSet();  break;
+                case JULIA: DrawJulia(julia_point); break;
+                }
             }
 
             //Reset set drawing
@@ -91,7 +106,11 @@ void Puzabrot::run ()
                 itrn_max_ = MAX_ITERATION;
                 lim_      = LIMIT;
 
-                DrawSet();
+                switch (drawing_mode)
+                {
+                case MAIN: DrawSet();  break;
+                case JULIA: DrawJulia(julia_point); break;
+                }
             }
 
             //Toggle input box visibility
@@ -123,7 +142,7 @@ void Puzabrot::run ()
             {
                 int err = makeShader();
 
-                if (!err) err = DrawSet();
+                if (!err) DrawSet();
 
                 if (err)
                     input_box_.setOutput(sf::String(calc_errstr[err + 1]));
@@ -134,22 +153,37 @@ void Puzabrot::run ()
             //Julia set drawing
             else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::J))
             {
-                DrawJulia(sf::Mouse::getPosition(*window_));
+                if (drawing_mode != JULIA)
+                {
+                    while (sf::Keyboard::isKeyPressed(sf::Keyboard::J))
+                    {
+                        julia_point = sf::Vector2f((float)sf::Mouse::getPosition(*window_).x / winsizes_.x * (borders_.Re_right - borders_.Re_left) + borders_.Re_left,
+                                                   (float)sf::Mouse::getPosition(*window_).y / winsizes_.y * (borders_.Im_up    - borders_.Im_down) + borders_.Im_down );
+
+                        DrawJulia(julia_point);
+                    }
+                    drawing_mode = JULIA;
+                }
+                else
+                {
+                    DrawSet();
+                    drawing_mode = MAIN;
+                }
             }
 
-            //Toggle modes
+            //Toggle action modes
             else if (event.type == sf::Event::KeyPressed)
             {
                 switch (event.key.code)
                 {
-                case sf::Keyboard::Z: mode = ZOOMING;       break;
-                case sf::Keyboard::P: mode = POINT_TRACING; break;
-                case sf::Keyboard::S: mode = SOUNDING;      break;
+                case sf::Keyboard::Z: action_mode = ZOOMING;       break;
+                case sf::Keyboard::P: action_mode = POINT_TRACING; break;
+                case sf::Keyboard::S: action_mode = SOUNDING;      break;
                 }
             }
 
             //Zooming
-            else if ((mode == ZOOMING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right)))
+            else if ((action_mode == ZOOMING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right)))
             {
                 if (GetNewScreen(newscreen))
                 {
@@ -160,12 +194,16 @@ void Puzabrot::run ()
                     else
                         itrn_max_ = (int)(itrn_max_*(1 - 1/(newscreen.zoom*DELTA_ZOOM + 1)));
 
-                    DrawSet();
+                    switch (drawing_mode)
+                    {
+                    case MAIN: DrawSet();  break;
+                    case JULIA: DrawJulia(julia_point); break;
+                    }
                 }
             }
 
             //Point tracing
-            else if ((mode == POINT_TRACING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left)))
+            else if ((action_mode == POINT_TRACING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left)))
             {
                 while (sf::Mouse::isButtonPressed(sf::Mouse::Left))
                 {
@@ -210,8 +248,6 @@ void Puzabrot::updateWinSizes (size_t new_width, size_t new_height)
     sprite_ = sf::Sprite(render_texture_.getTexture());
 
     borders_.Re_right = borders_.Re_left + (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y;
-
-    DrawSet();
 }
 
 //------------------------------------------------------------------------------
@@ -235,141 +271,34 @@ void Puzabrot::toggleFullScreen ()
 
 //------------------------------------------------------------------------------
 
-int Puzabrot::DrawSet ()
+void Puzabrot::DrawSet ()
 {
-    /*
-    int width  = winsizes_.x;
-    int height = winsizes_.y;
+    shader_.setUniform("borders",  sf::Glsl::Vec4((float)borders_.Re_left, (float)borders_.Re_right, (float)borders_.Im_down, (float)borders_.Im_up));
+    shader_.setUniform("winsizes", sf::Glsl::Ivec2(winsizes_.x, winsizes_.y));
 
-    double re_step = (borders_.Re_right - borders_.Re_left) / width;
-    double im_step = (borders_.Im_up    - borders_.Im_down) / height;
+    shader_.setUniform("itrn_max", (int)itrn_max_);
+    shader_.setUniform("limit",    (float)lim_);
 
-    int err = 0;
-    int progress = 0;
-
-    double im0 = borders_.Im_up;
-
-    #pragma omp parallel for
-    for (int y = 0; y < height; ++y)
-    {
-        int x_offset = winsizes_.x * y;
-        double re0 = borders_.Re_left;
-        double im0 = borders_.Im_up - im_step * y;
-        int thread_num = omp_get_thread_num();
-
-        for (int x = 0; x < width; ++x, re0 += re_step)
-        {
-            calcs_[thread_num].variables_.Push({ {re0, im0}, "c" });
-            calcs_[thread_num].variables_.Push({ {re0, im0}, "z" });
-
-            int i = 1;
-            calcs_[thread_num].trees_[0].root_->setData({ {re0, im0}, calcs_[thread_num].trees_[0].root_->getData().word, calcs_[thread_num].trees_[0].root_->getData().op_code, calcs_[thread_num].trees_[0].root_->getData().node_type });
-            for (; (i < itrn_max_) && (abs(calcs_[thread_num].trees_[0].root_->getData().number) < lim_); ++i)
-            {
-                err = calcs_[thread_num].Calculate(calcs_[thread_num].trees_[0].root_, false);
-                if (err) break;
-                calcs_[thread_num].variables_[calcs_[thread_num].variables_.getSize() - 1] = { calcs_[thread_num].trees_[0].root_->getData().number, "z" };
-            }
-
-            (*pointmap_)[x_offset + x].position = sf::Vector2f(x, y);
-            if (i < itrn_max_)
-                (*pointmap_)[x_offset + x].color = getColor(i);
-            else
-                (*pointmap_)[x_offset + x].color = sf::Color::Black;
-
-            calcs_[thread_num].variables_.Clean();
-            ADD_VAR(calcs_[thread_num].variables_);
-        }
-
-        ++progress;
-        ProgressBar prog_bar({winsizes_.x * 0.2f, winsizes_.y * 0.95f - 20.0f}, {winsizes_.x * 0.6f, 20.0f}, sf::Color::Blue);
-        prog_bar.setProgress((float)progress / height);
-        prog_bar.draw(window_);
-    }
-    return err
-    */
-
-
-    render_texture_.draw(sprite_, &shader_);
-
-    return 0;
-}
-
-//------------------------------------------------------------------------------
-
-void Puzabrot::DrawJulia (sf::Vector2i point)
-{
-
-    /*
-    int width = winsizes_.x;
-    int height = winsizes_.y;
-
-    double re_step = (borders_.Re_right - borders_.Re_left) / width;
-    double im_step = (borders_.Im_up - borders_.Im_down) / height;
-
-    double c_re = (double)point.x / width  * (borders_.Re_right - borders_.Re_left) + borders_.Re_left;
-    double c_im = (double)point.y / height * (borders_.Im_up    - borders_.Im_down) + borders_.Im_down;
-
-    int err = 0;
-    int progress = 0;
-
-    double im0 = borders_.Im_up;
-
-    #pragma omp parallel for
-    for (int y = 0; y < height; ++y)
-    {
-        int x_offset = winsizes_.x * y;
-        double re0 = borders_.Re_left;
-        double im0 = borders_.Im_up - im_step * y;
-        int thread_num = omp_get_thread_num();
-
-        for (int x = 0; x < width; ++x, re0 += re_step)
-        {
-            calcs_[thread_num].variables_.Push({ {c_re, c_im}, "c" });
-            calcs_[thread_num].variables_.Push({ {re0,  im0},  "z" });
-
-            int i = 1;
-            calcs_[thread_num].trees_[0].root_->setData({ {re0, im0}, calcs_[thread_num].trees_[0].root_->getData().word, calcs_[thread_num].trees_[0].root_->getData().op_code, calcs_[thread_num].trees_[0].root_->getData().node_type });
-            for (; (i < itrn_max_) && (abs(calcs_[thread_num].trees_[0].root_->getData().number) < lim_); ++i)
-            {
-                err = calcs_[thread_num].Calculate(calcs_[thread_num].trees_[0].root_, false);
-                if (err) break;
-                calcs_[thread_num].variables_[calcs_[thread_num].variables_.getSize() - 1] = { calcs_[thread_num].trees_[0].root_->getData().number, "z" };
-            }
-
-            (*pointmap_)[x_offset + x].position = sf::Vector2f(x, y);
-            if (i < itrn_max_)
-                (*pointmap_)[x_offset + x].color = getColor(i);
-            else
-                (*pointmap_)[x_offset + x].color = sf::Color::Black;
-
-            calcs_[thread_num].variables_.Clean();
-            ADD_VAR(calcs_[thread_num].variables_);
-        }
-    }
-    */
-
+    shader_.setUniform("drawing_mode", MAIN);
 
     render_texture_.draw(sprite_, &shader_);
 }
 
 //------------------------------------------------------------------------------
 
-sf::Color Puzabrot::getColor (int32_t itrn)
+void Puzabrot::DrawJulia (sf::Vector2f point)
 {
-    if (itrn < itrn_max_)
-    {
-        itrn = itrn*4 % 1530;
+    shader_.setUniform("borders", sf::Glsl::Vec4((float)borders_.Re_left, (float)borders_.Re_right, (float)borders_.Im_down, (float)borders_.Im_up));
+    shader_.setUniform("winsizes", sf::Glsl::Ivec2(winsizes_.x, winsizes_.y));
 
-             if (itrn < 256 ) return sf::Color( 255,       itrn,      0         );
-        else if (itrn < 511 ) return sf::Color( 510-itrn,  255,       0         );
-        else if (itrn < 766 ) return sf::Color( 0,         255,       itrn-510  );
-        else if (itrn < 1021) return sf::Color( 0,         1020-itrn, 255       );
-        else if (itrn < 1276) return sf::Color( itrn-1020, 0,         255       );
-        else if (itrn < 1530) return sf::Color( 255,       0,         1529-itrn );
-    }
+    shader_.setUniform("itrn_max", (int)itrn_max_);
+    shader_.setUniform("limit", (float)lim_);
 
-    return sf::Color( 0, 0, 0 );
+    shader_.setUniform("drawing_mode", JULIA);
+
+    shader_.setUniform("julia_point", sf::Glsl::Vec2(point.x, point.y));
+
+    render_texture_.draw(sprite_, &shader_);
 }
 
 //------------------------------------------------------------------------------
@@ -575,16 +504,76 @@ int Puzabrot::makeShader ()
 
 char* Puzabrot::writeShader ()
 {
-    char* str = new char[10000] {};
+    char* str_shader = new char[10000] {};
 
-    sprintf(str,
-        "#version 400 compatibility\n"
-        "void main()\n"
-        "{\n"
-        "    gl_FragColor = vec4(1.0, 0.5, 0.0, 1.0);\n"
-        "}" );
+    char* str_calculation = Tree2GLSL();
 
-    return str;
+    sprintf(str_shader,
+       "#version 400 compatibility\n"
+       "\n"
+       "uniform vec4  borders;\n"
+       "uniform ivec2 winsizes;\n"
+       "uniform int   itrn_max;\n"
+       "uniform float limit;\n"
+       "uniform int   drawing_mode;\n"
+       "uniform vec2  julia_point;\n"
+       "\n"
+       "vec3 getColor(int itrn)\n"
+       "{\n"
+       "    if (itrn < itrn_max)\n"
+       "    {\n"
+       "        itrn = itrn * 4 % 1530;\n"
+       "             if (itrn < 256)  return vec3( 255,         itrn,        0           );\n"
+       "        else if (itrn < 511)  return vec3( 510 - itrn,  255,         0           );\n"
+       "        else if (itrn < 766)  return vec3( 0,           255,         itrn - 510  );\n"
+       "        else if (itrn < 1021) return vec3( 0,           1020 - itrn, 255         );\n"
+       "        else if (itrn < 1276) return vec3( itrn - 1020, 0,           255         );\n"
+       "        else if (itrn < 1530) return vec3( 255,         0,           1529 - itrn );\n"
+       "    }\n"
+       "    return vec3( 0, 0, 0 );\n"
+       "}\n"
+       "\n"
+       "void main()\n"
+       "{\n"
+       "    double re0 = borders.x + (borders.y - borders.x) * gl_FragCoord.x / winsizes.x;\n"
+       "    double im0 = borders.z + (borders.w - borders.z) * gl_FragCoord.y / winsizes.y;\n"
+       "\n"
+       "    dvec2 z = dvec2(re0, im0);\n"
+       "    dvec2 c;\n"
+       "    if (drawing_mode == 0)"
+       "        c = dvec2(re0, im0);\n"
+       "    else if (drawing_mode == 1)\n"
+       "        c = dvec2(julia_point.x, julia_point.y);\n"
+       "\n"
+       "    int itrn = 0;\n"
+       "    for (itrn = 0; itrn < itrn_max; ++itrn)\n"
+       "    {\n"
+       "        %s\n"
+       "        \n"
+       "    if (dot(z, z) > limit) break;\n"
+       "    }\n"
+       "\n"
+       "    vec3 col = getColor(itrn);\n"
+       "    col = vec3(col.x / 255, col.y / 255, col.z / 255);\n"
+       "    gl_FragColor = vec4(col, 1.0);\n"
+       "}", str_calculation);
+
+    delete [] str_calculation;
+
+    return str_shader;
+}
+
+//------------------------------------------------------------------------------
+
+char* Puzabrot::Tree2GLSL()
+{
+    char* str_calculation = new char[1000]{};
+
+    sprintf(str_calculation,
+        "z = dvec2(z.x*z.x - z.y*z.y, 2*z.x*z.y) + c;\n"
+        );
+
+    return str_calculation;
 }
 
 //------------------------------------------------------------------------------

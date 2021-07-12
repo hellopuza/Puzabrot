@@ -19,6 +19,7 @@
 #include "ProgressBar.h"
 
 #include <SFML/Graphics.hpp>
+#include <SFML/OpenGl.hpp>
 #include <omp.h>
 
 
@@ -27,7 +28,7 @@ constexpr size_t DEFAULT_HEIGHT = 480;
 
 constexpr size_t DELTA_ZOOM    = 3000;
 constexpr size_t LIMIT         = 100;
-constexpr size_t MAX_ITERATION = 300;
+constexpr size_t MAX_ITERATION = 3000;
 
 constexpr double UPPER_BORDER = 1.3;
 
@@ -47,15 +48,21 @@ struct ComplexFrame
 {
     double Re_left  = 0;
     double Re_right = 0;
-    double Im_up    = 0;
     double Im_down  = 0;
+    double Im_up    = 0;
 };
 
-enum Modes
+enum ActionModes
 {
     ZOOMING       ,
     POINT_TRACING ,
     SOUNDING      ,
+};
+
+enum DrawingModes
+{
+    MAIN  = 0,
+    JULIA = 1,
 };
 
 //------------------------------------------------------------------------------
@@ -84,16 +91,16 @@ private:
     size_t itrn_max_ = MAX_ITERATION;
     size_t lim_      = LIMIT;
 
-    void      updateWinSizes   (size_t new_width, size_t new_height);
-    void      toggleFullScreen ();
-    int       DrawSet          ();
-    void      DrawJulia        (sf::Vector2i point);
-    sf::Color getColor         (int32_t itrn);
-    int       GetNewScreen     (Screen& newscreen);
-    void      changeBorders    (Screen newscreen);
-    void      PointTrace       (sf::Vector2i point);
-    int       makeShader       ();
-    char*     writeShader      ();
+    void   updateWinSizes   (size_t new_width, size_t new_height);
+    void   toggleFullScreen ();
+    void   DrawSet          ();
+    void   DrawJulia        (sf::Vector2f point);
+    int    GetNewScreen     (Screen& newscreen);
+    void   changeBorders    (Screen newscreen);
+    void   PointTrace       (sf::Vector2i point);
+    int    makeShader       ();
+    char*  writeShader      ();
+    char*  Tree2GLSL        ();
 };
 
 //------------------------------------------------------------------------------
