@@ -19,7 +19,6 @@
 #include "ProgressBar.h"
 
 #include <SFML/Graphics.hpp>
-#include <assert.h>
 #include <omp.h>
 
 
@@ -73,11 +72,14 @@ public:
 private:
 
     sf::RenderWindow* window_ = nullptr;
-    sf::VertexArray*  pointmap_ = nullptr;
     ComplexFrame      borders_;
     sf::Vector2u      winsizes_;
 
-    Calculator calcs_[20] = {};
+    InputBox           input_box_;
+    Tree<CalcNodeData> expr_tree_;
+    sf::Shader         shader_;
+    sf::RenderTexture  render_texture_;
+    sf::Sprite         sprite_;
 
     size_t itrn_max_ = MAX_ITERATION;
     size_t lim_      = LIMIT;
@@ -85,10 +87,13 @@ private:
     void      updateWinSizes   (size_t new_width, size_t new_height);
     void      toggleFullScreen ();
     int       DrawSet          ();
+    void      DrawJulia        (sf::Vector2i point);
     sf::Color getColor         (int32_t itrn);
     int       GetNewScreen     (Screen& newscreen);
     void      changeBorders    (Screen newscreen);
     void      PointTrace       (sf::Vector2i point);
+    int       makeShader       ();
+    char*     writeShader      ();
 };
 
 //------------------------------------------------------------------------------

@@ -336,7 +336,7 @@ int Expr2Tree (Expression& expr, Tree<CalcNodeData>& tree);
  * 
  *  @param   expr        String expression
  *
- *  @return  error code
+ *  @return  pointer to tree node
  */
 
 Node<CalcNodeData>* pass_Plus_Minus (Expression& expr);
@@ -346,7 +346,7 @@ Node<CalcNodeData>* pass_Plus_Minus (Expression& expr);
  * 
  *  @param   expr        String expression
  *
- *  @return  error code
+ *  @return  pointer to tree node
  */
 
 Node<CalcNodeData>* pass_Mul_Div (Expression& expr);
@@ -356,7 +356,7 @@ Node<CalcNodeData>* pass_Mul_Div (Expression& expr);
  * 
  *  @param   expr        String expression
  *
- *  @return  error code
+ *  @return  pointer to tree node
  */
 
 Node<CalcNodeData>* pass_Power (Expression& expr);
@@ -366,7 +366,7 @@ Node<CalcNodeData>* pass_Power (Expression& expr);
  * 
  *  @param   expr        String expression
  *
- *  @return  error code
+ *  @return  pointer to tree node
  */
 
 Node<CalcNodeData>* pass_Brackets (Expression& expr);
@@ -376,7 +376,7 @@ Node<CalcNodeData>* pass_Brackets (Expression& expr);
  * 
  *  @param   expr        String expression
  *
- *  @return  error code
+ *  @return  pointer to tree node
  */
 
 Node<CalcNodeData>* pass_Function (Expression& expr);
@@ -386,7 +386,7 @@ Node<CalcNodeData>* pass_Function (Expression& expr);
  * 
  *  @param   expr        String expression
  *
- *  @return  error code
+ *  @return  pointer to tree node
  */
 
 Node<CalcNodeData>* pass_Number (Expression& expr);
@@ -416,8 +416,6 @@ char findFunc (char* word);
 /*! @brief   Optimize expression process.
  *
  *  @param   tree        Tree to optimize
- *
- *  @return  error code
  */
 
 void Optimize (Tree<CalcNodeData>& tree);

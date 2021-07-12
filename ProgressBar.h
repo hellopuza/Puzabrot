@@ -26,7 +26,11 @@ public:
         size_ (size),
         col_  (col)
     {
-        font_.loadFromFile("consola.ttf");
+        if (not font_.loadFromFile("consola.ttf"))
+        {
+            std::cerr << "Failed to load consola.ttf" << std::endl;
+            exit(-1);
+        }
         prog_text_.setFont(font_);
 
         outer_rect_.setPosition(pos_);

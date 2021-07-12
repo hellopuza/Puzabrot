@@ -14,6 +14,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <SFML/Graphics.hpp>
+#include <iostream>
 
 //------------------------------------------------------------------------------
 
@@ -26,14 +27,26 @@ public:
         box_color_ (sf::Color(128, 128, 128)),
         text_color_(sf::Color::White),
         font_size_ (20)
-    {}
+    {
+        if (not font_.loadFromFile("consola.ttf"))
+        {
+            std::cerr << "Failed to load consola.ttf" << std::endl;
+            exit(-1);
+        }
+    }
 
     InputBox (sf::Vector2f box_pos, sf::Color box_color, sf::Color text_color, size_t font_size) :
         box_pos_   (box_pos),
         box_color_ (box_color),
         text_color_(text_color),
         font_size_ (font_size)
-    {}
+    {
+        if (not font_.loadFromFile("consola.ttf"))
+        {
+            std::cerr << "Failed to load consola.ttf" << std::endl;
+            exit(-1);
+        }
+    }
 
     ~InputBox () {}
 
@@ -65,12 +78,9 @@ public:
         window->draw(box);
         window->draw(input_box);
 
-        sf::Font font;
-        font.loadFromFile("consola.ttf");
-
         if (not output_text_.getString().isEmpty())
         {
-            output_text_.setFont(font);
+            output_text_.setFont(font_);
             output_text_.setPosition(sf::Vector2f(input_box.getPosition().x, input_box.getPosition().y + input_box.getSize().y));
             output_text_.setCharacterSize(font_size_);
             output_text_.setFillColor(text_color_);
@@ -79,7 +89,7 @@ public:
 
         if (not input_text_.getString().isEmpty())
         {
-            input_text_.setFont(font);
+            input_text_.setFont(font_);
             input_text_.setPosition(input_box.getPosition());
             input_text_.setCharacterSize(font_size_);
             input_text_.setFillColor(sf::Color::White);
@@ -128,6 +138,7 @@ private:
     sf::Vector2f box_size_ = { 0, 0 };
     sf::Color    box_color_;
     sf::Color    text_color_;
+    sf::Font     font_;
     size_t       font_size_;
 
 public:

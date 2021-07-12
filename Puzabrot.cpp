@@ -12,17 +12,23 @@
 
 //------------------------------------------------------------------------------
 
-Puzabrot::Puzabrot () :
-    winsizes_ ({DEFAULT_WIDTH, DEFAULT_HEIGHT})
+Puzabrot::Puzabrot() :
+    winsizes_  ({ DEFAULT_WIDTH, DEFAULT_HEIGHT }),
+    input_box_ (sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20),
+    expr_tree_ ((char*)"Expression tree")
 {
-    pointmap_ = new sf::VertexArray(sf::Points, sf::VideoMode::getDesktopMode().width * sf::VideoMode::getDesktopMode().height);
-    window_   = new sf::RenderWindow(sf::VideoMode(winsizes_.x, winsizes_.y), title_string);
+    window_ = new sf::RenderWindow(sf::VideoMode(winsizes_.x, winsizes_.y), title_string);
     
     borders_.Im_up   =  UPPER_BORDER;
     borders_.Im_down = -UPPER_BORDER;
 
     borders_.Re_left  = -(borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *3;
     borders_.Re_right =  (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *2;
+
+    input_box_.setInput(sf::String("z^2+c"));
+
+    render_texture_.create(winsizes_.x, winsizes_.y);
+    sprite_ = sf::Sprite(render_texture_.getTexture());
 }
 
 //------------------------------------------------------------------------------
@@ -30,7 +36,6 @@ Puzabrot::Puzabrot () :
 Puzabrot::~Puzabrot ()
 {
     if (window_->isOpen()) window_->close();
-    delete pointmap_;
     delete window_;
 }
 
@@ -40,20 +45,7 @@ void Puzabrot::run ()
 {
     window_->setVerticalSyncEnabled(true);
 
-    InputBox input_box(sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20);
-    input_box.setInput(sf::String("z^2+c"));
-
-    std::string string = input_box.getInput().toAnsiString();
-    char* str = (char*)string.c_str();
-    
-    #pragma omp parallel
-    {
-        char* expr = new char[MAX_STR_LEN] {};
-        strcpy(expr, str);
-        Expression expression = { expr, expr, CALC_OK };
-        int err = Expr2Tree(expression, calcs_[omp_get_thread_num()].trees_[0]);
-        delete [] expr;
-    }
+    makeShader();
 
     DrawSet();
 
@@ -88,7 +80,7 @@ void Puzabrot::run ()
             }
 
             //Reset set drawing
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) && (not input_box.has_focus_))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) && (not input_box_.has_focus_))
             {
                 borders_.Im_up   =  UPPER_BORDER;
                 borders_.Im_down = -UPPER_BORDER;
@@ -103,52 +95,46 @@ void Puzabrot::run ()
             }
 
             //Toggle input box visibility
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::I) && (not input_box.has_focus_))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::I) && (not input_box_.has_focus_))
             {
-                input_box.is_visible_ = 1 - input_box.is_visible_;
-                if (not input_box.is_visible_)
-                    input_box.has_focus_ = false;
+                input_box_.is_visible_ = 1 - input_box_.is_visible_;
+                if (not input_box_.is_visible_)
+                    input_box_.has_focus_ = false;
             }
 
             //Toggle input box focus
-            else if (input_box.is_visible_ && (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
+            else if (input_box_.is_visible_ && (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
             {
-                if ((input_box.getPos().x < event.mouseButton.x) && (event.mouseButton.x < input_box.getPos().x + input_box.getSize().x) &&
-                    (input_box.getPos().y < event.mouseButton.y) && (event.mouseButton.y < input_box.getPos().y + input_box.getSize().y))
-                    input_box.has_focus_ = true;
+                if ((input_box_.getPos().x < event.mouseButton.x) && (event.mouseButton.x < input_box_.getPos().x + input_box_.getSize().x) &&
+                    (input_box_.getPos().y < event.mouseButton.y) && (event.mouseButton.y < input_box_.getPos().y + input_box_.getSize().y))
+                    input_box_.has_focus_ = true;
                 else
-                    input_box.has_focus_ = false;
+                    input_box_.has_focus_ = false;
             }
 
             //Input text expression to input box
-            else if (input_box.has_focus_ && (event.type == sf::Event::TextEntered) && (event.text.unicode < 128))
+            else if (input_box_.has_focus_ && (event.type == sf::Event::TextEntered) && (event.text.unicode < 128))
             {
-                input_box.setInput(event.text.unicode);
+                input_box_.setInput(event.text.unicode);
             }
 
             //Enter expression from input box
-            else if (input_box.has_focus_ && (event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Enter))
+            else if (input_box_.has_focus_ && (event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Enter))
             {
-                int err = 0;
-                string = input_box.getInput().toAnsiString();
-                str = (char*)string.c_str();
-
-                #pragma omp parallel
-                {
-                    char* expr = new char[MAX_STR_LEN] {};
-                    strcpy(expr, str);
-                    Expression expression = { expr, expr, CALC_OK };
-                    if (Expr2Tree(expression, calcs_[omp_get_thread_num()].trees_[0]));
-                        err = expression.err;
-                    delete [] expr;
-                }
+                int err = makeShader();
 
                 if (!err) err = DrawSet();
 
                 if (err)
-                    input_box.setOutput(sf::String(calc_errstr[err + 1]));
+                    input_box_.setOutput(sf::String(calc_errstr[err + 1]));
                 else
-                    input_box.setOutput(sf::String());
+                    input_box_.setOutput(sf::String());
+            }
+
+            //Julia set drawing
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::J))
+            {
+                DrawJulia(sf::Mouse::getPosition(*window_));
             }
 
             //Toggle modes
@@ -179,25 +165,32 @@ void Puzabrot::run ()
             }
 
             //Point tracing
-            else if (mode == POINT_TRACING)
+            else if ((mode == POINT_TRACING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left)))
             {
                 while (sf::Mouse::isButtonPressed(sf::Mouse::Left))
                 {
-                    input_box.is_visible_ = false;
-                    input_box.has_focus_  = false;
+                    input_box_.is_visible_ = false;
+                    input_box_.has_focus_  = false;
 
                     window_->clear();
-                    window_->draw(*pointmap_);
+                    window_->draw(sprite_);
                     PointTrace(sf::Mouse::getPosition(*window_));
                 }
             }
+
+            /*
+            //Sounding
+            else if (mode == SOUNDING)
+            {
+            }
+            */
         }
 
         window_->clear();
-        window_->draw(*pointmap_);
+        window_->draw(sprite_);
 
-        if (input_box.is_visible_)
-            input_box.draw(window_);
+        if (input_box_.is_visible_)
+            input_box_.draw(window_);
         else
             window_->display();
     }
@@ -213,8 +206,8 @@ void Puzabrot::updateWinSizes (size_t new_width, size_t new_height)
     winsizes_.x = new_width;
     winsizes_.y = new_height;
 
-    delete pointmap_;
-    pointmap_ = new sf::VertexArray(sf::Points, winsizes_.x * winsizes_.y);
+    render_texture_.create(winsizes_.x, winsizes_.y);
+    sprite_ = sf::Sprite(render_texture_.getTexture());
 
     borders_.Re_right = borders_.Re_left + (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y;
 
@@ -244,9 +237,7 @@ void Puzabrot::toggleFullScreen ()
 
 int Puzabrot::DrawSet ()
 {
-    assert(itrn_max_);
-    assert(lim_);
-
+    /*
     int width  = winsizes_.x;
     int height = winsizes_.y;
 
@@ -295,8 +286,71 @@ int Puzabrot::DrawSet ()
         prog_bar.setProgress((float)progress / height);
         prog_bar.draw(window_);
     }
+    return err
+    */
 
-    return err;
+
+    render_texture_.draw(sprite_, &shader_);
+
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+
+void Puzabrot::DrawJulia (sf::Vector2i point)
+{
+
+    /*
+    int width = winsizes_.x;
+    int height = winsizes_.y;
+
+    double re_step = (borders_.Re_right - borders_.Re_left) / width;
+    double im_step = (borders_.Im_up - borders_.Im_down) / height;
+
+    double c_re = (double)point.x / width  * (borders_.Re_right - borders_.Re_left) + borders_.Re_left;
+    double c_im = (double)point.y / height * (borders_.Im_up    - borders_.Im_down) + borders_.Im_down;
+
+    int err = 0;
+    int progress = 0;
+
+    double im0 = borders_.Im_up;
+
+    #pragma omp parallel for
+    for (int y = 0; y < height; ++y)
+    {
+        int x_offset = winsizes_.x * y;
+        double re0 = borders_.Re_left;
+        double im0 = borders_.Im_up - im_step * y;
+        int thread_num = omp_get_thread_num();
+
+        for (int x = 0; x < width; ++x, re0 += re_step)
+        {
+            calcs_[thread_num].variables_.Push({ {c_re, c_im}, "c" });
+            calcs_[thread_num].variables_.Push({ {re0,  im0},  "z" });
+
+            int i = 1;
+            calcs_[thread_num].trees_[0].root_->setData({ {re0, im0}, calcs_[thread_num].trees_[0].root_->getData().word, calcs_[thread_num].trees_[0].root_->getData().op_code, calcs_[thread_num].trees_[0].root_->getData().node_type });
+            for (; (i < itrn_max_) && (abs(calcs_[thread_num].trees_[0].root_->getData().number) < lim_); ++i)
+            {
+                err = calcs_[thread_num].Calculate(calcs_[thread_num].trees_[0].root_, false);
+                if (err) break;
+                calcs_[thread_num].variables_[calcs_[thread_num].variables_.getSize() - 1] = { calcs_[thread_num].trees_[0].root_->getData().number, "z" };
+            }
+
+            (*pointmap_)[x_offset + x].position = sf::Vector2f(x, y);
+            if (i < itrn_max_)
+                (*pointmap_)[x_offset + x].color = getColor(i);
+            else
+                (*pointmap_)[x_offset + x].color = sf::Color::Black;
+
+            calcs_[thread_num].variables_.Clean();
+            ADD_VAR(calcs_[thread_num].variables_);
+        }
+    }
+    */
+
+
+    render_texture_.draw(sprite_, &shader_);
 }
 
 //------------------------------------------------------------------------------
@@ -333,16 +387,6 @@ int Puzabrot::GetNewScreen (Screen& newscreen)
     sf::RectangleShape rectangle;
     rectangle.setOutlineThickness(1);
     rectangle.setFillColor(sf::Color::Transparent);
-
-#ifdef __linux__
-
-    sf::Texture screen;
-    screen.create(w, h);
-    screen.update(*window_);
-
-    sf::Sprite sprite(screen);
-
-#endif // __linux__
 
     while (1)
     {
@@ -389,12 +433,7 @@ int Puzabrot::GetNewScreen (Screen& newscreen)
 
                     rectangle.setSize(sf::Vector2f(end - start));
 
-                    #ifdef __linux__
-                    window_->draw(sprite);
-                    #else
-                    window_->draw(*pointmap_);
-                    #endif // __linux__
-
+                    window_->draw(sprite_);
                     window_->draw(rectangle);
                     window_->display();
                 }
@@ -402,9 +441,7 @@ int Puzabrot::GetNewScreen (Screen& newscreen)
             }
         }
 
-        #ifndef __linux__
-        window_->draw(*pointmap_);
-        #endif // __linux__
+        window_->draw(sprite_);
 
         if (end.x != -1) break;
         else return 0;
@@ -473,18 +510,21 @@ void Puzabrot::PointTrace (sf::Vector2i point)
     double x1 = re0;
     double y1 = im0;
 
-    calcs_[0].variables_.Push({ {re0, im0}, "c" });
-    calcs_[0].variables_.Push({ {x1,  y1 }, "z" });
+    static Calculator calc;
+    calc.trees_[0] = expr_tree_;
 
-    calcs_[0].trees_[0].root_->setData({ {x1, y1}, calcs_[0].trees_[0].root_->getData().word, calcs_[0].trees_[0].root_->getData().op_code, calcs_[0].trees_[0].root_->getData().node_type });
+    calc.variables_.Push({ {re0, im0}, "c" });
+    calc.variables_.Push({ {x1,  y1 }, "z" });
 
-    for (int i = 0; (i < itrn_max_) && (abs(calcs_[0].trees_[0].root_->getData().number) < lim_); ++i)
+    calc.trees_[0].root_->setData({ {x1, y1}, calc.trees_[0].root_->getData().word, calc.trees_[0].root_->getData().op_code, calc.trees_[0].root_->getData().node_type });
+
+    for (int i = 0; (i < itrn_max_) && (abs(calc.trees_[0].root_->getData().number) < lim_); ++i)
     {
-        calcs_[0].Calculate(calcs_[0].trees_[0].root_, false);
-        calcs_[0].variables_[calcs_[0].variables_.getSize() - 1] = { calcs_[0].trees_[0].root_->getData().number, "z" };
+        calc.Calculate(calc.trees_[0].root_, false);
+        calc.variables_[calc.variables_.getSize() - 1] = { calc.trees_[0].root_->getData().number, "z" };
 
-        double x2 = real(calcs_[0].trees_[0].root_->getData().number);
-        double y2 = imag(calcs_[0].trees_[0].root_->getData().number);
+        double x2 = real(calc.trees_[0].root_->getData().number);
+        double y2 = imag(calc.trees_[0].root_->getData().number);
 
         sf::Vertex line[] =
         {
@@ -503,9 +543,48 @@ void Puzabrot::PointTrace (sf::Vector2i point)
     }
 
     window_->display();
-    calcs_[0].variables_.Clean();
-    ADD_VAR(calcs_[0].variables_);
+    calc.variables_.Clean();
+    ADD_VAR(calc.variables_);
+}
 
+//------------------------------------------------------------------------------
+
+int Puzabrot::makeShader ()
+{
+    std::string string = input_box_.getInput().toAnsiString();
+    char* str = (char*)string.c_str();
+
+    char* expr = new char[MAX_STR_LEN] {};
+    strcpy(expr, str);
+    Expression expression = { expr, expr, CALC_OK };
+
+    int err = Expr2Tree(expression, expr_tree_);
+    if (err) return err;
+
+    char* str_shader = writeShader();
+
+    shader_.loadFromMemory(str_shader, sf::Shader::Fragment);
+
+    delete [] str_shader;
+    delete [] expr;
+
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+
+char* Puzabrot::writeShader ()
+{
+    char* str = new char[10000] {};
+
+    sprintf(str,
+        "#version 400 compatibility\n"
+        "void main()\n"
+        "{\n"
+        "    gl_FragColor = vec4(1.0, 0.5, 0.0, 1.0);\n"
+        "}" );
+
+    return str;
 }
 
 //------------------------------------------------------------------------------
