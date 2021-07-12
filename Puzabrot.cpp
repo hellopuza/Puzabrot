@@ -75,7 +75,7 @@ void Puzabrot::run ()
 
                 switch (drawing_mode)
                 {
-                case MAIN: DrawSet();  break;
+                case MAIN:  DrawSet();              break;
                 case JULIA: DrawJulia(julia_point); break;
                 }
             }
@@ -89,7 +89,7 @@ void Puzabrot::run ()
 
                 switch (drawing_mode)
                 {
-                case MAIN: DrawSet();  break;
+                case MAIN:  DrawSet();              break;
                 case JULIA: DrawJulia(julia_point); break;
                 }
             }
@@ -108,7 +108,7 @@ void Puzabrot::run ()
 
                 switch (drawing_mode)
                 {
-                case MAIN: DrawSet();  break;
+                case MAIN:  DrawSet();              break;
                 case JULIA: DrawJulia(julia_point); break;
                 }
             }
@@ -157,8 +157,8 @@ void Puzabrot::run ()
                 {
                     while (sf::Keyboard::isKeyPressed(sf::Keyboard::J))
                     {
-                        julia_point = sf::Vector2f((float)sf::Mouse::getPosition(*window_).x / winsizes_.x * (borders_.Re_right - borders_.Re_left) + borders_.Re_left,
-                                                   (float)sf::Mouse::getPosition(*window_).y / winsizes_.y * (borders_.Im_up    - borders_.Im_down) + borders_.Im_down );
+                        julia_point = sf::Vector2f(borders_.Re_left + (borders_.Re_right - borders_.Re_left) * (float)sf::Mouse::getPosition(*window_).x / winsizes_.x,
+                                                    borders_.Im_up  - (borders_.Im_up    - borders_.Im_down) * (float)sf::Mouse::getPosition(*window_).y / winsizes_.y);
 
                         DrawJulia(julia_point);
                     }
@@ -196,7 +196,7 @@ void Puzabrot::run ()
 
                     switch (drawing_mode)
                     {
-                    case MAIN: DrawSet();  break;
+                    case MAIN:  DrawSet();              break;
                     case JULIA: DrawJulia(julia_point); break;
                     }
                 }
@@ -434,7 +434,7 @@ void Puzabrot::changeBorders (Screen newscreen)
 void Puzabrot::PointTrace (sf::Vector2i point)
 {
     double re0 = borders_.Re_left + (borders_.Re_right - borders_.Re_left) * point.x / winsizes_.x;
-    double im0 = borders_.Im_down + (borders_.Im_up    - borders_.Im_down) * point.y / winsizes_.y;
+    double im0 = borders_.Im_up   - (borders_.Im_up    - borders_.Im_down) * point.y / winsizes_.y;
 
     double x1 = re0;
     double y1 = im0;
@@ -536,7 +536,7 @@ char* Puzabrot::writeShader ()
        "void main()\n"
        "{\n"
        "    double re0 = borders.x + (borders.y - borders.x) * gl_FragCoord.x / winsizes.x;\n"
-       "    double im0 = borders.z + (borders.w - borders.z) * gl_FragCoord.y / winsizes.y;\n"
+       "    double im0 = borders.w - (borders.w - borders.z) * gl_FragCoord.y / winsizes.y;\n"
        "\n"
        "    dvec2 z = dvec2(re0, im0);\n"
        "    dvec2 c;\n"
