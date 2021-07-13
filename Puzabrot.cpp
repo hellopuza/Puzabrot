@@ -108,11 +108,8 @@ void Puzabrot::run ()
                 itrn_max_ = MAX_ITERATION;
                 lim_      = LIMIT;
 
-                switch (drawing_mode)
-                {
-                case MAIN:  DrawSet();              break;
-                case JULIA: DrawJulia(julia_point); break;
-                }
+                DrawSet();
+                drawing_mode = MAIN;
             }
 
             //Toggle input box visibility
@@ -144,7 +141,11 @@ void Puzabrot::run ()
             {
                 int err = makeShader();
 
-                if (!err) DrawSet();
+                if (!err)
+                {
+                    DrawSet();
+                    drawing_mode = MAIN;
+                }
 
                 if (err)
                     input_box_.setOutput(sf::String(calc_errstr[err + 1]));
@@ -545,7 +546,7 @@ char* Puzabrot::writeShader ()
         return nullptr;
     }
 
-    char* str_shader = new char[10000] {};
+    char* str_shader = new char[8000] {};
 
     sprintf(str_shader,
         "#version 400 compatibility\n"
@@ -554,6 +555,7 @@ char* Puzabrot::writeShader ()
         "const float PI  = atan(1) * 4;\n"
         "const float E   = exp(1);\n"
         "const vec2  I   = vec2(0, 1);\n"
+        "const vec2  ONE = vec2(1, 0);\n"
         "\n"
         "uniform vec4  borders;\n"
         "uniform ivec2 winsizes;\n"
@@ -660,22 +662,66 @@ char* Puzabrot::writeShader ()
         "\n"
         "vec2 carcsin(vec2 a)\n"
         "{\n"
-        "    return cmul(vec2(0, -1), cln(cadd(cmul(vec2(0, 1), a), csqrt(csub(vec2(1, 0), cmul(a, a))))));\n"
+        "    return cmul(vec2(0, -1), cln(cadd(cmul(I, a), csqrt(csub(ONE, cmul(a, a))))));\n"
         "}\n"
         "\n"
         "vec2 carccos(vec2 a)\n"
         "{\n"
-        "    return cmul(vec2(0, -1), cln(cadd(a, csqrt(csub(cmul(a, a), vec2(1, 0))))));\n"
+        "    return cmul(vec2(0, -1), cln(cadd(a, csqrt(csub(cmul(a, a), ONE)))));\n"
         "}\n"
         "\n"
         "vec2 carctan(vec2 a)\n"
         "{\n"
-        "    return cmul(vec2(0, 0.5), csub(cln(cadd(vec2(0, 1), a)), cln(csub(vec2(0, 1), a))));\n"
+        "    return cmul(vec2(0, 0.5), csub(cln(cadd(I, a)), cln(csub(I, a))));\n"
         "}\n"
         "\n"
         "vec2 carccot(vec2 a)\n"
         "{\n"
-        "    return csub(vec2(PI/2, 0), cmul(vec2(0, 0.5), csub(cln(cadd(vec2(0, 1), a)), cln(csub(vec2(0, 1), a)))));\n"
+        "    return csub(vec2(PI/2, 0), cmul(vec2(0, 0.5), csub(cln(cadd(I, a)), cln(csub(I, a)))));\n"
+        "}\n"
+        "\n"
+        "vec2 csinh(vec2 a)\n"
+        "{\n"
+        "    return vec2(sinh(a.x) * cos(a.y), cosh(a.x) * sin(a.y));\n"
+        "}\n"
+        "\n"
+        "vec2 ccosh(vec2 a)\n"
+        "{\n"
+        "    return vec2(cosh(a.x) * cos(a.y), sinh(a.x) * sin(a.y));\n"
+        "}\n"
+        "\n"
+        "vec2 ctanh(vec2 a)\n"
+        "{\n"
+        "    vec2 a_2 = vec2(a.x * 2, a.y * 2);\n"
+        "    float bottom = cosh(a_2.x) + cos(a_2.y);\n"
+        "    return vec2(sinh(a_2.x) / bottom, sin(a_2.y) / bottom);\n"
+        "}\n"
+        "\n"
+        "vec2 ccoth(vec2 a)\n"
+        "{\n"
+        "    vec2 a_2 = vec2(a.x * 2, a.y * 2);\n"
+        "    float bottom = cos(a_2.y) - cosh(a_2.x);\n"
+        "    return vec2(-sinh(a_2.x) / bottom, sin(a_2.y) / bottom);\n"
+        "}\n"
+        "\n"
+        "vec2 carcsinh(vec2 a)\n"
+        "{\n"
+        "    return cln(cadd(a, csqrt(cadd(cmul(a, a), ONE))));\n"
+        "}\n"
+        "\n"
+        "vec2 carccosh(vec2 a)\n"
+        "{\n"
+        "    return cln(cadd(a, csqrt(csub(cmul(a, a), ONE))));\n"
+        "}\n"
+        "\n"
+        "vec2 carctanh(vec2 a)\n"
+        "{\n"
+        "    return cmul(vec2(0.5, 0), csub(cln(cadd(ONE, a)), cln(csub(ONE, a))));\n"
+        "}\n"
+        "\n"
+        "vec2 carccoth(vec2 a)\n"
+        "{\n"
+        "    return cmul(vec2(0.5, 0), csub(cln(cadd(ONE, a)), cln(csub(ONE, a))));\n"
         "}\n"
         "\n"
         "vec3 getColor(int itrn)\n"
