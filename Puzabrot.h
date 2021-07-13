@@ -30,7 +30,7 @@ constexpr size_t DELTA_ZOOM    = 3000;
 constexpr size_t LIMIT         = 100;
 constexpr size_t MAX_ITERATION = 300;
 
-constexpr double UPPER_BORDER = 1.3;
+constexpr float UPPER_BORDER = 1.3f;
 
 const sf::String title_string = "Puzabrot";
 
@@ -46,10 +46,10 @@ struct Screen
 
 struct ComplexFrame
 {
-    double Re_left  = 0;
-    double Re_right = 0;
-    double Im_down  = 0;
-    double Im_up    = 0;
+    float Re_left  = 0;
+    float Re_right = 0;
+    float Im_down  = 0;
+    float Im_up    = 0;
 };
 
 enum ActionModes
@@ -100,7 +100,7 @@ private:
     void   PointTrace       (sf::Vector2i point);
     int    makeShader       ();
     char*  writeShader      ();
-    char*  Tree2GLSL        ();
+    int    Tree2GLSL        (Node<CalcNodeData>* node_cur, char* str_cur);
 };
 
 //------------------------------------------------------------------------------

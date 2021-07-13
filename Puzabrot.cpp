@@ -278,7 +278,7 @@ void Puzabrot::toggleFullScreen ()
 
 void Puzabrot::DrawSet ()
 {
-    shader_.setUniform("borders",  sf::Glsl::Vec4((float)borders_.Re_left, (float)borders_.Re_right, (float)borders_.Im_down, (float)borders_.Im_up));
+    shader_.setUniform("borders",  sf::Glsl::Vec4(borders_.Re_left, borders_.Re_right, borders_.Im_down, borders_.Im_up));
     shader_.setUniform("winsizes", sf::Glsl::Ivec2(winsizes_.x, winsizes_.y));
 
     shader_.setUniform("itrn_max", (int)itrn_max_);
@@ -293,11 +293,11 @@ void Puzabrot::DrawSet ()
 
 void Puzabrot::DrawJulia (sf::Vector2f point)
 {
-    shader_.setUniform("borders", sf::Glsl::Vec4((float)borders_.Re_left, (float)borders_.Re_right, (float)borders_.Im_down, (float)borders_.Im_up));
+    shader_.setUniform("borders", sf::Glsl::Vec4(borders_.Re_left, borders_.Re_right, borders_.Im_down, borders_.Im_up));
     shader_.setUniform("winsizes", sf::Glsl::Ivec2(winsizes_.x, winsizes_.y));
 
     shader_.setUniform("itrn_max", (int)itrn_max_);
-    shader_.setUniform("limit", (float)lim_);
+    shader_.setUniform("limit",    (float)lim_);
 
     shader_.setUniform("drawing_mode", JULIA);
 
@@ -411,10 +411,10 @@ int Puzabrot::GetNewScreen (Screen& newscreen)
 
 void Puzabrot::changeBorders (Screen newscreen)
 {
-    double releft  = borders_.Re_left;
-    double reright = borders_.Re_right;
-    double imup    = borders_.Im_up;
-    double imdown  = borders_.Im_down;
+    float releft  = borders_.Re_left;
+    float reright = borders_.Re_right;
+    float imup    = borders_.Im_up;
+    float imdown  = borders_.Im_down;
 
     if (newscreen.zoom > 1)
     {
@@ -438,11 +438,11 @@ void Puzabrot::changeBorders (Screen newscreen)
 
 void Puzabrot::PointTrace (sf::Vector2i point)
 {
-    double re0 = borders_.Re_left + (borders_.Re_right - borders_.Re_left) * point.x / winsizes_.x;
-    double im0 = borders_.Im_up   - (borders_.Im_up    - borders_.Im_down) * point.y / winsizes_.y;
+    float re0 = borders_.Re_left + (borders_.Re_right - borders_.Re_left) * point.x / winsizes_.x;
+    float im0 = borders_.Im_up   - (borders_.Im_up    - borders_.Im_down) * point.y / winsizes_.y;
 
-    double x1 = re0;
-    double y1 = im0;
+    float x1 = re0;
+    float y1 = im0;
 
     static Calculator calc;
     calc.trees_[0] = expr_tree_;
@@ -457,8 +457,8 @@ void Puzabrot::PointTrace (sf::Vector2i point)
         calc.Calculate(calc.trees_[0].root_, false);
         calc.variables_[calc.variables_.getSize() - 1] = { calc.trees_[0].root_->getData().number, "z" };
 
-        double x2 = real(calc.trees_[0].root_->getData().number);
-        double y2 = imag(calc.trees_[0].root_->getData().number);
+        float x2 = real(calc.trees_[0].root_->getData().number);
+        float y2 = imag(calc.trees_[0].root_->getData().number);
 
         sf::Vertex line[] =
         {
@@ -493,9 +493,10 @@ int Puzabrot::makeShader ()
     Expression expression = { expr, expr, CALC_OK };
 
     int err = Expr2Tree(expression, expr_tree_);
-    if (err) return err;
+    if (err) return expression.err;
 
     char* str_shader = writeShader();
+    if (str_shader == nullptr) return CALC_WRONG_VARIABLE;
 
     shader_.loadFromMemory(str_shader, sf::Shader::Fragment);
 
@@ -509,20 +510,63 @@ int Puzabrot::makeShader ()
 
 char* Puzabrot::writeShader ()
 {
+    char* str_calculation = new char[1000] {};
+    int err = Tree2GLSL(expr_tree_.root_, str_calculation);
+    if (err) return nullptr;
+
     char* str_shader = new char[10000] {};
 
-    char* str_calculation = Tree2GLSL();
-
     sprintf(str_shader,
-       "#version 400 compatibility\n"
-       "\n"
-       "uniform vec4  borders;\n"
-       "uniform ivec2 winsizes;\n"
-       "uniform int   itrn_max;\n"
-       "uniform float limit;\n"
-       "uniform int   drawing_mode;\n"
-       "uniform vec2  julia_point;\n"
-       "\n"
+/*1*/  "#version 400 compatibility\n"
+/*2*/  "\n"
+/*3*/  "uniform vec4  borders;\n"
+/*4*/  "uniform ivec2 winsizes;\n"
+/*5*/  "uniform int   itrn_max;\n"
+/*6*/  "uniform float limit;\n"
+/*7*/  "uniform int   drawing_mode;\n"
+/*8*/  "uniform vec2  julia_point;\n"
+/*9*/  "\n"
+/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
+/*11*/ "{\n"
+/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
+/*13*/ "}\n"
+/*14*/  "\n"
+/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
+/*11*/ "{\n"
+/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
+/*13*/ "}\n"
+/*14*/  "\n"
+/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
+/*11*/ "{\n"
+/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
+/*13*/ "}\n"
+/*14*/  "\n"
+/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
+/*11*/ "{\n"
+/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
+/*13*/ "}\n"
+/*14*/  "\n"
+/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
+/*11*/ "{\n"
+/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
+/*13*/ "}\n"
+/*14*/  "\n"
+/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
+/*11*/ "{\n"
+/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
+/*13*/ "}\n"
+/*14*/  "\n"
+/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
+/*11*/ "{\n"
+/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
+/*13*/ "}\n"
+/*14*/  "\n"
+/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
+/*11*/ "{\n"
+/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
+/*13*/ "}\n"
+/*14*/ "\n"
+
        "vec3 getColor(int itrn)\n"
        "{\n"
        "    if (itrn < itrn_max)\n"
@@ -540,20 +584,20 @@ char* Puzabrot::writeShader ()
        "\n"
        "void main()\n"
        "{\n"
-       "    double re0 = borders.x + (borders.y - borders.x) * gl_FragCoord.x / winsizes.x;\n"
-       "    double im0 = borders.w - (borders.w - borders.z) * gl_FragCoord.y / winsizes.y;\n"
+       "    float re0 = borders.x + (borders.y - borders.x) * gl_FragCoord.x / winsizes.x;\n"
+       "    float im0 = borders.w - (borders.w - borders.z) * gl_FragCoord.y / winsizes.y;\n"
        "\n"
-       "    dvec2 z = dvec2(re0, im0);\n"
-       "    dvec2 c;\n"
+       "    vec2 z = vec2(re0, im0);\n"
+       "    vec2 c;\n"
        "    if (drawing_mode == 0)"
-       "        c = dvec2(re0, im0);\n"
+       "        c = vec2(re0, im0);\n"
        "    else if (drawing_mode == 1)\n"
-       "        c = dvec2(julia_point.x, julia_point.y);\n"
+       "        c = vec2(julia_point.x, julia_point.y);\n"
        "\n"
        "    int itrn = 0;\n"
        "    for (itrn = 0; itrn < itrn_max; ++itrn)\n"
        "    {\n"
-       "        %s\n"
+       "        z = %s;\n"
        "        \n"
        "    if (dot(z, z) > limit) break;\n"
        "    }\n"
@@ -570,15 +614,69 @@ char* Puzabrot::writeShader ()
 
 //------------------------------------------------------------------------------
 
-char* Puzabrot::Tree2GLSL()
+int Puzabrot::Tree2GLSL (Node<CalcNodeData>* node_cur, char* str_cur)
 {
-    char* str_calculation = new char[1000]{};
+    assert(node_cur != nullptr);
+    assert(str_cur  != nullptr);
 
-    sprintf(str_calculation,
-        "z = dvec2(z.x/z.y, z.x+z.y) + c;\n"
-        );
+    switch (node_cur->getData().node_type)
+    {
+    case NODE_FUNCTION:
+    {
+        sprintf(str_cur, "c%s(", node_cur->getData().word);
 
-    return str_calculation;
+        int err = Tree2GLSL(node_cur->right_, str_cur + strlen(str_cur));
+        if (err) return err;
+        sprintf(str_cur + strlen(str_cur), ")");
+
+        break;
+    }
+    case NODE_OPERATOR:
+    {
+        switch (node_cur->getData().op_code)
+        {
+        case OP_ADD: sprintf(str_cur, "cadd("); break;
+        case OP_SUB: sprintf(str_cur, "csub("); break;
+        case OP_MUL: sprintf(str_cur, "cmul("); break;
+        case OP_DIV: sprintf(str_cur, "cdiv("); break;
+        case OP_POW: sprintf(str_cur, "cpow("); break;
+        default: assert(0);
+        }
+
+        int err = Tree2GLSL(node_cur->left_, str_cur + strlen(str_cur));
+        if (err) return err;
+
+        sprintf(str_cur + strlen(str_cur), ", ");
+
+        int err = Tree2GLSL(node_cur->right_, str_cur + strlen(str_cur));
+        if (err) return err;
+
+        sprintf(str_cur + strlen(str_cur), ")");
+        
+        break;
+    }
+    case NODE_VARIABLE:
+    {
+        if ((strcmp(node_cur->getData().word, "z") != 0) && (strcmp(node_cur->getData().word, "c") != 0) && (strcmp(node_cur->getData().word, "i") != 0))
+            return -1;
+
+        if (strcmp(node_cur->getData().word, "i") == 0)
+            sprintf(str_cur, "vec2(1, 0)");
+        else
+            sprintf(str_cur, "%s", node_cur->getData().word);
+
+        break;
+    }
+    case NODE_NUMBER:
+    {
+        sprintf(str_cur, "vec2(%f, %f)", real(node_cur->getData().number), imag(node_cur->getData().number));
+
+        break;
+    }
+    default: assert(0);
+    }
+
+    return 0;
 }
 
 //------------------------------------------------------------------------------

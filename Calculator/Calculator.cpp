@@ -187,10 +187,10 @@ int Calculator::Calculate (Node<CalcNodeData>* node_cur, bool with_new_var)
 
         switch (node_cur->getData().op_code)
         {
-        case OP_MUL:  number = left_num * right_num;     break;
         case OP_ADD:  number = left_num + right_num;     break;
-        case OP_DIV:  number = left_num / right_num;     break;
         case OP_SUB:  number = left_num - right_num;     break;
+        case OP_MUL:  number = left_num * right_num;     break;
+        case OP_DIV:  number = left_num / right_num;     break;
         case OP_POW:  number = pow(left_num, right_num); break;
         default: assert(0);
         }
