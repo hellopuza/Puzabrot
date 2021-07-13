@@ -25,6 +25,7 @@ Puzabrot::Puzabrot() :
     borders_.Re_left  = -(borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *3;
     borders_.Re_right =  (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *2;
 
+    input_box_.setLabel(sf::String("z:"));
     input_box_.setInput(sf::String("z^2+c"));
 
     render_texture_.create(winsizes_.x, winsizes_.y);

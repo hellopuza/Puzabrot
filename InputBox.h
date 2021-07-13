@@ -70,13 +70,30 @@ public:
             box_size_ = sf::Vector2f(input_box.getSize().x + input_box.getSize().y, 1.5f * input_box.getSize().y);
         else
             box_size_ = sf::Vector2f(1.5f * input_box.getSize().y + (input_box.getSize().x > 0.56f * font_size_ * output_text_.getString().getSize() ? input_box.getSize().x : 0.56f * font_size_ * output_text_.getString().getSize()), 1.5f * input_box.getSize().y + font_size_);
+
+        if (not label_.getString().isEmpty())
+            box_size_.x += 0.56f * font_size_ * label_.getString().getSize() + 0.25f * font_size_;
+
         box.setSize(box_size_);
         box.setFillColor(box_color_);
 
         box.setPosition(box_pos_);
-        input_box.setPosition(sf::Vector2f(box_pos_.x + 0.5f * input_box.getSize().y, box_pos_.y + 0.25f * input_box.getSize().y));
+        if (label_.getString().isEmpty())
+            input_box.setPosition(sf::Vector2f(box_pos_.x + 0.5f * input_box.getSize().y, box_pos_.y + 0.25f * input_box.getSize().y));
+        else
+            input_box.setPosition(sf::Vector2f(box_pos_.x + 0.5f * input_box.getSize().y + 0.56f * font_size_ * label_.getString().getSize() + 0.25f * font_size_, box_pos_.y + 0.25f * input_box.getSize().y));
+
         window->draw(box);
         window->draw(input_box);
+
+        if (not label_.getString().isEmpty())
+        {
+            label_.setFont(font_);
+            label_.setPosition(sf::Vector2f(input_box.getPosition().x - 0.56f * font_size_ * label_.getString().getSize() - 0.25f * font_size_, input_box.getPosition().y));
+            label_.setCharacterSize(font_size_);
+            label_.setFillColor(text_color_);
+            window->draw(label_);
+        }
 
         if (not output_text_.getString().isEmpty())
         {
@@ -109,6 +126,11 @@ public:
         input_text_.setString(input);
     }
 
+    void setLabel(const sf::String& text)
+    {
+        label_.setString(text);
+    }
+
     void setOutput (const sf::String& text)
     {
         output_text_.setString(text);
@@ -131,6 +153,7 @@ public:
 
 private:
 
+    sf::Text label_;
     sf::Text input_text_;
     sf::Text output_text_;
 
