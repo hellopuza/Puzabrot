@@ -158,17 +158,22 @@ void Puzabrot::run ()
                     while (sf::Keyboard::isKeyPressed(sf::Keyboard::J))
                     {
                         julia_point = sf::Vector2f(borders_.Re_left + (borders_.Re_right - borders_.Re_left) * (float)sf::Mouse::getPosition(*window_).x / winsizes_.x,
-                                                    borders_.Im_up  - (borders_.Im_up    - borders_.Im_down) * (float)sf::Mouse::getPosition(*window_).y / winsizes_.y);
+                                                   borders_.Im_up   - (borders_.Im_up    - borders_.Im_down) * (float)sf::Mouse::getPosition(*window_).y / winsizes_.y);
 
                         DrawJulia(julia_point);
+                        window_->draw(sprite_);
+                        window_->display();
                     }
-                    drawing_mode = JULIA;
                 }
                 else
                 {
                     DrawSet();
                     drawing_mode = MAIN;
                 }
+            }
+            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::J))
+            {
+                drawing_mode = JULIA;
             }
 
             //Toggle action modes
@@ -458,10 +463,10 @@ void Puzabrot::PointTrace (sf::Vector2i point)
         sf::Vertex line[] =
         {
             sf::Vertex(sf::Vector2f((x1 - borders_.Re_left) / (borders_.Re_right - borders_.Re_left) * winsizes_.x,
-                                    (y1 - borders_.Im_down) / (borders_.Im_up    - borders_.Im_down) * winsizes_.y), sf::Color::White),
+                                    (borders_.Im_up - y1)   / (borders_.Im_up    - borders_.Im_down) * winsizes_.y), sf::Color::White),
 
             sf::Vertex(sf::Vector2f((x2 - borders_.Re_left) / (borders_.Re_right - borders_.Re_left) * winsizes_.x,
-                                    (y2 - borders_.Im_down) / (borders_.Im_up    - borders_.Im_down) * winsizes_.y), sf::Color::Black)
+                                    (borders_.Im_up - y2)   / (borders_.Im_up    - borders_.Im_down) * winsizes_.y), sf::Color::Black)
         };
 
         x1 = x2;
@@ -570,7 +575,7 @@ char* Puzabrot::Tree2GLSL()
     char* str_calculation = new char[1000]{};
 
     sprintf(str_calculation,
-        "z = dvec2(z.x*z.x - z.y*z.y, 2*z.x*z.y) + c;\n"
+        "z = dvec2(z.x/z.y, z.x+z.y) + c;\n"
         );
 
     return str_calculation;
