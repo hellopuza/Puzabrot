@@ -53,7 +53,6 @@
 
 char const * const STACK_LOGNAME = "stack.log";
 
-constexpr size_t MAX_STACK_NUM = 100;
 constexpr size_t MAX_CAPACITY  = 100000;
 
 
@@ -74,7 +73,6 @@ enum StackErrors
     STACK_NULL_INPUT_STACK_PTR                                      ,
     STACK_NULL_STACK_PTR                                            ,
     STACK_SIZE_BIGGER_CAPACITY                                      ,
-    STACK_TOO_MANY_STACKS                                           ,
     STACK_WRONG_CUR_SIZE                                            ,
     STACK_WRONG_INPUT_CAPACITY_VALUE_BIG                            ,
     STACK_WRONG_INPUT_CAPACITY_VALUE_NIL                            ,
@@ -98,7 +96,6 @@ char const * const stk_errstr[] =
     "The input value of the stack pointer turned out to be zero"    ,
     "The pointer to the stack is null, stack lost"                  ,
     "The size of the stack data is larger than the capacity"        ,
-    "Too many stacks created, cannot create a new one"              ,
     "Current size of stack data is wrong"                           ,
     "Wrong capacity value: - is too big"                            ,
     "Wrong capacity value: - is nil"                                ,

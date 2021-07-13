@@ -25,7 +25,6 @@ Stack<TYPE>::Stack (char* stack_name, size_t capacity) :
     STACK_ASSERTOK((capacity > MAX_CAPACITY),   STACK_WRONG_INPUT_CAPACITY_VALUE_BIG);
     STACK_ASSERTOK((capacity == 0),             STACK_WRONG_INPUT_CAPACITY_VALUE_NIL);
     STACK_ASSERTOK((stack_name == nullptr),     STACK_WRONG_INPUT_STACK_NAME);
-    STACK_ASSERTOK((stack_id == MAX_STACK_NUM), STACK_TOO_MANY_STACKS);
     
     try
     {
@@ -59,7 +58,6 @@ Stack<TYPE>::Stack (const Stack& obj) :
 {
     STACK_ASSERTOK((capacity_ > MAX_CAPACITY),  STACK_WRONG_INPUT_CAPACITY_VALUE_BIG);
     STACK_ASSERTOK((capacity_ == 0),            STACK_WRONG_INPUT_CAPACITY_VALUE_NIL);
-    STACK_ASSERTOK((stack_id == MAX_STACK_NUM), STACK_TOO_MANY_STACKS);
 
     try
     {
