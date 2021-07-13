@@ -52,6 +52,8 @@ void Puzabrot::run ()
     int action_mode = ZOOMING;
     int drawing_mode = MAIN;
 
+    bool julia_dragging = false;
+
     sf::Vector2f julia_point = sf::Vector2f(0, 0);
 
     while (window_->isOpen())
@@ -163,17 +165,22 @@ void Puzabrot::run ()
                         DrawJulia(julia_point);
                         window_->draw(sprite_);
                         window_->display();
+
+                        julia_dragging = true;
                     }
                 }
                 else
                 {
                     DrawSet();
-                    drawing_mode = MAIN;
+                    julia_dragging = false;
                 }
             }
             else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::J))
             {
-                drawing_mode = JULIA;
+                if (not julia_dragging)
+                    drawing_mode = MAIN;
+                else
+                    drawing_mode = JULIA;
             }
 
             //Toggle action modes
@@ -217,7 +224,16 @@ void Puzabrot::run ()
 
                     window_->clear();
                     window_->draw(sprite_);
-                    PointTrace(sf::Mouse::getPosition(*window_));
+
+                    switch (drawing_mode)
+                    {
+                    case MAIN:
+                        PointTrace(sf::Mouse::getPosition(*window_), sf::Vector2f(NAN, NAN));
+                        break;
+                    case JULIA:
+                        PointTrace(sf::Mouse::getPosition(*window_), julia_point);
+                        break;
+                    }
                 }
             }
 
@@ -284,7 +300,7 @@ void Puzabrot::DrawSet ()
     shader_.setUniform("itrn_max", (int)itrn_max_);
     shader_.setUniform("limit",    (float)lim_);
 
-    shader_.setUniform("drawing_mode", MAIN);
+    shader_.setUniform("drawing_mode", (int)MAIN);
 
     render_texture_.draw(sprite_, &shader_);
 }
@@ -299,7 +315,7 @@ void Puzabrot::DrawJulia (sf::Vector2f point)
     shader_.setUniform("itrn_max", (int)itrn_max_);
     shader_.setUniform("limit",    (float)lim_);
 
-    shader_.setUniform("drawing_mode", JULIA);
+    shader_.setUniform("drawing_mode", (int)JULIA);
 
     shader_.setUniform("julia_point", sf::Glsl::Vec2(point.x, point.y));
 
@@ -436,13 +452,24 @@ void Puzabrot::changeBorders (Screen newscreen)
 
 //------------------------------------------------------------------------------
 
-void Puzabrot::PointTrace (sf::Vector2i point)
+void Puzabrot::PointTrace (sf::Vector2i point, sf::Vector2f julia_point)
 {
     float re0 = borders_.Re_left + (borders_.Re_right - borders_.Re_left) * point.x / winsizes_.x;
     float im0 = borders_.Im_up   - (borders_.Im_up    - borders_.Im_down) * point.y / winsizes_.y;
 
-    float x1 = re0;
-    float y1 = im0;
+    float x1 = 0;
+    float y1 = 0;
+    
+    if (isnan(julia_point.x) || isnan(julia_point.y))
+    {
+        x1 = re0;
+        y1 = im0;
+    }
+    else
+    {
+        x1 = julia_point.x;
+        y1 = julia_point.y;
+    }
 
     static Calculator calc;
     calc.trees_[0] = expr_tree_;
@@ -512,99 +539,183 @@ char* Puzabrot::writeShader ()
 {
     char* str_calculation = new char[1000] {};
     int err = Tree2GLSL(expr_tree_.root_, str_calculation);
-    if (err) return nullptr;
+    if (err)
+    {
+        delete [] str_calculation;
+        return nullptr;
+    }
 
     char* str_shader = new char[10000] {};
 
     sprintf(str_shader,
-/*1*/  "#version 400 compatibility\n"
-/*2*/  "\n"
-/*3*/  "uniform vec4  borders;\n"
-/*4*/  "uniform ivec2 winsizes;\n"
-/*5*/  "uniform int   itrn_max;\n"
-/*6*/  "uniform float limit;\n"
-/*7*/  "uniform int   drawing_mode;\n"
-/*8*/  "uniform vec2  julia_point;\n"
-/*9*/  "\n"
-/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
-/*11*/ "{\n"
-/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
-/*13*/ "}\n"
-/*14*/  "\n"
-/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
-/*11*/ "{\n"
-/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
-/*13*/ "}\n"
-/*14*/  "\n"
-/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
-/*11*/ "{\n"
-/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
-/*13*/ "}\n"
-/*14*/  "\n"
-/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
-/*11*/ "{\n"
-/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
-/*13*/ "}\n"
-/*14*/  "\n"
-/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
-/*11*/ "{\n"
-/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
-/*13*/ "}\n"
-/*14*/  "\n"
-/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
-/*11*/ "{\n"
-/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
-/*13*/ "}\n"
-/*14*/  "\n"
-/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
-/*11*/ "{\n"
-/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
-/*13*/ "}\n"
-/*14*/  "\n"
-/*10*/ "vec2 cmul(vec2 a, vec2 b)\n"
-/*11*/ "{\n"
-/*12*/ "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
-/*13*/ "}\n"
-/*14*/ "\n"
-
-       "vec3 getColor(int itrn)\n"
-       "{\n"
-       "    if (itrn < itrn_max)\n"
-       "    {\n"
-       "        itrn = itrn * 4 % 1530;\n"
-       "             if (itrn < 256)  return vec3( 255,         itrn,        0           );\n"
-       "        else if (itrn < 511)  return vec3( 510 - itrn,  255,         0           );\n"
-       "        else if (itrn < 766)  return vec3( 0,           255,         itrn - 510  );\n"
-       "        else if (itrn < 1021) return vec3( 0,           1020 - itrn, 255         );\n"
-       "        else if (itrn < 1276) return vec3( itrn - 1020, 0,           255         );\n"
-       "        else if (itrn < 1530) return vec3( 255,         0,           1529 - itrn );\n"
-       "    }\n"
-       "    return vec3( 0, 0, 0 );\n"
-       "}\n"
-       "\n"
-       "void main()\n"
-       "{\n"
-       "    float re0 = borders.x + (borders.y - borders.x) * gl_FragCoord.x / winsizes.x;\n"
-       "    float im0 = borders.w - (borders.w - borders.z) * gl_FragCoord.y / winsizes.y;\n"
-       "\n"
-       "    vec2 z = vec2(re0, im0);\n"
-       "    vec2 c;\n"
-       "    if (drawing_mode == 0)"
-       "        c = vec2(re0, im0);\n"
-       "    else if (drawing_mode == 1)\n"
-       "        c = vec2(julia_point.x, julia_point.y);\n"
-       "\n"
-       "    int itrn = 0;\n"
-       "    for (itrn = 0; itrn < itrn_max; ++itrn)\n"
-       "    {\n"
-       "        z = %s;\n"
-       "        \n"
-       "    if (dot(z, z) > limit) break;\n"
-       "    }\n"
-       "\n"
-       "    vec3 col = getColor(itrn);\n"
-       "    col = vec3(col.x / 255, col.y / 255, col.z / 255);\n"
-       "    gl_FragColor = vec4(col, 1.0);\n"
+        "#version 400 compatibility\n"
+        "\n"
+        "const float NIL = 1e-9;\n"
+        "const float PI  = atan(1) * 4;\n"
+        "const float E   = exp(1);\n"
+        "const vec2  I   = vec2(0, 1);\n"
+        "\n"
+        "uniform vec4  borders;\n"
+        "uniform ivec2 winsizes;\n"
+        "uniform int   itrn_max;\n"
+        "uniform float limit;\n"
+        "uniform int   drawing_mode;\n"
+        "uniform vec2  julia_point;\n"
+        "\n"
+        "vec2 conj(vec2 a)\n"
+        "{\n"
+        "    return vec2(a.x, -a.y);\n"
+        "}\n"
+        "\n"
+        "float norm(vec2 a)\n"
+        "{\n"
+        "    return a.x * a.x + a.y * a.y;\n"
+        "}\n"
+        "\n"
+        "float cabs(vec2 a)\n"
+        "{\n"
+        "    return sqrt(a.x * a.x + a.y * a.y);\n"
+        "}\n"
+        "\n"
+        "float arg(vec2 a)\n"
+        "{\n"
+        "    return atan(a.y, a.x);\n"
+        "}\n"
+        "\n"
+        "vec2 cadd(vec2 a, vec2 b)\n"
+        "{\n"
+        "    return vec2(a.x + b.x, a.y + b.y);\n"
+        "}\n"
+        "\n"
+        "vec2 csub(vec2 a, vec2 b)\n"
+        "{\n"
+        "    return vec2(a.x - b.x, a.y - b.y);\n"
+        "}\n"
+        "\n"
+        "vec2 cmul(vec2 a, vec2 b)\n"
+        "{\n"
+        "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
+        "}\n"
+        "\n"
+        "vec2 cdiv(vec2 a, vec2 b)\n"
+        "{\n"
+        "    vec2 top = cmul(a, conj(b));\n"
+        "    float bottom = norm(b);\n"
+        "    return vec2(top.x / bottom, top.y / bottom);\n"
+        "}\n"
+        "\n"
+        "vec2 cln(vec2 a)\n"
+        "{\n"
+        "    if ((a.x < 0) && (abs(a.y) <= NIL))\n"
+        "        return vec2(log(a.x * a.x + a.y * a.y)/2, PI);\n"
+        "    else\n"
+        "        return vec2(log(a.x * a.x + a.y * a.y)/2, arg(a));\n"
+        "}\n"
+        "\n"
+        "vec2 clg(vec2 a)\n"
+        "{\n"
+        "    vec2 ln = cln(a);\n"
+        "    return vec2(ln.x/log(10), ln.y/log(10));\n"
+        "}\n"
+        "\n"
+        "vec2 cexp(vec2 a)\n"
+        "{\n"
+        "    float e = exp(a.x);\n"
+        "    return vec2(e * cos(a.y), e * sin(a.y));\n"
+        "}\n"
+        "\n"
+        "vec2 cpow(vec2 a, vec2 b)\n"
+        "{\n"
+        "    return cexp(cmul(b, cln(a)));\n"
+        "}\n"
+        "\n"
+        "vec2 csqrt(vec2 a)\n"
+        "{\n"
+        "    return cpow(a, vec2(0.5, 0));\n"
+        "}\n"
+        "\n"
+        "vec2 csin(vec2 a)\n"
+        "{\n"
+        "    return vec2(sin(a.x) * cosh(a.y), cos(a.x) * sinh(a.y));\n"
+        "}\n"
+        "\n"
+        "vec2 ccos(vec2 a)\n"
+        "{\n"
+        "    return vec2(cos(a.x) * cosh(a.y), -sin(a.x) * sinh(a.y));\n"
+        "}\n"
+        "\n"
+        "vec2 ctan(vec2 a)\n"
+        "{\n"
+        "    vec2 a_2 = vec2(a.x * 2, a.y * 2);\n"
+        "    float bottom = cos(a_2.x) + cosh(a_2.y);\n"
+        "    return vec2(sin(a_2.x) / bottom, sinh(a_2.y) / bottom);\n"
+        "}\n"
+        "\n"
+        "vec2 ccot(vec2 a)\n"
+        "{\n"
+        "    vec2 a_2 = vec2(a.x * 2, a.y * 2);\n"
+        "    float bottom = cos(a_2.x) - cosh(a_2.y);\n"
+        "    return vec2(-sin(a_2.x) / bottom, sinh(a_2.y) / bottom);\n"
+        "}\n"
+        "\n"
+        "vec2 carcsin(vec2 a)\n"
+        "{\n"
+        "    return cmul(vec2(0, -1), cln(cadd(cmul(vec2(0, 1), a), csqrt(csub(vec2(1, 0), cmul(a, a))))));\n"
+        "}\n"
+        "\n"
+        "vec2 carccos(vec2 a)\n"
+        "{\n"
+        "    return cmul(vec2(0, -1), cln(cadd(a, csqrt(csub(cmul(a, a), vec2(1, 0))))));\n"
+        "}\n"
+        "\n"
+        "vec2 carctan(vec2 a)\n"
+        "{\n"
+        "    return cmul(vec2(0, 0.5), csub(cln(cadd(vec2(0, 1), a)), cln(csub(vec2(0, 1), a))));\n"
+        "}\n"
+        "\n"
+        "vec2 carccot(vec2 a)\n"
+        "{\n"
+        "    return csub(vec2(PI/2, 0), cmul(vec2(0, 0.5), csub(cln(cadd(vec2(0, 1), a)), cln(csub(vec2(0, 1), a)))));\n"
+        "}\n"
+        "\n"
+        "vec3 getColor(int itrn)\n"
+        "{\n"
+        "    if (itrn < itrn_max)\n"
+        "    {\n"
+        "        itrn = itrn * 4 % 1530;\n"
+        "             if (itrn < 256)  return vec3( 255,         itrn,        0           );\n"
+        "        else if (itrn < 511)  return vec3( 510 - itrn,  255,         0           );\n"
+        "        else if (itrn < 766)  return vec3( 0,           255,         itrn - 510  );\n"
+        "        else if (itrn < 1021) return vec3( 0,           1020 - itrn, 255         );\n"
+        "        else if (itrn < 1276) return vec3( itrn - 1020, 0,           255         );\n"
+        "        else if (itrn < 1530) return vec3( 255,         0,           1529 - itrn );\n"
+        "    }\n"
+        "    return vec3( 0, 0, 0 );\n"
+        "}\n"
+        "\n"
+        "void main()\n"
+        "{\n"
+        "    float re0 = borders.x + (borders.y - borders.x) * gl_FragCoord.x / winsizes.x;\n"
+        "    float im0 = borders.w - (borders.w - borders.z) * gl_FragCoord.y / winsizes.y;\n"
+        "\n"
+        "    vec2 z = vec2(re0, im0);\n"
+        "    vec2 c;\n"
+        "    if (drawing_mode == 0)"
+        "        c = vec2(re0, im0);\n"
+        "    else if (drawing_mode == 1)\n"
+        "        c = vec2(julia_point.x, julia_point.y);\n"
+        "\n"
+        "    int itrn = 0;\n"
+        "    for (itrn = 0; itrn < itrn_max; ++itrn)\n"
+        "    {\n"
+        "        z = %s;\n"
+        "        \n"
+        "    if (cabs(z) > limit) break;\n"
+        "    }\n"
+        "\n"
+        "    vec3 col = getColor(itrn);\n"
+        "    col = vec3(col.x / 255, col.y / 255, col.z / 255);\n"
+        "    gl_FragColor = vec4(col, 1.0);\n"
        "}", str_calculation);
 
     delete [] str_calculation;
@@ -648,7 +759,7 @@ int Puzabrot::Tree2GLSL (Node<CalcNodeData>* node_cur, char* str_cur)
 
         sprintf(str_cur + strlen(str_cur), ", ");
 
-        int err = Tree2GLSL(node_cur->right_, str_cur + strlen(str_cur));
+        err = Tree2GLSL(node_cur->right_, str_cur + strlen(str_cur));
         if (err) return err;
 
         sprintf(str_cur + strlen(str_cur), ")");

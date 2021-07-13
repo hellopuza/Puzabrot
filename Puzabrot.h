@@ -28,7 +28,7 @@ constexpr size_t DEFAULT_HEIGHT = 480;
 
 constexpr size_t DELTA_ZOOM    = 3000;
 constexpr size_t LIMIT         = 100;
-constexpr size_t MAX_ITERATION = 300;
+constexpr size_t MAX_ITERATION = 3000;
 
 constexpr float UPPER_BORDER = 1.3f;
 
@@ -97,7 +97,7 @@ private:
     void   DrawJulia        (sf::Vector2f point);
     int    GetNewScreen     (Screen& newscreen);
     void   changeBorders    (Screen newscreen);
-    void   PointTrace       (sf::Vector2i point);
+    void   PointTrace       (sf::Vector2i point, sf::Vector2f julia_point);
     int    makeShader       ();
     char*  writeShader      ();
     int    Tree2GLSL        (Node<CalcNodeData>* node_cur, char* str_cur);
