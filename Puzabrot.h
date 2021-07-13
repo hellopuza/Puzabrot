@@ -59,8 +59,14 @@ enum ActionModes
 
 enum DrawingModes
 {
-    MAIN  = 0,
-    JULIA = 1,
+    MAIN  ,
+    JULIA ,
+};
+
+enum InputModes
+{
+    Z_INPUT  ,
+    XY_INPUT ,
 };
 
 //------------------------------------------------------------------------------
@@ -80,26 +86,34 @@ private:
     ComplexFrame      borders_;
     sf::Vector2u      winsizes_;
 
-    InputBox           input_box_;
-    Tree<CalcNodeData> expr_tree_;
+    size_t itrn_max_   = MAX_ITERATION;
+    size_t lim_        = LIMIT;
+    int    input_mode_ = Z_INPUT;
+
+    InputBox           input_box_x_;
+    InputBox           input_box_y_;
+    InputBox           input_box_z_;
+    Tree<CalcNodeData> expr_trees_[2];
     sf::Shader         shader_;
     sf::RenderTexture  render_texture_;
     sf::Sprite         sprite_;
 
-    size_t itrn_max_ = MAX_ITERATION;
-    size_t lim_      = LIMIT;
-
-    void   updateWinSizes   (size_t new_width, size_t new_height);
-    void   toggleFullScreen ();
-    void   DrawSet          ();
-    void   DrawJulia        (sf::Vector2f point);
-    int    GetNewScreen     (Screen& newscreen);
-    void   changeBorders    (Screen newscreen);
-    void   PointTrace       (sf::Vector2i point, sf::Vector2f julia_point);
-    void   savePict         ();
-    int    makeShader       ();
-    char*  writeShader      ();
-    int    Tree2GLSL        (Node<CalcNodeData>* node_cur, char* str_cur);
+    void   updateWinSizes      (size_t new_width, size_t new_height);
+    void   toggleFullScreen    ();
+    bool   InputBoxesHasFocus  ();
+    bool   InputBoxesIsVisible ();
+    void   DrawSet             ();
+    void   DrawJulia           (sf::Vector2f point);
+    int    GetNewScreen        (Screen& newscreen);
+    void   changeBorders       (Screen newscreen);
+    void   PointTrace          (sf::Vector2i point, sf::Vector2f julia_point);
+    void   savePict            ();
+    int    makeShader          ();
+    char*  writeShader         ();
+    char*  writeInitialization ();
+    char*  writeCalculation    ();
+    char*  writeChecking       ();
+    int    Tree2GLSL           (Node<CalcNodeData>* node_cur, char* str_cur);
 };
 
 //------------------------------------------------------------------------------

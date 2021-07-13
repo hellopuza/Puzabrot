@@ -113,7 +113,7 @@ public:
             window->draw(input_text_);
         }
 
-        window->display();
+        //window->display();
     }
 
     void setInput (const sf::String& text)

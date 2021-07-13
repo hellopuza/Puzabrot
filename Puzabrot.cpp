@@ -13,9 +13,10 @@
 //------------------------------------------------------------------------------
 
 Puzabrot::Puzabrot() :
-    winsizes_  ({ DEFAULT_WIDTH, DEFAULT_HEIGHT }),
-    input_box_ (sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20),
-    expr_tree_ ((char*)"Expression tree")
+    winsizes_    ({ DEFAULT_WIDTH, DEFAULT_HEIGHT }),
+    input_box_x_ (sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20),
+    input_box_y_ (sf::Vector2f(10, 50), sf::Color(128, 128, 128, 128), sf::Color::White, 20),
+    input_box_z_ (sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20)
 {
     window_ = new sf::RenderWindow(sf::VideoMode(winsizes_.x, winsizes_.y), title_string);
     
@@ -25,8 +26,17 @@ Puzabrot::Puzabrot() :
     borders_.Re_left  = -(borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *3;
     borders_.Re_right =  (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *2;
 
-    input_box_.setLabel(sf::String("z:"));
-    input_box_.setInput(sf::String("z^2+c"));
+    expr_trees_[0] = Tree<CalcNodeData>((char*)"Expression tree 1");
+    expr_trees_[1] = Tree<CalcNodeData>((char*)"Expression tree 2");
+
+    input_box_x_.setLabel(sf::String("x:"));
+    input_box_y_.setLabel(sf::String("y:"));
+    input_box_z_.setLabel(sf::String("z:"));
+
+    input_box_x_.setInput(sf::String("x*x-y*y+cx"));
+    input_box_y_.setInput(sf::String("2*x*y+cy"));
+
+    input_box_z_.setInput(sf::String("z^2+c"));
 
     render_texture_.create(winsizes_.x, winsizes_.y);
     sprite_ = sf::Sprite(render_texture_.getTexture());
@@ -46,12 +56,11 @@ void Puzabrot::run ()
 {
     window_->setVerticalSyncEnabled(true);
 
-    makeShader();
-
-    DrawSet();
-
-    int action_mode = ZOOMING;
+    int action_mode  = ZOOMING;
     int drawing_mode = MAIN;
+
+    makeShader();
+    DrawSet();
 
     bool julia_dragging = false;
 
@@ -99,7 +108,7 @@ void Puzabrot::run ()
             }
 
             //Reset set drawing
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) && (not input_box_.has_focus_))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) && (not InputBoxesHasFocus()))
             {
                 borders_.Im_up   =  UPPER_BORDER;
                 borders_.Im_down = -UPPER_BORDER;
@@ -115,38 +124,139 @@ void Puzabrot::run ()
             }
 
             //Take a screenshot
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Space) && (!was_screenshot))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Space) && (!was_screenshot) && (not InputBoxesHasFocus()))
             {
                 savePict();
                 was_screenshot = 1;
             }
 
-            //Toggle input box visibility
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::I) && (not input_box_.has_focus_))
+            //Toggle input mode
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::C) && (not InputBoxesHasFocus()))
             {
-                input_box_.is_visible_ = 1 - input_box_.is_visible_;
-                if (not input_box_.is_visible_)
-                    input_box_.has_focus_ = false;
+                switch (input_mode_)
+                {
+                case Z_INPUT:
+                {
+                    input_box_x_.has_focus_ = false;
+                    if (input_box_z_.is_visible_)
+                        input_box_x_.is_visible_ = true;
+                    else
+                        input_box_x_.is_visible_ = false;
+
+                    input_box_y_.has_focus_ = false;
+                    if (input_box_z_.is_visible_)
+                        input_box_y_.is_visible_ = true;
+                    else
+                        input_box_y_.is_visible_ = false;
+
+                    input_box_z_.has_focus_  = false;
+                    input_box_z_.is_visible_ = false;
+
+                    input_mode_ = XY_INPUT;
+                    break;
+                }
+                case XY_INPUT:
+                {
+                    input_box_z_.has_focus_  = false;
+                    if (input_box_x_.is_visible_)
+                        input_box_z_.is_visible_ = true;
+                    else
+                        input_box_z_.is_visible_ = false;
+
+                    input_box_x_.has_focus_  = false;
+                    input_box_x_.is_visible_ = false;
+
+                    input_box_y_.has_focus_  = false;
+                    input_box_y_.is_visible_ = false;
+
+                    input_mode_ = Z_INPUT;
+                    break;
+                }
+                }
+            }
+
+            //Toggle input box visibility
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::I) && (not InputBoxesHasFocus()))
+            {
+                switch (input_mode_)
+                {
+                case Z_INPUT:
+                {
+                    input_box_z_.is_visible_ = 1 - input_box_z_.is_visible_;
+                    if (not input_box_z_.is_visible_)
+                        input_box_z_.has_focus_ = false;
+                    break;
+                }
+                case XY_INPUT:
+                {
+                    input_box_x_.is_visible_ = 1 - input_box_x_.is_visible_;
+                    input_box_y_.is_visible_ = 1 - input_box_y_.is_visible_;
+
+                    if (not input_box_x_.is_visible_)
+                    {
+                        input_box_x_.has_focus_ = false;
+                        input_box_y_.has_focus_ = false;
+                    }
+                    break;
+                }
+                }
             }
 
             //Toggle input box focus
-            else if (input_box_.is_visible_ && (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
+            else if (InputBoxesIsVisible() && (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
             {
-                if ((input_box_.getPos().x < event.mouseButton.x) && (event.mouseButton.x < input_box_.getPos().x + input_box_.getSize().x) &&
-                    (input_box_.getPos().y < event.mouseButton.y) && (event.mouseButton.y < input_box_.getPos().y + input_box_.getSize().y))
-                    input_box_.has_focus_ = true;
-                else
-                    input_box_.has_focus_ = false;
+                switch (input_mode_)
+                {
+                case Z_INPUT:
+                {
+                    if ((input_box_z_.getPos().x < event.mouseButton.x) && (event.mouseButton.x < input_box_z_.getPos().x + input_box_z_.getSize().x) &&
+                        (input_box_z_.getPos().y < event.mouseButton.y) && (event.mouseButton.y < input_box_z_.getPos().y + input_box_z_.getSize().y))
+                        input_box_z_.has_focus_ = true;
+                    else
+                        input_box_z_.has_focus_ = false;
+                    break;
+                }
+                case XY_INPUT:
+                {
+                    if ((input_box_x_.getPos().x < event.mouseButton.x) && (event.mouseButton.x < input_box_x_.getPos().x + input_box_x_.getSize().x) &&
+                        (input_box_x_.getPos().y < event.mouseButton.y) && (event.mouseButton.y < input_box_x_.getPos().y + input_box_x_.getSize().y))
+                        input_box_x_.has_focus_ = true;
+                    else
+                        input_box_x_.has_focus_ = false;
+
+                    if ((input_box_y_.getPos().x < event.mouseButton.x) && (event.mouseButton.x < input_box_y_.getPos().x + input_box_y_.getSize().x) &&
+                        (input_box_y_.getPos().y < event.mouseButton.y) && (event.mouseButton.y < input_box_y_.getPos().y + input_box_y_.getSize().y))
+                        input_box_y_.has_focus_ = true;
+                    else
+                        input_box_y_.has_focus_ = false;
+                    break;
+                }
+                }
             }
 
             //Input text expression to input box
-            else if (input_box_.has_focus_ && (event.type == sf::Event::TextEntered) && (event.text.unicode < 128))
+            else if (InputBoxesHasFocus() && (event.type == sf::Event::TextEntered) && (event.text.unicode < 128))
             {
-                input_box_.setInput(event.text.unicode);
+                switch (input_mode_)
+                {
+                case Z_INPUT:
+                {
+                    input_box_z_.setInput(event.text.unicode);
+                    break;
+                }
+                case XY_INPUT:
+                {
+                    if (input_box_x_.has_focus_)
+                        input_box_x_.setInput(event.text.unicode);
+                    else
+                        input_box_y_.setInput(event.text.unicode);
+                    break;
+                }
+                }
             }
 
             //Enter expression from input box
-            else if (input_box_.has_focus_ && (event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Enter))
+            else if (InputBoxesHasFocus() && (event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Enter))
             {
                 int err = makeShader();
 
@@ -156,10 +266,32 @@ void Puzabrot::run ()
                     drawing_mode = MAIN;
                 }
 
-                if (err)
-                    input_box_.setOutput(sf::String(calc_errstr[err + 1]));
-                else
-                    input_box_.setOutput(sf::String());
+                switch (input_mode_)
+                {
+                case Z_INPUT:
+                {
+                    if (err)
+                        input_box_z_.setOutput(sf::String(calc_errstr[err + 1]));
+                    else
+                        input_box_z_.setOutput(sf::String());
+                    break;
+                }
+                case XY_INPUT:
+                {
+                    if (input_box_x_.has_focus_)
+                        if (err)
+                            input_box_x_.setOutput(sf::String(calc_errstr[err + 1]));
+                        else
+                            input_box_x_.setOutput(sf::String());
+                    else
+                        if (err)
+                            input_box_y_.setOutput(sf::String(calc_errstr[err + 1]));
+                        else
+                            input_box_y_.setOutput(sf::String());
+                    break;
+                }
+                }
+
             }
 
             //Julia set drawing
@@ -229,8 +361,14 @@ void Puzabrot::run ()
             {
                 while (sf::Mouse::isButtonPressed(sf::Mouse::Left))
                 {
-                    input_box_.is_visible_ = false;
-                    input_box_.has_focus_  = false;
+                    input_box_x_.is_visible_ = false;
+                    input_box_x_.has_focus_  = false;
+
+                    input_box_y_.is_visible_ = false;
+                    input_box_y_.has_focus_  = false;
+
+                    input_box_z_.is_visible_ = false;
+                    input_box_z_.has_focus_  = false;
 
                     window_->clear();
                     window_->draw(sprite_);
@@ -258,10 +396,28 @@ void Puzabrot::run ()
         window_->clear();
         window_->draw(sprite_);
 
-        if (input_box_.is_visible_)
-            input_box_.draw(window_);
-        else
+        switch (input_mode_)
+        {
+        case Z_INPUT:
+        {
+            if (input_box_z_.is_visible_)
+                input_box_z_.draw(window_);
+
             window_->display();
+            break;
+        }
+        case XY_INPUT:
+        {
+            if (input_box_x_.is_visible_)
+            {
+                input_box_x_.draw(window_);
+                input_box_y_.draw(window_);
+            }
+
+            window_->display();
+            break;
+        }
+        }
     }
 }
 
@@ -298,6 +454,20 @@ void Puzabrot::toggleFullScreen ()
         window_ = new sf::RenderWindow(sf::VideoMode::getDesktopMode(), title_string, sf::Style::Fullscreen);
         updateWinSizes(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height);
     }
+}
+
+//------------------------------------------------------------------------------
+
+bool Puzabrot::InputBoxesHasFocus ()
+{
+    return (input_box_x_.has_focus_) || (input_box_y_.has_focus_) || (input_box_z_.has_focus_);
+}
+
+//------------------------------------------------------------------------------
+
+bool Puzabrot::InputBoxesIsVisible ()
+{
+    return (input_box_x_.is_visible_) || (input_box_y_.is_visible_) || (input_box_z_.is_visible_);
 }
 
 //------------------------------------------------------------------------------
@@ -482,20 +652,63 @@ void Puzabrot::PointTrace (sf::Vector2i point, sf::Vector2f julia_point)
     }
 
     static Calculator calc;
-    calc.trees_[0] = expr_tree_;
+    calc.trees_[0] = expr_trees_[0];
+    calc.trees_[1] = expr_trees_[1];
 
-    calc.variables_.Push({ {re0, im0}, "c" });
-    calc.variables_.Push({ {x1,  y1 }, "z" });
 
-    calc.trees_[0].root_->setData({ {x1, y1}, calc.trees_[0].root_->getData().word, calc.trees_[0].root_->getData().op_code, calc.trees_[0].root_->getData().node_type });
+    switch (input_mode_)
+    {
+    case Z_INPUT:
+    {
+        calc.variables_.Push({ { re0, im0 }, "c" });
+        calc.variables_.Push({ { x1,  y1  }, "z" });
+    
+        calc.trees_[0].root_->setData({ {x1, y1}, calc.trees_[0].root_->getData().word, calc.trees_[0].root_->getData().op_code, calc.trees_[0].root_->getData().node_type });
+        break;
+    }
+    case XY_INPUT:
+    {
+        calc.variables_.Push({ { re0, 0 }, "cx" });
+        calc.variables_.Push({ { im0, 0 }, "cy" });
+
+        calc.variables_.Push({ { x1, 0 }, "x" });
+        calc.variables_.Push({ { y1, 0 }, "y" });
+
+        calc.trees_[0].root_->setData({ {x1, 0}, calc.trees_[0].root_->getData().word, calc.trees_[0].root_->getData().op_code, calc.trees_[0].root_->getData().node_type });
+        calc.trees_[1].root_->setData({ {y1, 0}, calc.trees_[1].root_->getData().word, calc.trees_[1].root_->getData().op_code, calc.trees_[1].root_->getData().node_type });
+        break;
+    }
+    }
 
     for (int i = 0; (i < itrn_max_) && (abs(calc.trees_[0].root_->getData().number) < lim_); ++i)
     {
-        calc.Calculate(calc.trees_[0].root_, false);
-        calc.variables_[calc.variables_.getSize() - 1] = { calc.trees_[0].root_->getData().number, "z" };
+        float x2 = 0;
+        float y2 = 0;
 
-        float x2 = real(calc.trees_[0].root_->getData().number);
-        float y2 = imag(calc.trees_[0].root_->getData().number);
+        switch (input_mode_)
+        {
+        case Z_INPUT:
+        {
+            calc.Calculate(calc.trees_[0].root_, false);
+            calc.variables_[calc.variables_.getSize() - 1] = { calc.trees_[0].root_->getData().number, "z" };
+
+            x2 = real(calc.trees_[0].root_->getData().number);
+            y2 = imag(calc.trees_[0].root_->getData().number);
+            break;
+        }
+        case XY_INPUT:
+        {
+            calc.Calculate(calc.trees_[0].root_, false);
+            calc.Calculate(calc.trees_[1].root_, false);
+
+            calc.variables_[calc.variables_.getSize() - 1] = { calc.trees_[0].root_->getData().number, "x" };
+            calc.variables_[calc.variables_.getSize() - 2] = { calc.trees_[1].root_->getData().number, "y" };
+
+            x2 = real(calc.trees_[0].root_->getData().number);
+            y2 = real(calc.trees_[1].root_->getData().number);
+            break;
+        }
+        }
 
         sf::Vertex line[] =
         {
@@ -511,6 +724,22 @@ void Puzabrot::PointTrace (sf::Vector2i point, sf::Vector2f julia_point)
 
         window_->draw(line, 2, sf::Lines);
         ++i;
+
+        switch (input_mode_)
+        {
+        case Z_INPUT:
+        {
+            if (abs(calc.trees_[0].root_->getData().number) < lim_)
+                break;
+            break;
+        }
+        case XY_INPUT:
+        {
+            if (abs(std::complex<double>(real(calc.trees_[0].root_->getData().number), real(calc.trees_[1].root_->getData().number))) < lim_)
+                break;
+            break;
+        }
+        }
     }
 
     window_->display();
@@ -561,23 +790,54 @@ void Puzabrot::savePict ()
 
 int Puzabrot::makeShader ()
 {
-    std::string string = input_box_.getInput().toAnsiString();
-    char* str = (char*)string.c_str();
+    char* expr1 = new char[MAX_STR_LEN] {};
+    char* expr2 = new char[MAX_STR_LEN] {};
 
-    char* expr = new char[MAX_STR_LEN] {};
-    strcpy(expr, str);
-    Expression expression = { expr, expr, CALC_OK };
+    Expression expression1 = { expr1, expr1, CALC_OK };
+    Expression expression2 = { expr2, expr2, CALC_OK };
 
-    int err = Expr2Tree(expression, expr_tree_);
-    if (err) return expression.err;
+    switch (input_mode_)
+    {
+    case Z_INPUT:
+    {
+        std::string string = input_box_z_.getInput().toAnsiString();
+        char* str = (char*)string.c_str();
+
+        strcpy(expr1, str);
+
+        int err = Expr2Tree(expression1, expr_trees_[0]);
+        if (err) return expression1.err;
+        break;
+    }
+    case XY_INPUT:
+    {
+        std::string string1 = input_box_x_.getInput().toAnsiString();
+        std::string string2 = input_box_y_.getInput().toAnsiString();
+
+        char* str1 = (char*)string1.c_str();
+        char* str2 = (char*)string2.c_str();
+
+        strcpy(expr1, str1);
+        strcpy(expr2, str2);
+
+        int err = Expr2Tree(expression1, expr_trees_[0]);
+        if (err) return expression1.err;
+
+        err = Expr2Tree(expression2, expr_trees_[1]);
+        if (err) return expression2.err;
+        break;
+    }
+    }
 
     char* str_shader = writeShader();
-    if (str_shader == nullptr) return CALC_WRONG_VARIABLE;
+    if (str_shader == nullptr)
+        return CALC_WRONG_VARIABLE;
 
     shader_.loadFromMemory(str_shader, sf::Shader::Fragment);
 
     delete [] str_shader;
-    delete [] expr;
+    delete [] expr1;
+    delete [] expr2;
 
     return 0;
 }
@@ -586,15 +846,14 @@ int Puzabrot::makeShader ()
 
 char* Puzabrot::writeShader ()
 {
-    char* str_calculation = new char[1000] {};
-    int err = Tree2GLSL(expr_tree_.root_, str_calculation);
-    if (err)
-    {
-        delete [] str_calculation;
-        return nullptr;
-    }
+    char* str_initialization = writeInitialization();
 
-    char* str_shader = new char[8000] {};
+    char* str_calculation = writeCalculation();
+    if (str_calculation == nullptr) return nullptr;
+
+    char* str_checking = writeChecking();
+
+    char* str_shader = new char[10000] {};
 
     sprintf(str_shader,
         "#version 400 compatibility\n"
@@ -792,29 +1051,151 @@ char* Puzabrot::writeShader ()
         "    float re0 = borders.x + (borders.y - borders.x) * gl_FragCoord.x / winsizes.x;\n"
         "    float im0 = borders.w - (borders.w - borders.z) * gl_FragCoord.y / winsizes.y;\n"
         "\n"
-        "    vec2 z = vec2(re0, im0);\n"
-        "    vec2 c;\n"
-        "    if (drawing_mode == 0)"
-        "        c = vec2(re0, im0);\n"
-        "    else if (drawing_mode == 1)\n"
-        "        c = vec2(julia_point.x, julia_point.y);\n"
+        "    %s\n"
         "\n"
         "    int itrn = 0;\n"
         "    for (itrn = 0; itrn < itrn_max; ++itrn)\n"
         "    {\n"
-        "        z = %s;\n"
+        "        %s\n"
         "        \n"
-        "    if (cabs(z) > limit) break;\n"
+        "        %s\n"
         "    }\n"
         "\n"
         "    vec3 col = getColor(itrn);\n"
         "    col = vec3(col.x / 255, col.y / 255, col.z / 255);\n"
         "    gl_FragColor = vec4(col, 1.0);\n"
-       "}", str_calculation);
+       "}", str_initialization, str_calculation, str_checking);
 
+    delete [] str_initialization;
     delete [] str_calculation;
+    delete [] str_checking;
 
     return str_shader;
+}
+
+//------------------------------------------------------------------------------
+
+char* Puzabrot::writeInitialization ()
+{
+    switch (input_mode_)
+    {
+    case Z_INPUT:
+    {
+        char* str_initialization = new char[1000] {};
+
+        sprintf(str_initialization,
+            "vec2 z = vec2(re0, im0);\n"
+            "vec2 c;\n"
+            "if (drawing_mode == 0)\n"
+            "    c = vec2(re0, im0);\n"
+            "else if (drawing_mode == 1)\n"
+            "    c = vec2(julia_point.x, julia_point.y);");
+
+        return str_initialization;
+    }
+    case XY_INPUT:
+    {
+        char* str_initialization = new char[1000] {};
+
+        sprintf(str_initialization,
+            "float x = re0;\n"
+            "float y = im0;\n"
+            "float cx = 0;\n"
+            "float cy = 0;\n"
+            "if (drawing_mode == 0)\n"
+            "{\n"
+            "    cx = re0;\n"
+            "    cy = im0;\n"
+            "}\n"
+            "else if (drawing_mode == 1)\n"
+            "{\n"
+            "    cx = julia_point.x;\n"
+            "    cy = julia_point.y;\n"
+            "}");
+
+        return str_initialization;
+    }
+    default: return nullptr;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+char* Puzabrot::writeCalculation ()
+{
+    switch (input_mode_)
+    {
+    case Z_INPUT:
+    {
+        char* str_calculation = new char[1000] {};
+        sprintf(str_calculation, "z = ");
+
+        int err = Tree2GLSL(expr_trees_[0].root_, str_calculation + strlen(str_calculation));
+        if (err)
+        {
+            delete [] str_calculation;
+            return nullptr;
+        }
+
+        sprintf(str_calculation + strlen(str_calculation), ";");
+
+        return str_calculation;
+    }
+    case XY_INPUT:
+    {
+        char* str_calculation = new char[1000] {};
+        sprintf(str_calculation, "vec2 x1 = ");
+
+        int err = Tree2GLSL(expr_trees_[0].root_, str_calculation + strlen(str_calculation));
+        if (err)
+        {
+            delete [] str_calculation;
+            return nullptr;
+        }
+
+        sprintf(str_calculation + strlen(str_calculation), ";\nvec2 y1 = ");
+
+        err = Tree2GLSL(expr_trees_[1].root_, str_calculation + strlen(str_calculation));
+        if (err)
+        {
+            delete[] str_calculation;
+            return nullptr;
+        }
+
+        sprintf(str_calculation + strlen(str_calculation), ";\n");
+
+        sprintf(str_calculation + strlen(str_calculation), "x = x1.x;\ny = y1.x;");
+
+        return str_calculation;
+    }
+    default: return nullptr;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+char* Puzabrot::writeChecking ()
+{
+    switch (input_mode_)
+    {
+    case Z_INPUT:
+    {
+        char* str_checking = new char[1000] {};
+
+        sprintf(str_checking, "if (cabs(z) > limit) break;");
+
+        return str_checking;
+    }
+    case XY_INPUT:
+    {
+        char* str_checking = new char[1000] {};
+
+        sprintf(str_checking, "if (cabs(vec2(x, y)) > limit) break;");
+
+        return str_checking;
+    }
+    default: return nullptr;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -862,13 +1243,38 @@ int Puzabrot::Tree2GLSL (Node<CalcNodeData>* node_cur, char* str_cur)
     }
     case NODE_VARIABLE:
     {
-        if ((strcmp(node_cur->getData().word, "z") != 0) && (strcmp(node_cur->getData().word, "c") != 0) && (strcmp(node_cur->getData().word, "i") != 0))
-            return -1;
+        switch (input_mode_)
+        {
+        case Z_INPUT:
+        {
+            if ((strcmp(node_cur->getData().word, "z") != 0) &&
+                (strcmp(node_cur->getData().word, "c") != 0) &&
+                (strcmp(node_cur->getData().word, "i") != 0))
+                return -1;
+
+            break;
+        }
+        case XY_INPUT:
+        {
+            if ((strcmp(node_cur->getData().word, "x")  != 0) &&
+                (strcmp(node_cur->getData().word, "y")  != 0) &&
+                (strcmp(node_cur->getData().word, "cx") != 0) &&
+                (strcmp(node_cur->getData().word, "cy") != 0) &&
+                (strcmp(node_cur->getData().word, "i")  != 0))
+                return -1;
+
+            break;
+        }
+        }
 
         if (strcmp(node_cur->getData().word, "i") == 0)
-            sprintf(str_cur, "vec2(1, 0)");
+            sprintf(str_cur, "I");
         else
-            sprintf(str_cur, "%s", node_cur->getData().word);
+            switch (input_mode_)
+            {
+            case Z_INPUT:  sprintf(str_cur, "%s",          node_cur->getData().word); break;
+            case XY_INPUT: sprintf(str_cur, "vec2(%s, 0)", node_cur->getData().word); break;
+            }
 
         break;
     }
