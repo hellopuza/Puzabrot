@@ -18,7 +18,6 @@
 #include "InputBox.h"
 
 #include <SFML/Graphics.hpp>
-#include <SFML/OpenGl.hpp>
 #include <omp.h>
 
 
@@ -97,6 +96,7 @@ private:
     int    GetNewScreen     (Screen& newscreen);
     void   changeBorders    (Screen newscreen);
     void   PointTrace       (sf::Vector2i point, sf::Vector2f julia_point);
+    void   savePict         ();
     int    makeShader       ();
     char*  writeShader      ();
     int    Tree2GLSL        (Node<CalcNodeData>* node_cur, char* str_cur);

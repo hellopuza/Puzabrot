@@ -60,6 +60,7 @@ void Puzabrot::run ()
     {
         sf::Event event;
         Screen newscreen = {};
+        bool was_screenshot = 0;
         while (window_->pollEvent(event))
         {
             //Close window
@@ -110,6 +111,13 @@ void Puzabrot::run ()
 
                 DrawSet();
                 drawing_mode = MAIN;
+            }
+
+            //Take a screenshot
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Space) && (!was_screenshot))
+            {
+                savePict();
+                was_screenshot = 1;
             }
 
             //Toggle input box visibility
@@ -507,6 +515,45 @@ void Puzabrot::PointTrace (sf::Vector2i point, sf::Vector2f julia_point)
     window_->display();
     calc.variables_.Clean();
     ADD_VAR(calc.variables_);
+}
+
+//------------------------------------------------------------------------------
+
+void Puzabrot::savePict ()
+{
+    static int shot_num = 0;
+    char filename[256] = "screenshot";
+    char shot_num_str[13] = "";
+    sprintf(shot_num_str, "%d", shot_num++);
+
+    strcat(filename, "(");
+    strcat(filename, shot_num_str);
+    strcat(filename, ")");
+    strcat(filename, ".png");
+
+    window_->draw(sprite_);
+
+    sf::Texture screen;
+    screen.create(window_->getSize().x, window_->getSize().y);
+    screen.update(*window_);
+
+    sf::RectangleShape rectangle;
+    rectangle.setPosition(0, 0);
+    rectangle.setSize(sf::Vector2f(window_->getSize()));
+
+    if (screen.copyToImage().saveToFile(filename))
+        rectangle.setFillColor(sf::Color(10, 10, 10, 150));  // grey screen if ok
+    else
+        rectangle.setFillColor(sf::Color(255, 10, 10, 200)); // red screen if error
+
+    window_->draw(rectangle);
+    window_->display();
+
+    sf::sleep(sf::milliseconds(300));
+
+    sf::Sprite screen_sprite(screen);
+    window_->draw(screen_sprite);
+    window_->display();
 }
 
 //------------------------------------------------------------------------------
