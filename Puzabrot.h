@@ -105,7 +105,8 @@ private:
     int    GetNewScreen        (Screen& newscreen);
     void   changeBorders       (Screen newscreen);
     void   PointTrace          (sf::Vector2i point, sf::Vector2f julia_point);
-    void   savePict            ();
+    void   savePicture         ();
+    void   drawHelpMenu        ();
     int    makeShader          ();
     char*  writeShader         ();
     char*  writeInitialization ();

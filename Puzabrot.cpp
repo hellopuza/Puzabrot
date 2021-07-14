@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
     * File:        Puzabrot.cpp                                                *
     * Description: Functions for application                                   *
-    * Created:     27 mar 2021                                                 *
+    * Created:     30 jun 2021                                                 *
     * Author:      Artem Puzankov                                              *
     * Email:       puzankov.ao@phystech.edu                                    *
     * GitHub:      https://github.com/hellopuza                                *
@@ -62,6 +62,7 @@ void Puzabrot::run ()
     makeShader();
     DrawSet();
 
+    bool showing_menu   = false;
     bool julia_dragging = false;
 
     sf::Vector2f julia_point = sf::Vector2f(0, 0);
@@ -126,8 +127,20 @@ void Puzabrot::run ()
             //Take a screenshot
             else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Space) && (!was_screenshot) && (not InputBoxesHasFocus()))
             {
-                savePict();
+                savePicture();
                 was_screenshot = 1;
+            }
+
+            //Toggle help menu showing
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::H) && (not InputBoxesHasFocus()))
+            {
+                showing_menu = 1 - showing_menu;
+                if (showing_menu)
+                {
+                    input_box_x_.is_visible_ = false;
+                    input_box_y_.is_visible_ = false;
+                    input_box_z_.is_visible_ = false;
+                }
             }
 
             //Toggle input mode
@@ -410,6 +423,9 @@ void Puzabrot::run ()
             input_box_x_.draw(window_);
             input_box_y_.draw(window_);
         }
+
+        if (showing_menu)
+            drawHelpMenu();
 
         window_->display();
     }
@@ -743,7 +759,7 @@ void Puzabrot::PointTrace (sf::Vector2i point, sf::Vector2f julia_point)
 
 //------------------------------------------------------------------------------
 
-void Puzabrot::savePict ()
+void Puzabrot::savePicture ()
 {
     static int shot_num = 0;
     char filename[256] = "screenshot";
@@ -778,6 +794,46 @@ void Puzabrot::savePict ()
     sf::Sprite screen_sprite(screen);
     window_->draw(screen_sprite);
     window_->display();
+}
+
+//------------------------------------------------------------------------------
+
+void Puzabrot::drawHelpMenu ()
+{
+    sf::RectangleShape dimRect(sf::Vector2f((float)winsizes_.x, (float)winsizes_.y));
+    dimRect.setFillColor(sf::Color(0, 0, 0, 128));
+    window_->draw(dimRect);
+    
+    sf::Font font;
+    font.loadFromMemory(consola_ttf, consola_ttf_len);
+
+    sf::Text helpMenu;
+    helpMenu.setFont(font);
+    helpMenu.setCharacterSize(22);
+    helpMenu.setPosition(10.0f, 10.0f);
+    helpMenu.setFillColor(sf::Color::White);
+
+    char str[1000] = "";
+
+    sprintf(str, 
+        "    H - Toggle help menu viewing\n"
+        "    Z - Choose zooming mode       (draw a rectangle by left and right mouse button to zoom in-out)\n"
+        "    P - Choose point tracing mode (press left mouse button to trace point)\n"
+        "    S - Choose sounding mode      (press left mouse button to trace point and hear sound)\n"
+        "  F11 - Toggle Fullscreen\n"
+        "  Esc - Exit program\n"
+        "Space - Take a screenshot\n"
+        "    R - Reset View\n"
+        "    I - Open input box (enter text expression, then press enter to output the set)\n"
+        "    C - Change input method\n"
+        "    J - Hold down, move mouse, and release to make Julia sets. Press again to switch back\n"
+        "\n"
+        "\n"
+        "        Current max iteration: %lu, current limit: %lu\n"
+        "        Borders: upper: %.5lf, bottom: %.5lf, left: %.5lf, right: %.5lf\n", itrn_max_, lim_, borders_.Im_up, borders_.Im_down, borders_.Re_left, borders_.Re_right);
+
+    helpMenu.setString(str);
+    window_->draw(helpMenu);
 }
 
 //------------------------------------------------------------------------------
@@ -1274,7 +1330,11 @@ int Puzabrot::Tree2GLSL (Node<CalcNodeData>* node_cur, char* str_cur)
     }
     case NODE_NUMBER:
     {
-        sprintf(str_cur, "vec2(%f, %f)", real(node_cur->getData().number), imag(node_cur->getData().number));
+        switch (input_mode_)
+        {
+        case Z_INPUT:  sprintf(str_cur, "vec2(%f, %f)", real(node_cur->getData().number), imag(node_cur->getData().number)); break;
+        case XY_INPUT: sprintf(str_cur, "vec2(%f,  0)", real(node_cur->getData().number)); break;
+        }
 
         break;
     }

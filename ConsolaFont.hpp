@@ -38271,4 +38271,4 @@ const unsigned char consola_ttf[] = {
 };
 const unsigned int consola_ttf_len = 459180;
 
-#endif CONSOLAFONT_HPP_INCLUDED
+#endif //CONSOLAFONT_HPP_INCLUDED

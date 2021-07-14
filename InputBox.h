@@ -15,7 +15,6 @@
 
 #include <SFML/Graphics.hpp>
 #include "ConsolaFont.hpp"
-#include <iostream>
 
 //------------------------------------------------------------------------------
 
