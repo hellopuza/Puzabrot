@@ -301,7 +301,7 @@ void Puzabrot::run ()
             }
 
             //Julia set drawing
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::J))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::J) && (not InputBoxesHasFocus()))
             {
                 if (drawing_mode != JULIA)
                 {
@@ -323,7 +323,7 @@ void Puzabrot::run ()
                     julia_dragging = false;
                 }
             }
-            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::J))
+            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::J) && (not InputBoxesHasFocus()))
             {
                 if (not julia_dragging)
                     drawing_mode = MAIN;
@@ -332,7 +332,7 @@ void Puzabrot::run ()
             }
 
             //Toggle action modes
-            else if (event.type == sf::Event::KeyPressed)
+            else if ((event.type == sf::Event::KeyPressed) && (not InputBoxesHasFocus()))
             {
                 switch (event.key.code)
                 {
@@ -393,7 +393,7 @@ void Puzabrot::run ()
 
             /*
             //Sounding
-            else if (mode == SOUNDING)
+            else if ((action_mode == SOUNDING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left)))
             {
             }
             */
@@ -402,28 +402,16 @@ void Puzabrot::run ()
         window_->clear();
         window_->draw(sprite_);
 
-        switch (input_mode_)
+        if ((input_mode_ == Z_INPUT) && input_box_z_.is_visible_)
+            input_box_z_.draw(window_);
+        else
+        if ((input_mode_ == XY_INPUT) && input_box_x_.is_visible_)
         {
-        case Z_INPUT:
-        {
-            if (input_box_z_.is_visible_)
-                input_box_z_.draw(window_);
+            input_box_x_.draw(window_);
+            input_box_y_.draw(window_);
+        }
 
-            window_->display();
-            break;
-        }
-        case XY_INPUT:
-        {
-            if (input_box_x_.is_visible_)
-            {
-                input_box_x_.draw(window_);
-                input_box_y_.draw(window_);
-            }
-
-            window_->display();
-            break;
-        }
-        }
+        window_->display();
     }
 }
 
