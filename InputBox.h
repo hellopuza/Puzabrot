@@ -14,6 +14,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <SFML/Graphics.hpp>
+#include "ConsolaFont.h"
 #include <iostream>
 
 //------------------------------------------------------------------------------
@@ -28,11 +29,7 @@ public:
         text_color_(sf::Color::White),
         font_size_ (20)
     {
-        if (not font_.loadFromFile("consola.ttf"))
-        {
-            std::cerr << "Failed to load consola.ttf" << std::endl;
-            exit(-1);
-        }
+        font_.loadFromMemory(consola_ttf, consola_ttf_len);
     }
 
     InputBox (sf::Vector2f box_pos, sf::Color box_color, sf::Color text_color, size_t font_size) :
@@ -41,11 +38,7 @@ public:
         text_color_(text_color),
         font_size_ (font_size)
     {
-        if (not font_.loadFromFile("consola.ttf"))
-        {
-            std::cerr << "Failed to load consola.ttf" << std::endl;
-            exit(-1);
-        }
+        font_.loadFromMemory(consola_ttf, consola_ttf_len);
     }
 
     ~InputBox () {}
@@ -112,8 +105,6 @@ public:
             input_text_.setFillColor(sf::Color::White);
             window->draw(input_text_);
         }
-
-        //window->display();
     }
 
     void setInput (const sf::String& text)
@@ -126,7 +117,7 @@ public:
         input_text_.setString(input);
     }
 
-    void setLabel(const sf::String& text)
+    void setLabel (const sf::String& text)
     {
         label_.setString(text);
     }
@@ -141,7 +132,7 @@ public:
         return input_text_.getString();
     }
 
-    const sf::Vector2f& getPos () const
+    const sf::Vector2f& getPosition () const
     {
         return box_pos_;
     }
@@ -149,6 +140,16 @@ public:
     const sf::Vector2f& getSize () const
     {
         return box_size_;
+    }
+
+    void setPosition(const sf::Vector2f& pos)
+    {
+        box_pos_ = pos;
+    }
+
+    void setSize (const sf::Vector2f& size)
+    {
+        box_size_ = size;
     }
 
 private:

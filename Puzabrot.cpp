@@ -209,8 +209,8 @@ void Puzabrot::run ()
                 {
                 case Z_INPUT:
                 {
-                    if ((input_box_z_.getPos().x < event.mouseButton.x) && (event.mouseButton.x < input_box_z_.getPos().x + input_box_z_.getSize().x) &&
-                        (input_box_z_.getPos().y < event.mouseButton.y) && (event.mouseButton.y < input_box_z_.getPos().y + input_box_z_.getSize().y))
+                    if ((input_box_z_.getPosition().x < event.mouseButton.x) && (event.mouseButton.x < input_box_z_.getPosition().x + input_box_z_.getSize().x) &&
+                        (input_box_z_.getPosition().y < event.mouseButton.y) && (event.mouseButton.y < input_box_z_.getPosition().y + input_box_z_.getSize().y))
                         input_box_z_.has_focus_ = true;
                     else
                         input_box_z_.has_focus_ = false;
@@ -218,14 +218,14 @@ void Puzabrot::run ()
                 }
                 case XY_INPUT:
                 {
-                    if ((input_box_x_.getPos().x < event.mouseButton.x) && (event.mouseButton.x < input_box_x_.getPos().x + input_box_x_.getSize().x) &&
-                        (input_box_x_.getPos().y < event.mouseButton.y) && (event.mouseButton.y < input_box_x_.getPos().y + input_box_x_.getSize().y))
+                    if ((input_box_x_.getPosition().x < event.mouseButton.x) && (event.mouseButton.x < input_box_x_.getPosition().x + input_box_x_.getSize().x) &&
+                        (input_box_x_.getPosition().y < event.mouseButton.y) && (event.mouseButton.y < input_box_x_.getPosition().y + input_box_x_.getSize().y))
                         input_box_x_.has_focus_ = true;
                     else
                         input_box_x_.has_focus_ = false;
 
-                    if ((input_box_y_.getPos().x < event.mouseButton.x) && (event.mouseButton.x < input_box_y_.getPos().x + input_box_y_.getSize().x) &&
-                        (input_box_y_.getPos().y < event.mouseButton.y) && (event.mouseButton.y < input_box_y_.getPos().y + input_box_y_.getSize().y))
+                    if ((input_box_y_.getPosition().x < event.mouseButton.x) && (event.mouseButton.x < input_box_y_.getPosition().x + input_box_y_.getSize().x) &&
+                        (input_box_y_.getPosition().y < event.mouseButton.y) && (event.mouseButton.y < input_box_y_.getPosition().y + input_box_y_.getSize().y))
                         input_box_y_.has_focus_ = true;
                     else
                         input_box_y_.has_focus_ = false;
@@ -280,9 +280,15 @@ void Puzabrot::run ()
                 {
                     if (input_box_x_.has_focus_)
                         if (err)
+                        {
                             input_box_x_.setOutput(sf::String(calc_errstr[err + 1]));
+                            input_box_y_.setPosition(sf::Vector2f(input_box_y_.getPosition().x, input_box_y_.getPosition().y + 0.5f * input_box_x_.getSize().y));
+                        }
                         else
+                        {
                             input_box_x_.setOutput(sf::String());
+                            input_box_y_.setPosition(sf::Vector2f(10, 50));
+                        }
                     else
                         if (err)
                             input_box_y_.setOutput(sf::String(calc_errstr[err + 1]));
