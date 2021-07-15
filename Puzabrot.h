@@ -19,7 +19,6 @@
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
-#include <omp.h>
 
 constexpr size_t DEFAULT_WIDTH  = 640;
 constexpr size_t DEFAULT_HEIGHT = 480;

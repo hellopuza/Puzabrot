@@ -1440,10 +1440,6 @@ bool Synth::onGetData (Chunk& data)
         audio_reset_ = false;
     }
 
-    /*
-    if (audio_pause_) return true;
-    */
-
     const int steps = SAMPLE_RATE / MAX_FREQ;
     for (int i = 0; i < AUDIO_BUFF_SIZE; i += 2)
     {
