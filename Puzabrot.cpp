@@ -12,7 +12,7 @@
 
 //------------------------------------------------------------------------------
 
-Puzabrot::Puzabrot() :
+Puzabrot::Puzabrot () :
     winsizes_    ({ DEFAULT_WIDTH, DEFAULT_HEIGHT }),
     input_box_x_ (sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20),
     input_box_y_ (sf::Vector2f(10, 50), sf::Color(128, 128, 128, 128), sf::Color::White, 20),
@@ -40,6 +40,7 @@ Puzabrot::Puzabrot() :
 
     render_texture_.create(winsizes_.x, winsizes_.y);
     sprite_ = sf::Sprite(render_texture_.getTexture());
+
 }
 
 //------------------------------------------------------------------------------
@@ -57,15 +58,19 @@ void Puzabrot::run ()
     window_->setVerticalSyncEnabled(true);
 
     int action_mode  = ZOOMING;
-    int drawing_mode = MAIN;
 
     makeShader();
     DrawSet();
 
     bool showing_menu   = false;
+    bool showing_trace  = false;
     bool julia_dragging = false;
 
-    sf::Vector2f julia_point = sf::Vector2f(0, 0);
+    sf::Vector2f orbit   = sf::Vector2f(0, 0);
+    sf::Vector2f c_point = sf::Vector2f(0, 0);
+
+    Synth synth(this);
+    synth.play();
 
     while (window_->isOpen())
     {
@@ -87,10 +92,10 @@ void Puzabrot::run ()
             {
                 toggleFullScreen();
 
-                switch (drawing_mode)
+                switch (draw_mode_)
                 {
-                case MAIN:  DrawSet();              break;
-                case JULIA: DrawJulia(julia_point); break;
+                case MAIN:  DrawSet();   break;
+                case JULIA: DrawJulia(); break;
                 }
             }
 
@@ -101,10 +106,10 @@ void Puzabrot::run ()
                 window_->setView(sf::View(visibleArea));
                 updateWinSizes(window_->getSize().x, window_->getSize().y);
 
-                switch (drawing_mode)
+                switch (draw_mode_)
                 {
-                case MAIN:  DrawSet();              break;
-                case JULIA: DrawJulia(julia_point); break;
+                case MAIN:  DrawSet();   break;
+                case JULIA: DrawJulia(); break;
                 }
             }
 
@@ -121,7 +126,7 @@ void Puzabrot::run ()
                 lim_      = LIMIT;
 
                 DrawSet();
-                drawing_mode = MAIN;
+                draw_mode_ = MAIN;
             }
 
             //Take a screenshot
@@ -276,7 +281,7 @@ void Puzabrot::run ()
                 if (!err)
                 {
                     DrawSet();
-                    drawing_mode = MAIN;
+                    draw_mode_ = MAIN;
                 }
 
                 switch (input_mode_)
@@ -316,14 +321,13 @@ void Puzabrot::run ()
             //Julia set drawing
             else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::J) && (not InputBoxesHasFocus()))
             {
-                if (drawing_mode != JULIA)
+                if (draw_mode_ != JULIA)
                 {
                     while (sf::Keyboard::isKeyPressed(sf::Keyboard::J))
                     {
-                        julia_point = sf::Vector2f(borders_.Re_left + (borders_.Re_right - borders_.Re_left) * (float)sf::Mouse::getPosition(*window_).x / winsizes_.x,
-                                                   borders_.Im_up   - (borders_.Im_up    - borders_.Im_down) * (float)sf::Mouse::getPosition(*window_).y / winsizes_.y);
+                        julia_point_ = Screen2Plane(sf::Mouse::getPosition(*window_));
 
-                        DrawJulia(julia_point);
+                        DrawJulia();
                         window_->draw(sprite_);
                         window_->display();
 
@@ -339,9 +343,9 @@ void Puzabrot::run ()
             else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::J) && (not InputBoxesHasFocus()))
             {
                 if (not julia_dragging)
-                    drawing_mode = MAIN;
+                    draw_mode_ = MAIN;
                 else
-                    drawing_mode = JULIA;
+                    draw_mode_ = JULIA;
             }
 
             //Toggle action modes
@@ -367,49 +371,43 @@ void Puzabrot::run ()
                     else
                         itrn_max_ = (int)(itrn_max_*(1 - 1/(newscreen.zoom*DELTA_ZOOM + 1)));
 
-                    switch (drawing_mode)
+                    switch (draw_mode_)
                     {
-                    case MAIN:  DrawSet();              break;
-                    case JULIA: DrawJulia(julia_point); break;
+                    case MAIN:  DrawSet();   break;
+                    case JULIA: DrawJulia(); break;
                     }
                 }
             }
 
-            //Point tracing
-            else if ((action_mode == POINT_TRACING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left)))
+            //Point tracing and sounding
+            else if (((action_mode == POINT_TRACING) || (action_mode == SOUNDING)) && (sf::Mouse::isButtonPressed(sf::Mouse::Left)))
             {
-                while (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+                input_box_x_.is_visible_ = false;
+                input_box_x_.has_focus_  = false;
+
+                input_box_y_.is_visible_ = false;
+                input_box_y_.has_focus_  = false;
+
+                input_box_z_.is_visible_ = false;
+                input_box_z_.has_focus_  = false;
+
+                orbit   = Screen2Plane(sf::Mouse::getPosition(*window_));
+                c_point = Screen2Plane(sf::Mouse::getPosition(*window_));
+                showing_trace = true;
+                    
+                if (action_mode == SOUNDING)
                 {
-                    input_box_x_.is_visible_ = false;
-                    input_box_x_.has_focus_  = false;
-
-                    input_box_y_.is_visible_ = false;
-                    input_box_y_.has_focus_  = false;
-
-                    input_box_z_.is_visible_ = false;
-                    input_box_z_.has_focus_  = false;
-
-                    window_->clear();
-                    window_->draw(sprite_);
-
-                    switch (drawing_mode)
-                    {
-                    case MAIN:
-                        PointTrace(sf::Mouse::getPosition(*window_), sf::Vector2f(NAN, NAN));
-                        break;
-                    case JULIA:
-                        PointTrace(sf::Mouse::getPosition(*window_), julia_point);
-                        break;
-                    }
+                    synth.SetPoint(Screen2Plane(sf::Mouse::getPosition(*window_)));
+                    synth.audio_pause_ = false;
+                    synth.play();
                 }
             }
-
-            /*
-            //Sounding
-            else if ((action_mode == SOUNDING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left)))
+            else if (((action_mode == POINT_TRACING) || (action_mode == SOUNDING)) && (sf::Mouse::isButtonPressed(sf::Mouse::Right)))
             {
+                showing_trace = false;
+                synth.audio_pause_ = true;
+                synth.pause();
             }
-            */
         }
 
         window_->clear();
@@ -424,11 +422,24 @@ void Puzabrot::run ()
             input_box_y_.draw(window_);
         }
 
+        if (showing_trace)
+            orbit = PointTrace(orbit, c_point);
+
         if (showing_menu)
             drawHelpMenu();
 
         window_->display();
     }
+
+    synth.stop();
+}
+
+//------------------------------------------------------------------------------
+
+sf::Vector2f Puzabrot::Screen2Plane (sf::Vector2i point)
+{
+    return sf::Vector2f(borders_.Re_left + (borders_.Re_right - borders_.Re_left) * point.x / winsizes_.x,
+                        borders_.Im_up   - (borders_.Im_up    - borders_.Im_down) * point.y / winsizes_.y);
 }
 
 //------------------------------------------------------------------------------
@@ -497,7 +508,7 @@ void Puzabrot::DrawSet ()
 
 //------------------------------------------------------------------------------
 
-void Puzabrot::DrawJulia (sf::Vector2f point)
+void Puzabrot::DrawJulia ()
 {
     shader_.setUniform("borders", sf::Glsl::Vec4(borders_.Re_left, borders_.Re_right, borders_.Im_down, borders_.Im_up));
     shader_.setUniform("winsizes", sf::Glsl::Ivec2(winsizes_.x, winsizes_.y));
@@ -507,7 +518,7 @@ void Puzabrot::DrawJulia (sf::Vector2f point)
 
     shader_.setUniform("drawing_mode", (int)JULIA);
 
-    shader_.setUniform("julia_point", sf::Glsl::Vec2(point.x, point.y));
+    shader_.setUniform("julia_point", sf::Glsl::Vec2(julia_point_.x, julia_point_.y));
 
     render_texture_.draw(sprite_, &shader_);
 }
@@ -642,83 +653,96 @@ void Puzabrot::changeBorders (Screen newscreen)
 
 //------------------------------------------------------------------------------
 
-void Puzabrot::PointTrace (sf::Vector2i point, sf::Vector2f julia_point)
+void Puzabrot::initCalculator (Calculator& calc, float x, float y, float cx, float cy)
 {
-    float re0 = borders_.Re_left + (borders_.Re_right - borders_.Re_left) * point.x / winsizes_.x;
-    float im0 = borders_.Im_up   - (borders_.Im_up    - borders_.Im_down) * point.y / winsizes_.y;
-
-    float x1 = 0;
-    float y1 = 0;
-    
-    if (isnan(julia_point.x) || isnan(julia_point.y))
-    {
-        x1 = re0;
-        y1 = im0;
-    }
-    else
-    {
-        x1 = julia_point.x;
-        y1 = julia_point.y;
-    }
-
-    static Calculator calc;
-    calc.trees_[0] = expr_trees_[0];
-    calc.trees_[1] = expr_trees_[1];
-
+    calc.trees_[0].root_ = expr_trees_[0].root_;
+    calc.trees_[1].root_ = expr_trees_[1].root_;
 
     switch (input_mode_)
     {
     case Z_INPUT:
     {
-        calc.variables_.Push({ { re0, im0 }, "c" });
-        calc.variables_.Push({ { x1,  y1  }, "z" });
-    
-        calc.trees_[0].root_->setData({ {x1, y1}, calc.trees_[0].root_->getData().word, calc.trees_[0].root_->getData().op_code, calc.trees_[0].root_->getData().node_type });
+        calc.variables_.Push({ { cx, cy }, "c" });
+        calc.variables_.Push({ {  x,  y }, "z" });
         break;
     }
     case XY_INPUT:
     {
-        calc.variables_.Push({ { re0, 0 }, "cx" });
-        calc.variables_.Push({ { im0, 0 }, "cy" });
+        calc.variables_.Push({ { cx, 0 }, "cx" });
+        calc.variables_.Push({ { cy, 0 }, "cy" });
 
-        calc.variables_.Push({ { x1, 0 }, "x" });
-        calc.variables_.Push({ { y1, 0 }, "y" });
+        calc.variables_.Push({ {  x, 0 }, "x" });
+        calc.variables_.Push({ {  y, 0 }, "y" });
+        break;
+    }
+    }
+}
 
-        calc.trees_[0].root_->setData({ {x1, 0}, calc.trees_[0].root_->getData().word, calc.trees_[0].root_->getData().op_code, calc.trees_[0].root_->getData().node_type });
-        calc.trees_[1].root_->setData({ {y1, 0}, calc.trees_[1].root_->getData().word, calc.trees_[1].root_->getData().op_code, calc.trees_[1].root_->getData().node_type });
+//------------------------------------------------------------------------------
+
+void Puzabrot::Mapping (Calculator& calc, float& mapped_x, float& mapped_y)
+{
+    switch (input_mode_)
+    {
+    case Z_INPUT:
+    {
+        calc.Calculate(calc.trees_[0].root_, false);
+        calc.variables_[calc.variables_.getSize() - 1] = { calc.trees_[0].root_->getData().number, "z" };
+
+        mapped_x = real(calc.trees_[0].root_->getData().number);
+        mapped_y = imag(calc.trees_[0].root_->getData().number);
+        break;
+    }
+    case XY_INPUT:
+    {
+        calc.Calculate(calc.trees_[0].root_, false);
+        calc.Calculate(calc.trees_[1].root_, false);
+
+        calc.variables_[calc.variables_.getSize() - 1] = { calc.trees_[0].root_->getData().number, "x" };
+        calc.variables_[calc.variables_.getSize() - 2] = { calc.trees_[1].root_->getData().number, "y" };
+
+        mapped_x = real(calc.trees_[0].root_->getData().number);
+        mapped_y = real(calc.trees_[1].root_->getData().number);
+        break;
+    }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+sf::Vector2f Puzabrot::PointTrace (sf::Vector2f point, sf::Vector2f c_point)
+{
+    float re0 = point.x;
+    float im0 = point.y;
+
+    float x1 = 0;
+    float y1 = 0;
+    
+    switch (draw_mode_)
+    {
+    case MAIN:
+    {
+        x1 = c_point.x;
+        y1 = c_point.y;
+        break;
+    }
+    case JULIA:
+    {
+        x1 = julia_point_.x;
+        y1 = julia_point_.y;
         break;
     }
     }
 
-    for (int i = 0; (i < itrn_max_) && (abs(calc.trees_[0].root_->getData().number) < lim_); ++i)
+    float x2 = 0;
+    float y2 = 0;
+
+    static Calculator calc;
+    initCalculator(calc, re0, im0, x1, y1);
+
+    for (int i = 0; (i < itrn_max_) && (sqrt(x2 * x2 + y2 * y2) < lim_); ++i)
     {
-        float x2 = 0;
-        float y2 = 0;
-
-        switch (input_mode_)
-        {
-        case Z_INPUT:
-        {
-            calc.Calculate(calc.trees_[0].root_, false);
-            calc.variables_[calc.variables_.getSize() - 1] = { calc.trees_[0].root_->getData().number, "z" };
-
-            x2 = real(calc.trees_[0].root_->getData().number);
-            y2 = imag(calc.trees_[0].root_->getData().number);
-            break;
-        }
-        case XY_INPUT:
-        {
-            calc.Calculate(calc.trees_[0].root_, false);
-            calc.Calculate(calc.trees_[1].root_, false);
-
-            calc.variables_[calc.variables_.getSize() - 1] = { calc.trees_[0].root_->getData().number, "x" };
-            calc.variables_[calc.variables_.getSize() - 2] = { calc.trees_[1].root_->getData().number, "y" };
-
-            x2 = real(calc.trees_[0].root_->getData().number);
-            y2 = real(calc.trees_[1].root_->getData().number);
-            break;
-        }
-        }
+        Mapping(calc, x2, y2);
 
         sf::Vertex line[] =
         {
@@ -752,9 +776,10 @@ void Puzabrot::PointTrace (sf::Vector2i point, sf::Vector2f julia_point)
         }
     }
 
-    window_->display();
     calc.variables_.Clean();
     ADD_VAR(calc.variables_);
+
+    return sf::Vector2f(x1, y1);
 }
 
 //------------------------------------------------------------------------------
@@ -854,9 +879,12 @@ int Puzabrot::makeShader ()
         char* str = (char*)string.c_str();
 
         strcpy(expr1, str);
+        strcpy(expr2, str);
 
         int err = Expr2Tree(expression1, expr_trees_[0]);
         if (err) return expression1.err;
+
+        Expr2Tree(expression2, expr_trees_[1]);
         break;
     }
     case XY_INPUT:
@@ -1342,6 +1370,144 @@ int Puzabrot::Tree2GLSL (Node<CalcNodeData>* node_cur, char* str_cur)
     }
 
     return 0;
+}
+
+//------------------------------------------------------------------------------
+
+Synth::Synth (Puzabrot* puza) :
+    puza_        (puza),
+    audio_reset_ (true),
+    audio_pause_ (false),
+    sustain_     (true),
+    volume_      (8000.0),
+    point_       (sf::Vector2f(0, 0)),
+    c_point_     (sf::Vector2f(0, 0)),
+    new_point_   (sf::Vector2f(0, 0)),
+    prev_point_  (sf::Vector2f(0, 0))
+{
+    initialize(2, SAMPLE_RATE);
+    setLoop(true);
+
+    updateCalc();
+}
+
+//------------------------------------------------------------------------------
+
+void Synth::updateCalc ()
+{
+    calc_.variables_.Clean();
+    ADD_VAR(calc_.variables_);
+    puza_->initCalculator(calc_, point_.x, point_.y, c_point_.x, c_point_.y);
+}
+
+//------------------------------------------------------------------------------
+
+void Synth::SetPoint (sf::Vector2f point)
+{
+    new_point_ = point;
+
+    audio_reset_ = true;
+    audio_pause_ = false;
+}
+
+//------------------------------------------------------------------------------
+
+bool Synth::onGetData (Chunk& data)
+{
+    data.samples = m_samples;
+    data.sampleCount = AUDIO_BUFF_SIZE;
+    memset(m_samples, 0, AUDIO_BUFF_SIZE);
+
+    if (audio_reset_)
+    {
+        m_audio_time = 0;
+
+        switch (puza_->draw_mode_)
+        {
+        case MAIN:  c_point_ = new_point_;          break;
+        case JULIA: c_point_ = puza_->julia_point_; break;
+        }
+
+        point_ = new_point_;
+        prev_point_ = new_point_;
+
+        mean_x = new_point_.x;
+        mean_y = new_point_.y;
+        volume_ = 8000.0;
+
+        updateCalc();
+
+        audio_reset_ = false;
+    }
+
+    /*
+    if (audio_pause_) return true;
+    */
+
+    const int steps = SAMPLE_RATE / MAX_FREQ;
+    for (int i = 0; i < AUDIO_BUFF_SIZE; i += 2)
+    {
+        const int j = m_audio_time % steps;
+        if (j == 0)
+        {
+            prev_point_ = point_;
+
+            puza_->Mapping(calc_, point_.x, point_.y);
+
+            if (sqrt(point_.x * point_.x + point_.y * point_.y) > puza_->lim_)
+            {
+                audio_pause_ = true;
+                return true;
+            }
+
+            dpx = prev_point_.x - c_point_.x;
+            dpy = prev_point_.y - c_point_.y;
+            dx  = point_.x - c_point_.x;
+            dy  = point_.y - c_point_.y;
+
+            if (dx != 0.0 || dy != 0.0)
+            {
+                double dpmag = 1.0 / std::sqrt(1e-12 + dpx * dpx + dpy * dpy);
+                double dmag  = 1.0 / std::sqrt(1e-12 + dx * dx + dy * dy);
+
+                dpx *= dpmag;
+                dpy *= dpmag;
+                dx  *= dmag;
+                dy  *= dmag;
+            }
+
+            double m = dx * dx + dy * dy;
+            if (m > 2.0)
+            {
+                dx *= 2.0 / m;
+                dy *= 2.0 / m;
+            }
+
+            m = dpx * dpx + dpy * dpy;
+            if (m > 2.0)
+            {
+                dpx *= 2.0 / m;
+                dpy *= 2.0 / m;
+            }
+
+            if (!sustain_)
+            {
+                volume_ *= 0.9992;
+            }
+        }
+
+        double t = 0.5 - 0.5 * cos(double(j) / double(steps) * real(PI));
+
+        double wx = t * dx + (1.0 - t) * dpx;
+        double wy = t * dy + (1.0 - t) * dpy;
+
+        m_samples[i]     = (int16_t)std::min(std::max(wx * volume_, -32000.0), 32000.0);
+        m_samples[i + 1] = (int16_t)std::min(std::max(wy * volume_, -32000.0), 32000.0);
+
+        m_audio_time += 1;
+    }
+
+    return !audio_reset_;
 }
 
 //------------------------------------------------------------------------------
