@@ -1292,8 +1292,8 @@ char* Puzabrot::writeChecking ()
 
     switch (input_mode_)
     {
-    case Z_INPUT:  sprintf(str_checking, "if (cabs(z) > limit) break;\n");        break;
-    case XY_INPUT: sprintf(str_checking, "if (cabs(vec2(x, y)) > limit) break;"); break;
+    case Z_INPUT:  sprintf(str_checking, "if (cabs(z) > limit) break;\n");          break;
+    case XY_INPUT: sprintf(str_checking, "if (cabs(vec2(x, y)) > limit) break;\nvec2 z = vec2(x, y);\n"); break;
     default: return nullptr;
     }
 
