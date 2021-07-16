@@ -2,7 +2,7 @@
 Mathematical set viewer
 
 A program that allows you view any different mathematical sets such as mandelbrot and other.
-Inspired by CodeParade (https://github.com/HackerPoet)
+Inspired by CodeParade (https://github.com/HackerPoet/FractalSoundExplorer)
 
 ## Usage
 
