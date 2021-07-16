@@ -94,6 +94,7 @@ private:
     size_t lim_        = LIMIT;
     int    input_mode_ = Z_INPUT;
     int    draw_mode_  = MAIN;
+    bool   coloring_   = false;
 
     sf::Vector2f julia_point_ = sf::Vector2f(0, 0);
 
@@ -149,8 +150,7 @@ public:
     sf::Vector2f new_point_;
     sf::Vector2f prev_point_;
 
-    Synth (Puzabrot* puza);
-
+                 Synth      (Puzabrot* puza);
             void updateCalc ();
             void SetPoint   (sf::Vector2f point);
     virtual void onSeek     (sf::Time timeOffset) override {}

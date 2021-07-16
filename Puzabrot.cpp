@@ -136,10 +136,28 @@ void Puzabrot::run ()
                 was_screenshot = 1;
             }
 
+            //Toggle audio dampening
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::D) && (not InputBoxesHasFocus()))
+            {
+                synth.sustain_ = not synth.sustain_;
+            }
+
+            //Toggle sound coloring
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::C) && (not InputBoxesHasFocus()))
+            {
+                coloring_ = not coloring_;
+
+                switch (draw_mode_)
+                {
+                case MAIN:  DrawSet();   break;
+                case JULIA: DrawJulia(); break;
+                }
+            }
+
             //Toggle help menu showing
             else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::H) && (not InputBoxesHasFocus()))
             {
-                showing_menu = 1 - showing_menu;
+                showing_menu = not showing_menu;
                 if (showing_menu)
                 {
                     input_box_x_.is_visible_ = false;
@@ -149,7 +167,7 @@ void Puzabrot::run ()
             }
 
             //Toggle input mode
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::C) && (not InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Tab) && (not InputBoxesHasFocus()))
             {
                 switch (input_mode_)
                 {
@@ -200,15 +218,15 @@ void Puzabrot::run ()
                 {
                 case Z_INPUT:
                 {
-                    input_box_z_.is_visible_ = 1 - input_box_z_.is_visible_;
+                    input_box_z_.is_visible_ = not input_box_z_.is_visible_;
                     if (not input_box_z_.is_visible_)
                         input_box_z_.has_focus_ = false;
                     break;
                 }
                 case XY_INPUT:
                 {
-                    input_box_x_.is_visible_ = 1 - input_box_x_.is_visible_;
-                    input_box_y_.is_visible_ = 1 - input_box_y_.is_visible_;
+                    input_box_x_.is_visible_ = not input_box_x_.is_visible_;
+                    input_box_y_.is_visible_ = not input_box_y_.is_visible_;
 
                     if (not input_box_x_.is_visible_)
                     {
@@ -391,8 +409,8 @@ void Puzabrot::run ()
                 input_box_z_.is_visible_ = false;
                 input_box_z_.has_focus_  = false;
 
-                orbit   = Screen2Plane(sf::Mouse::getPosition(*window_));
                 c_point = Screen2Plane(sf::Mouse::getPosition(*window_));
+                orbit   = c_point;
                 showing_trace = true;
                     
                 if (action_mode == SOUNDING)
@@ -501,7 +519,8 @@ void Puzabrot::DrawSet ()
     shader_.setUniform("itrn_max", (int)itrn_max_);
     shader_.setUniform("limit",    (float)lim_);
 
-    shader_.setUniform("drawing_mode", (int)MAIN);
+    shader_.setUniform("drawing_mode", MAIN);
+    shader_.setUniform("coloring",     coloring_);
 
     render_texture_.draw(sprite_, &shader_);
 }
@@ -516,7 +535,8 @@ void Puzabrot::DrawJulia ()
     shader_.setUniform("itrn_max", (int)itrn_max_);
     shader_.setUniform("limit",    (float)lim_);
 
-    shader_.setUniform("drawing_mode", (int)JULIA);
+    shader_.setUniform("drawing_mode", JULIA);
+    shader_.setUniform("coloring",     coloring_);
 
     shader_.setUniform("julia_point", sf::Glsl::Vec2(julia_point_.x, julia_point_.y));
 
@@ -655,8 +675,8 @@ void Puzabrot::changeBorders (Screen newscreen)
 
 void Puzabrot::initCalculator (Calculator& calc, float x, float y, float cx, float cy)
 {
-    calc.trees_[0].root_ = expr_trees_[0].root_;
-    calc.trees_[1].root_ = expr_trees_[1].root_;
+    calc.trees_[0] = expr_trees_[0];
+    calc.trees_[1] = expr_trees_[1];
 
     switch (input_mode_)
     {
@@ -850,7 +870,9 @@ void Puzabrot::drawHelpMenu ()
         "Space - Take a screenshot\n"
         "    R - Reset View\n"
         "    I - Open input box (enter text expression, then press enter to output the set)\n"
-        "    C - Change input method\n"
+        "  Tab - Change input method\n"
+        "    D - Toggle audio dampening\n"
+        "    C - Toggle sound coloring\n"
         "    J - Hold down, move mouse, and release to make Julia sets. Press again to switch back\n"
         "\n"
         "\n"
@@ -947,6 +969,7 @@ char* Puzabrot::writeShader ()
         "uniform int   itrn_max;\n"
         "uniform float limit;\n"
         "uniform int   drawing_mode;\n"
+        "uniform bool  coloring;\n"
         "uniform vec2  julia_point;\n"
         "\n"
         "vec2 conj(vec2 a)\n"
@@ -1109,19 +1132,20 @@ char* Puzabrot::writeShader ()
         "    return cmul(vec2(0.5, 0), csub(cln(cadd(ONE, a)), cln(csub(ONE, a))));\n"
         "}\n"
         "\n"
-        "vec3 getColor(int itrn)\n"
+        "vec3 getColor(int itrn, vec3 sumz)\n"
         "{\n"
         "    if (itrn < itrn_max)\n"
         "    {\n"
         "        itrn = itrn * 4 % 1530;\n"
-        "             if (itrn < 256)  return vec3( 255,         itrn,        0           );\n"
-        "        else if (itrn < 511)  return vec3( 510 - itrn,  255,         0           );\n"
-        "        else if (itrn < 766)  return vec3( 0,           255,         itrn - 510  );\n"
-        "        else if (itrn < 1021) return vec3( 0,           1020 - itrn, 255         );\n"
-        "        else if (itrn < 1276) return vec3( itrn - 1020, 0,           255         );\n"
-        "        else if (itrn < 1530) return vec3( 255,         0,           1529 - itrn );\n"
+        "             if (itrn < 256)  return vec3( 255,         itrn,        0           ) / 255 * (1.0 - float(coloring)*0.85);\n"
+        "        else if (itrn < 511)  return vec3( 510 - itrn,  255,         0           ) / 255 * (1.0 - float(coloring)*0.85);\n"
+        "        else if (itrn < 766)  return vec3( 0,           255,         itrn - 510  ) / 255 * (1.0 - float(coloring)*0.85);\n"
+        "        else if (itrn < 1021) return vec3( 0,           1020 - itrn, 255         ) / 255 * (1.0 - float(coloring)*0.85);\n"
+        "        else if (itrn < 1276) return vec3( itrn - 1020, 0,           255         ) / 255 * (1.0 - float(coloring)*0.85);\n"
+        "        else if (itrn < 1530) return vec3( 255,         0,           1529 - itrn ) / 255 * (1.0 - float(coloring)*0.85);\n"
         "    }\n"
-        "    return vec3( 0, 0, 0 );\n"
+        "    else if (coloring) return sin(abs(abs(sumz) / itrn_max * 5.0)) * 0.45 + 0.5;\n"
+        "    else return vec3( 0, 0, 0 );\n"
         "}\n"
         "\n"
         "void main()\n"
@@ -1131,7 +1155,8 @@ char* Puzabrot::writeShader ()
         "\n"
         "    %s\n"
         "\n"
-        "    int itrn = 0;\n"
+        "    vec3 sumz = vec3(0.0, 0.0, 0.0);\n"
+        "    int itrn  = 0;\n"
         "    for (itrn = 0; itrn < itrn_max; ++itrn)\n"
         "    {\n"
         "        %s\n"
@@ -1139,8 +1164,7 @@ char* Puzabrot::writeShader ()
         "        %s\n"
         "    }\n"
         "\n"
-        "    vec3 col = getColor(itrn);\n"
-        "    col = vec3(col.x / 255, col.y / 255, col.z / 255);\n"
+        "    vec3 col = getColor(itrn, sumz);\n"
         "    gl_FragColor = vec4(col, 1.0);\n"
        "}", str_initialization, str_calculation, str_checking);
 
@@ -1163,7 +1187,8 @@ char* Puzabrot::writeInitialization ()
 
         sprintf(str_initialization,
             "vec2 z = vec2(re0, im0);\n"
-            "vec2 c;\n"
+            "vec2 pz = z;\n"
+            "vec2 c = vec2(0, 0);\n"
             "if (drawing_mode == 0)\n"
             "    c = vec2(re0, im0);\n"
             "else if (drawing_mode == 1)\n"
@@ -1178,6 +1203,7 @@ char* Puzabrot::writeInitialization ()
         sprintf(str_initialization,
             "float x = re0;\n"
             "float y = im0;\n"
+            "vec2 pz = vec2(x, y);\n"
             "float cx = 0;\n"
             "float cy = 0;\n"
             "if (drawing_mode == 0)\n"
@@ -1206,7 +1232,11 @@ char* Puzabrot::writeCalculation ()
     case Z_INPUT:
     {
         char* str_calculation = new char[1000] {};
-        sprintf(str_calculation, "z = ");
+        sprintf(str_calculation,
+            "vec2 ppz = pz;\n"
+            "pz = z;\n");
+
+        sprintf(str_calculation + strlen(str_calculation), "z = ");
 
         int err = Tree2GLSL(expr_trees_[0].root_, str_calculation + strlen(str_calculation));
         if (err)
@@ -1222,7 +1252,11 @@ char* Puzabrot::writeCalculation ()
     case XY_INPUT:
     {
         char* str_calculation = new char[1000] {};
-        sprintf(str_calculation, "vec2 x1 = ");
+        sprintf(str_calculation,
+            "vec2 ppz = pz;\n"
+            "pz = vec2(x, y);\n");
+
+        sprintf(str_calculation + strlen(str_calculation), "vec2 x1 = ");
 
         int err = Tree2GLSL(expr_trees_[0].root_, str_calculation + strlen(str_calculation));
         if (err)
@@ -1254,26 +1288,21 @@ char* Puzabrot::writeCalculation ()
 
 char* Puzabrot::writeChecking ()
 {
+    char* str_checking = new char[1000] {};
+
     switch (input_mode_)
     {
-    case Z_INPUT:
-    {
-        char* str_checking = new char[1000] {};
-
-        sprintf(str_checking, "if (cabs(z) > limit) break;");
-
-        return str_checking;
-    }
-    case XY_INPUT:
-    {
-        char* str_checking = new char[1000] {};
-
-        sprintf(str_checking, "if (cabs(vec2(x, y)) > limit) break;");
-
-        return str_checking;
-    }
+    case Z_INPUT:  sprintf(str_checking, "if (cabs(z) > limit) break;\n");        break;
+    case XY_INPUT: sprintf(str_checking, "if (cabs(vec2(x, y)) > limit) break;"); break;
     default: return nullptr;
     }
+
+    sprintf(str_checking + strlen(str_checking),
+        "sumz.x += dot(z - pz, pz - ppz);\n"
+        "sumz.y += dot(z - pz,  z - pz);\n"
+        "sumz.z += dot(z - ppz, z - ppz);");
+
+    return str_checking;
 }
 
 //------------------------------------------------------------------------------
@@ -1435,10 +1464,11 @@ bool Synth::onGetData (Chunk& data)
         mean_y = new_point_.y;
         volume_ = 8000.0;
 
-        updateCalc();
 
         audio_reset_ = false;
     }
+
+    if (audio_pause_) return true;
 
     const int steps = SAMPLE_RATE / MAX_FREQ;
     for (int i = 0; i < AUDIO_BUFF_SIZE; i += 2)
@@ -1448,6 +1478,7 @@ bool Synth::onGetData (Chunk& data)
         {
             prev_point_ = point_;
 
+            updateCalc();
             puza_->Mapping(calc_, point_.x, point_.y);
 
             if (sqrt(point_.x * point_.x + point_.y * point_.y) > puza_->lim_)
