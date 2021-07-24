@@ -40,7 +40,6 @@ Puzabrot::Puzabrot () :
 
     render_texture_.create(winsizes_.x, winsizes_.y);
     sprite_ = sf::Sprite(render_texture_.getTexture());
-
 }
 
 //------------------------------------------------------------------------------

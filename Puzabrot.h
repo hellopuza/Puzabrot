@@ -102,9 +102,9 @@ private:
     InputBox           input_box_y_;
     InputBox           input_box_z_;
     Tree<CalcNodeData> expr_trees_[2];
-    sf::Sprite         sprite_;
 
     sf::Shader         shader_;
+    sf::Sprite         sprite_;
     sf::RenderTexture  render_texture_;
 
     sf::Vector2f Screen2Plane        (sf::Vector2i point);
