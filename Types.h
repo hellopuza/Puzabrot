@@ -89,19 +89,6 @@ bool isPOISON (TYPE value)
 }
 
 //------------------------------------------------------------------------------
-/*! @brief   Copy the contents of one variable to another.
- *
- *  @param   dst         Destination variable
- *  @param   src         Source variable
- */
-
-#define copyType(dst, src)                              \
-        if constexpr (std::is_same<TYPE, char*>::value) \
-            strcpy(dst, src);                           \
-        else                                            \
-            dst = src;                                  \
-
-//------------------------------------------------------------------------------
 /*! @brief   Print values of any type.
  *
  *  @param   fp          Pointer to output

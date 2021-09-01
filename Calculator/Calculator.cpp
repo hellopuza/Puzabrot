@@ -243,8 +243,6 @@ int Calculator::Calculate (Node<CalcNodeData>* node_cur, bool with_new_var)
 
 void Calculator::Write ()
 {
-    assert(trees_[0].root_->getData().node_type == NODE_NUMBER);
-
     char* strnum = Num2Str(trees_[0].root_->getData().number);
     if (filename_ == nullptr)
     {

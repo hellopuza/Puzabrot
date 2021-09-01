@@ -1,9 +1,9 @@
 ####
 
 CC = g++
-CFLAGS = -c -march=native -msse4.2 -openmp -O3 -std=c++17
+CFLAGS = -c -openmp -O3 -std=c++17
 LDFLAGS =
-LIBS = -lsfml-system -lsfml-graphics -lsfml-window
+LIBS = -lsfml-system -lsfml-graphics -lsfml-window -lsfml-audio
 SOURCES = main.cpp Puzabrot.cpp Calculator/Calculator.cpp StringLib/StringLib.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 EXECUTABLE = Puzabrot

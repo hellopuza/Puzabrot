@@ -32,8 +32,6 @@
 
 #endif
 
-#define CONSOLE_PRINT  if(1)
-
 
 char const * const DUMP_NAME         = "graph.dot";
 char const * const DUMP_PICT_NAME    = "graph.png";
@@ -42,8 +40,6 @@ char const * const TREE_LOGNAME      = "tree.log";
 
 const char OPEN_BRACKET  = '[';
 const char CLOSE_BRACKET = ']';
-
-constexpr size_t MAX_TREES_NUM = 100;
 
 
 enum TreeErrors
@@ -60,7 +56,6 @@ enum TreeErrors
     TREE_NOT_CONSTRUCTED                                            ,
     TREE_NULL_INPUT_TREE_PTR                                        ,
     TREE_NULL_TREE_PTR                                              ,
-    TREE_TOO_MANY_TREES                                             ,
     TREE_WRONG_DEPTH                                                ,
     TREE_WRONG_INPUT_TREE_NAME                                      ,
     TREE_WRONG_PREV_NODE                                            ,
@@ -80,8 +75,7 @@ char const * const tree_errstr[] =
     "Memory access violation"                                       ,
     "Tree did not constructed, operation is impossible"             ,
     "The input value of the tree pointer turned out to be zero"     ,
-    "The pointer to the TREE is null, tree lost"                    ,
-    "Too many trees created, cannot create a new one"               ,
+    "The pointer to the tree is null, tree lost"                    ,
     "Wrong node depth found"                                        ,
     "Wrong input tree name"                                         ,
     "Wrong pointer to previous node found"                          ,

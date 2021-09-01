@@ -955,7 +955,7 @@ char* Puzabrot::writeShader ()
     char* str_shader = new char[10000] {};
 
     sprintf(str_shader,
-        "#version 400 compatibility\n"
+        "#version 400 core\n"
         "\n"
         "const float NIL = 1e-9;\n"
         "const float PI  = atan(1) * 4;\n"

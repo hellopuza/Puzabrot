@@ -58,14 +58,14 @@
 
 static int tree_id = 0;
 
-#define newTree(NAME, STK_TYPE) \
-        Tree<STK_TYPE> NAME ((char*)#NAME);
+#define newTree(NAME, TREE_TYPE) \
+        Tree<TREE_TYPE> NAME ((char*)#NAME);
 
-#define newTree_root(NAME, root, STK_TYPE) \
-        Tree<STK_TYPE> NAME ((char*)#NAME, root);
+#define newTree_root(NAME, root, TREE_TYPE) \
+        Tree<TREE_TYPE> NAME ((char*)#NAME, root);
 
-#define newTree_base(NAME, base, STK_TYPE) \
-        Tree<STK_TYPE> NAME ((char*)#NAME, base);
+#define newTree_base(NAME, base, TREE_TYPE) \
+        Tree<TREE_TYPE> NAME ((char*)#NAME, base);
 
 
 template <typename TYPE>
@@ -79,14 +79,12 @@ template<typename TYPE> void TypePrint (FILE* fp, const Tree<TYPE>& tree);
 
 
 template <typename TYPE>
-struct Node
+class Node
 {
-private:
-
     friend class Tree<TYPE>;
 
-    TYPE data_       = POISON<TYPE>;
-    bool is_dynamic_ = false;
+    TYPE data_      = POISON<TYPE>;
+    bool is_string_ = false;
 
 public:
 
@@ -103,7 +101,7 @@ public:
     Node ();
 
 //------------------------------------------------------------------------------
-/*! @brief   Recursive node destruction.
+/*! @brief   Node destruction.
  *
  *  @note    All nodes must be created by operator new!!!
  */
@@ -178,7 +176,7 @@ private:
  *  @return  1 if found, 0 if not
  */
 
-    int findPath (Stack<size_t>& path, TYPE elem);
+    bool findPath (Stack<size_t>& path, TYPE elem);
 
 //------------------------------------------------------------------------------
 /*! @brief   Recursive node checker.
@@ -205,10 +203,7 @@ private:
 template <typename TYPE>
 class Tree
 {
-public:
-
-    char* name_ = nullptr;
-    Node<TYPE>* root_ = nullptr;
+    friend class Node<TYPE>;
 
     int id_ = 0;
     int errCode_ = 0;
@@ -216,6 +211,9 @@ public:
     Stack<TYPE> path2badnode_;
 
 public:
+
+    char* name_ = nullptr;
+    Node<TYPE>* root_ = nullptr;
 
 //------------------------------------------------------------------------------
 /*! @brief   Tree default constructor.
@@ -250,10 +248,10 @@ public:
     Tree (char* tree_name, char* base_name);
 
 //------------------------------------------------------------------------------
-/*! @brief   Stack destructor.
+/*! @brief   Tree destructor.
  */
 
-   ~Tree ();
+    ~Tree ();
 
 //------------------------------------------------------------------------------
 /*! @brief   Tree copy constructor.
@@ -296,7 +294,7 @@ public:
  *  @return  1 if found, 0 if not
  */
 
-    int findPath (Stack<size_t>& path, TYPE elem);
+    bool findPath (Stack<size_t>& path, TYPE elem);
 
 //------------------------------------------------------------------------------
 /*! @brief   Check tree for problems.
@@ -305,6 +303,22 @@ public:
  */
 
     int Check ();
+
+//------------------------------------------------------------------------------
+/*! @brief   Get error code of the tree.
+ *
+ *  @return  error code
+ */
+
+    int getErrCode ();
+
+//------------------------------------------------------------------------------
+/*! @brief   Get id of the tree.
+ *
+ *  @return  id
+ */
+
+    int getId ();
 
 //------------------------------------------------------------------------------
 /*! @brief   Print error explanations to log file and to console.
@@ -331,8 +345,6 @@ public:
 
 //------------------------------------------------------------------------------
 };
-
-//------------------------------------------------------------------------------
 
 #include "Tree.ipp"
 

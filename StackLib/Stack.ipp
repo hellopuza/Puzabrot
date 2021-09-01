@@ -68,7 +68,7 @@ Stack<TYPE>::Stack (const Stack& obj) :
         STACK_ASSERTOK(STACK_NO_MEMORY, STACK_NO_MEMORY);
     }
 
-    for (int i = 0; i < capacity_; ++i) copyType(data_[i], obj.data_[i]);
+    for (int i = 0; i < capacity_; ++i) data_[i] = obj.data_[i];
 
 #ifdef HASH_PROTECT
     datahash_  = hash(data_, capacity_ * sizeof(TYPE));

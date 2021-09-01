@@ -126,6 +126,8 @@ Tree<TYPE>::~Tree ()
 template <typename TYPE>
 void Tree<TYPE>::Clean ()
 {
+    TREE_CHECK;
+
     if (root_ != nullptr)
     {
         delete root_;
@@ -147,15 +149,18 @@ template <typename TYPE>
 Node<TYPE>& Node<TYPE>::operator = (const Node& obj)
 {
     if constexpr (std::is_same<TYPE, char*>::value)
-        if (is_dynamic_)
+    {
+        if (is_string_)
             delete [] data_;
 
-    if (obj.is_dynamic_)
-        if constexpr (std::is_same<TYPE, char*>::value)
+        if (obj.is_string_)
             data_ = new char[strlen(obj.data_) + 2] {};
 
-    copyType(data_, obj.data_);
-    is_dynamic_ = obj.is_dynamic_;
+        strcpy(data_, obj.data_);
+    }
+    else data_ = obj.data_;
+
+    is_string_ = obj.is_string_;
 
     if (obj.right_ != nullptr)
     {
@@ -210,11 +215,9 @@ Node<TYPE>::~Node ()
 
     prev_ = nullptr;
 
-    if constexpr (std::is_same<TYPE, char*>::value)
-        if (is_dynamic_)
-            delete [] data_;
+    if constexpr (std::is_same<TYPE, char*>::value) if (is_string_) delete [] data_;
 
-    is_dynamic_ = false;
+    is_string_ = false;
 
     data_ = POISON<TYPE>;
 }
@@ -238,7 +241,7 @@ int Node<TYPE>::AddFromBase (const Text& base, size_t& line_cur)
         strcpy(data_, base.lines_[line_cur].str);
         ++line_cur;
 
-        is_dynamic_ = true;
+        is_string_ = true;
     }
     else
         sscanf(base.lines_[line_cur++].str, PRINT_FORMAT<TYPE>, &data_);
@@ -278,6 +281,8 @@ int Node<TYPE>::AddFromBase (const Text& base, size_t& line_cur)
 template <typename TYPE>
 void Tree<TYPE>::Dump (const char* dumpname)
 {
+    assert(dumpname != nullptr);
+
     FILE* dump = fopen(dumpname, "w");
     assert(dump != nullptr);
 
@@ -380,6 +385,8 @@ void Node<TYPE>::Dump (FILE* dump)
 template <typename TYPE>
 void Tree<TYPE>::Write (const char* basename)
 {
+    TREE_CHECK;
+
     FILE* base = fopen(basename, "w");
     assert(base != nullptr);
 
@@ -429,16 +436,10 @@ void Node<TYPE>::Write (FILE* base)
 template <typename TYPE>
 void Node<TYPE>::setData (TYPE data)
 {
-    if constexpr (std::is_same<TYPE, char*>::value)
-    {
-        if (is_dynamic_)
-            delete [] data_;
+    if constexpr (std::is_same<TYPE, char*>::value) if (is_string_) delete [] data_;
+    is_string_ = false;
 
-        data_ = new char [strlen(data) + 2] {};
-        is_dynamic_ = true;
-    }
-
-    copyType(data_, data);
+    data_ = data;
 }
 
 //------------------------------------------------------------------------------
@@ -487,8 +488,10 @@ void Node<TYPE>::recountPrev ()
 //------------------------------------------------------------------------------
 
 template <typename TYPE>
-int Tree<TYPE>::findPath (Stack<size_t>& path, TYPE elem)
+bool Tree<TYPE>::findPath (Stack<size_t>& path, TYPE elem)
 {
+    TREE_CHECK;
+
     TREE_ASSERTOK((isPOISON(elem)), TREE_INPUT_DATA_POISON, -1);
 
     bool found = root_->findPath(path, elem);
@@ -499,7 +502,7 @@ int Tree<TYPE>::findPath (Stack<size_t>& path, TYPE elem)
 //------------------------------------------------------------------------------
 
 template <typename TYPE>
-int Node<TYPE>::findPath (Stack<size_t>& path, TYPE elem)
+bool Node<TYPE>::findPath (Stack<size_t>& path, TYPE elem)
 {
     path.Push((size_t)this);
     
@@ -534,10 +537,10 @@ int Node<TYPE>::findPath (Stack<size_t>& path, TYPE elem)
 template<typename TYPE>
 bool isPOISON (Tree<TYPE> tree)
 {
-    return ( (tree.name_    == nullptr) &&
-             (tree.root_    == nullptr) &&
-             (tree.id_      == 0)       &&
-             (tree.errCode_ == 0) );
+    return ( (tree.name_        == nullptr) &&
+             (tree.root_        == nullptr) &&
+             (tree.getId()      == 0)       &&
+             (tree.getErrCode() == 0) );
 }
 
 //------------------------------------------------------------------------------
@@ -577,7 +580,7 @@ int Node<TYPE>::Check (Tree<TYPE>& tree)
 
     if (prev_ != nullptr)
         if ((prev_->right_ != this) &&
-            (prev_->left_ != this))
+            (prev_->left_  != this))
         {
             tree.path2badnode_.Push(data_);
             return TREE_WRONG_PREV_NODE;
@@ -614,6 +617,22 @@ int Node<TYPE>::Check (Tree<TYPE>& tree)
     if (err) tree.path2badnode_.Push(data_);
 
     return err;
+}
+
+//------------------------------------------------------------------------------
+
+template <typename TYPE>
+int Tree<TYPE>::getErrCode ()
+{
+    return errCode_;
+}
+
+//------------------------------------------------------------------------------
+
+template <typename TYPE>
+int Tree<TYPE>::getId ()
+{
+    return id_;
 }
 
 //------------------------------------------------------------------------------

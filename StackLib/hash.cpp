@@ -12,7 +12,7 @@
 
 //------------------------------------------------------------------------------
 
-int bit_rotate(void* buf, size_t size, int dir)
+int bit_rotate (void* buf, size_t size, int dir)
 {
     assert(buf != nullptr);
 
@@ -84,27 +84,24 @@ int bit_rotate(void* buf, size_t size, int dir)
 
 //------------------------------------------------------------------------------
 
-hash_t hash(void* buf, size_t size)
+hash_t hash (void* buf, size_t size)
 {
     assert(buf != nullptr);
 
-    size_t bm_size = (size / BLOCK_SIZE) * BLOCK_SIZE + BLOCK_SIZE;
-    size_t mid_size = bm_size / 2;
+    size_t main_size = (size / BLOCK_SIZE) * BLOCK_SIZE + BLOCK_SIZE;
+    size_t half_size = main_size / 2;
 
-    char* buf_main = (char*)calloc(bm_size, 1);
+    char* buf_main = (char*)calloc(main_size, 1);
     if (buf_main == nullptr)
         return 0;
 
     memcpy(buf_main, buf, size);
-
-    ((size_t*)buf_main)[bm_size/sizeof(size_t) - 1] += size;
-
     hash_t hsh = (hash_t)(Keys[size % KEYS_NUM]);
 
-    for (size_t byte_i = 0; byte_i < mid_size; ++byte_i)
+    for (size_t byte_i = 0; byte_i < half_size; ++byte_i)
     {
         char b1 = *((char*)buf_main + byte_i);
-        char b2 = *((char*)buf_main + byte_i + mid_size);
+        char b2 = *((char*)buf_main + byte_i + half_size);
 
         char p1 = b1;
         char p2 = b2;
@@ -115,10 +112,10 @@ hash_t hash(void* buf, size_t size)
         int q1 = b2 ^ p1 ^ Keys[ byte_i      % KEYS_NUM] + b1;
         int q2 = b1 ^ p2 ^ Keys[(byte_i + 1) % KEYS_NUM] + b2;
 
-        b1 = *((char*)buf_main - 1 - byte_i + bm_size);
-        b2 = *((char*)buf_main - 1 - byte_i + mid_size);
+        char d1 = *((char*)buf_main - 1 - byte_i + main_size);
+        char d2 = *((char*)buf_main - 1 - byte_i + half_size);
 
-        hsh = hsh * (q1*b2 + q2*b1) + hsh ^ (q1*b1 + q2*b2) + q1 + q2 + b1 + b2;
+        hsh = hsh * (q1*d2 + q2*d1) + hsh ^ (q1*d1 + q2*d2) + q1 + q2 + b1 + b2;
 
         bit_rotate(&hsh, sizeof(hsh), 3);
     }
