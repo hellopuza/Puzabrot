@@ -1025,11 +1025,11 @@ char* Puzabrot::writeShader ()
     char* str_shader = new char[10000] {};
 
     sprintf(str_shader,
-        "#version 400 core\n"
+        "#version 130\n"
         "\n"
         "const float NIL = 1e-9;\n"
-        "const float PI  = atan(1) * 4;\n"
-        "const float E   = exp(1);\n"
+        "const float PI  = atan(1.0) * 4;\n"
+        "const float E   = exp(1.0);\n"
         "const vec2  I   = vec2(0, 1);\n"
         "const vec2  ONE = vec2(1, 0);\n"
         "\n"
@@ -1094,7 +1094,7 @@ char* Puzabrot::writeShader ()
         "vec2 clg(vec2 a)\n"
         "{\n"
         "    vec2 ln = cln(a);\n"
-        "    return vec2(ln.x/log(10), ln.y/log(10));\n"
+        "    return vec2(ln.x/log(10.0), ln.y/log(10.0));\n"
         "}\n"
         "\n"
         "vec2 cexp(vec2 a)\n"
