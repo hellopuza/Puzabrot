@@ -56,7 +56,7 @@ void Puzabrot::run ()
 {
     window_->setVerticalSyncEnabled(true);
 
-    int action_mode  = ZOOMING;
+    int action_mode  = POINT_TRACING;
 
     makeShader();
     DrawSet();
@@ -377,16 +377,21 @@ void Puzabrot::run ()
             }
 
             //Zooming
+            else if (event.type == sf::Event::MouseWheelMoved)
+            {
+                Zooming(event.mouseWheel.delta, Screen2Plane(sf::Mouse::getPosition(*window_)));
+
+                switch (draw_mode_)
+                {
+                case MAIN:  DrawSet();   break;
+                case JULIA: DrawJulia(); break;
+                }
+            }
             else if ((action_mode == ZOOMING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right)))
             {
                 if (GetNewScreen(newscreen))
                 {
                     changeBorders(newscreen);
-
-                    if (newscreen.zoom > 1)
-                        itrn_max_ = (int)(itrn_max_*(1 + newscreen.zoom/DELTA_ZOOM));
-                    else
-                        itrn_max_ = (int)(itrn_max_*(1 - 1/(newscreen.zoom*DELTA_ZOOM + 1)));
 
                     switch (draw_mode_)
                     {
@@ -540,6 +545,27 @@ void Puzabrot::DrawJulia ()
     shader_.setUniform("julia_point", sf::Glsl::Vec2(julia_point_.x, julia_point_.y));
 
     render_texture_.draw(sprite_, &shader_);
+}
+
+//------------------------------------------------------------------------------
+
+void Puzabrot::Zooming (int wheel_delta, sf::Vector2f point)
+{
+    float width  = (borders_.Re_right - borders_.Re_left);
+    float height = (borders_.Im_up    - borders_.Im_down);
+
+    float x_ratio = (point.x - borders_.Re_left) / width;
+    float y_ratio = (point.y - borders_.Im_down) / height;
+
+    ComplexFrame new_frame =
+    {
+        borders_.Re_left  +      x_ratio  * ZOOMING_RATIO * width  * wheel_delta,
+        borders_.Re_right - (1 - x_ratio) * ZOOMING_RATIO * width  * wheel_delta,
+        borders_.Im_down  +      y_ratio  * ZOOMING_RATIO * height * wheel_delta,
+        borders_.Im_up    - (1 - y_ratio) * ZOOMING_RATIO * height * wheel_delta,
+    };
+
+    borders_ = new_frame;
 }
 
 //------------------------------------------------------------------------------

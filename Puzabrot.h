@@ -29,6 +29,8 @@ constexpr size_t MAX_ITERATION = 3000;
 
 constexpr float UPPER_BORDER = 1.3f;
 
+constexpr float ZOOMING_RATIO = 0.33f;
+
 constexpr int AUDIO_BUFF_SIZE = 4096;
 constexpr int SAMPLE_RATE     = 48000;
 constexpr int MAX_FREQ        = 4000;
@@ -114,6 +116,7 @@ private:
     bool         InputBoxesIsVisible ();
     void         DrawSet             ();
     void         DrawJulia           ();
+    void         Zooming             (int wheel_delta, sf::Vector2f point);
     int          GetNewScreen        (Screen& newscreen);
     void         changeBorders       (Screen newscreen);
     void         initCalculator      (Calculator& calc, float x, float y, float cx, float cy);
