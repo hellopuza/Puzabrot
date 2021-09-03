@@ -23,9 +23,8 @@
 constexpr size_t DEFAULT_WIDTH  = 640;
 constexpr size_t DEFAULT_HEIGHT = 480;
 
-constexpr size_t DELTA_ZOOM    = 3000;
-constexpr size_t LIMIT         = 100;
-constexpr size_t MAX_ITERATION = 3000;
+constexpr float  LIMIT         = 100.0f;
+constexpr size_t MAX_ITERATION = 500;
 
 constexpr float UPPER_BORDER = 1.3f;
 
@@ -93,7 +92,7 @@ private:
     sf::Vector2u      winsizes_;
 
     size_t itrn_max_   = MAX_ITERATION;
-    size_t lim_        = LIMIT;
+    float  lim_        = LIMIT;
     int    input_mode_ = Z_INPUT;
     int    draw_mode_  = MAIN;
     bool   coloring_   = false;

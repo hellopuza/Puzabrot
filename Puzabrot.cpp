@@ -64,6 +64,8 @@ void Puzabrot::run ()
     bool showing_menu   = false;
     bool showing_trace  = false;
     bool julia_dragging = false;
+    bool change_iter    = false;
+    bool change_limit    = false;
 
     sf::Vector2f orbit   = sf::Vector2f(0, 0);
     sf::Vector2f c_point = sf::Vector2f(0, 0);
@@ -211,7 +213,7 @@ void Puzabrot::run ()
             }
 
             //Toggle input box visibility
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::I) && (not InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Tilde) && (not InputBoxesHasFocus()))
             {
                 switch (input_mode_)
                 {
@@ -363,6 +365,46 @@ void Puzabrot::run ()
                     draw_mode_ = MAIN;
                 else
                     draw_mode_ = JULIA;
+            }
+
+            //Change max iterations
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::I) && (not InputBoxesHasFocus()))
+            {
+                change_iter = true;
+            }
+            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::I) && (not InputBoxesHasFocus()))
+            {
+                change_iter = false;
+            }
+            else if ((event.type == sf::Event::MouseWheelMoved) && change_iter)
+            {
+                itrn_max_ += event.mouseWheel.delta * 50;
+
+                switch (draw_mode_)
+                {
+                case MAIN:  DrawSet();   break;
+                case JULIA: DrawJulia(); break;
+                }
+            }
+
+            //Change limit
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::L) && (not InputBoxesHasFocus()))
+            {
+                change_limit = true;
+            }
+            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::L) && (not InputBoxesHasFocus()))
+            {
+                change_limit = false;
+            }
+            else if ((event.type == sf::Event::MouseWheelMoved) && change_limit)
+            {
+                lim_ *= pow(2, event.mouseWheel.delta);
+
+                switch (draw_mode_)
+                {
+                case MAIN:  DrawSet();   break;
+                case JULIA: DrawJulia(); break;
+                }
             }
 
             //Toggle action modes
@@ -521,7 +563,7 @@ void Puzabrot::DrawSet ()
     shader_.setUniform("winsizes", sf::Glsl::Ivec2(winsizes_.x, winsizes_.y));
 
     shader_.setUniform("itrn_max", (int)itrn_max_);
-    shader_.setUniform("limit",    (float)lim_);
+    shader_.setUniform("limit",    lim_);
 
     shader_.setUniform("drawing_mode", MAIN);
     shader_.setUniform("coloring",     coloring_);
@@ -537,7 +579,7 @@ void Puzabrot::DrawJulia ()
     shader_.setUniform("winsizes", sf::Glsl::Ivec2(winsizes_.x, winsizes_.y));
 
     shader_.setUniform("itrn_max", (int)itrn_max_);
-    shader_.setUniform("limit",    (float)lim_);
+    shader_.setUniform("limit",    lim_);
 
     shader_.setUniform("drawing_mode", JULIA);
     shader_.setUniform("coloring",     coloring_);
@@ -894,14 +936,16 @@ void Puzabrot::drawHelpMenu ()
         "  Esc - Exit program\n"
         "Space - Take a screenshot\n"
         "    R - Reset View\n"
-        "    I - Open input box (enter text expression, then press enter to output the set)\n"
+        "Tilde - Open input box (enter text expression, then press enter to output the set)\n"
         "  Tab - Change input method\n"
         "    D - Toggle audio dampening\n"
         "    C - Toggle sound coloring\n"
         "    J - Hold down, move mouse, and release to make Julia sets. Press again to switch back\n"
+        "    I - Hold down, scroll mouse wheel to increase or decrease max iterations\n"
+        "    L - Hold down, scroll mouse wheel to increase or decrease limit\n"
         "\n"
         "\n"
-        "        Current max iteration: %lu, current limit: %lu\n"
+        "        Current max iteration: %lu, current limit: %f\n"
         "        Borders: upper: %.5lf, bottom: %.5lf, left: %.5lf, right: %.5lf\n", itrn_max_, lim_, borders_.Im_up, borders_.Im_down, borders_.Re_left, borders_.Re_right);
 
     helpMenu.setString(str);
