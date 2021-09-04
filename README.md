@@ -1,6 +1,8 @@
 # Puzabrot
 Mathematical set viewer
 
+![screenshot](screenshot.png "Screenshot")
+
 A program that allows you view any different escape-time fractals and sets such as mandelbrot and other.
 Inspired by CodeParade (https://github.com/HackerPoet/FractalSoundExplorer)
 
