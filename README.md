@@ -15,7 +15,7 @@ $ make
 ```
 **Requirements:**
 
-- C++ compiler, GNU make,
+- GCC compiler, GNU make,
 - SFML
 - OpenGL version 1.3 or later
 
