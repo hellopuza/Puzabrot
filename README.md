@@ -1,5 +1,5 @@
 # Puzabrot
-Mathematical set viewer
+Escape-time fractals viewer
 
 ![screenshot](screenshot.png "Screenshot")
 
