@@ -17,7 +17,7 @@ $ make
 
 - C++ compiler, GNU make,
 - SFML
-- OpenGL version 4.0 or later
+- OpenGL version 1.3 or later
 
 **How to use**
 
