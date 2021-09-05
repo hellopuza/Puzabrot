@@ -65,7 +65,7 @@ void Puzabrot::run ()
     bool showing_trace  = false;
     bool julia_dragging = false;
     bool change_iter    = false;
-    bool change_limit    = false;
+    bool change_limit   = false;
 
     sf::Vector2f orbit   = sf::Vector2f(0, 0);
     sf::Vector2f c_point = sf::Vector2f(0, 0);
@@ -93,11 +93,7 @@ void Puzabrot::run ()
             {
                 toggleFullScreen();
 
-                switch (draw_mode_)
-                {
-                case MAIN:  DrawSet();   break;
-                case JULIA: DrawJulia(); break;
-                }
+                DrawSet();
             }
 
             //Resize window
@@ -107,11 +103,7 @@ void Puzabrot::run ()
                 window_->setView(sf::View(visibleArea));
                 updateWinSizes(window_->getSize().x, window_->getSize().y);
 
-                switch (draw_mode_)
-                {
-                case MAIN:  DrawSet();   break;
-                case JULIA: DrawJulia(); break;
-                }
+                DrawSet();
             }
 
             //Reset set drawing
@@ -126,8 +118,8 @@ void Puzabrot::run ()
                 itrn_max_ = MAX_ITERATION;
                 lim_      = LIMIT;
 
-                DrawSet();
                 draw_mode_ = MAIN;
+                DrawSet();
             }
 
             //Take a screenshot
@@ -148,11 +140,7 @@ void Puzabrot::run ()
             {
                 coloring_ = not coloring_;
 
-                switch (draw_mode_)
-                {
-                case MAIN:  DrawSet();   break;
-                case JULIA: DrawJulia(); break;
-                }
+                DrawSet();
             }
 
             //Toggle help menu showing
@@ -346,7 +334,10 @@ void Puzabrot::run ()
                     {
                         julia_point_ = Screen2Plane(sf::Mouse::getPosition(*window_));
 
-                        DrawJulia();
+                        draw_mode_ = JULIA;
+                        DrawSet();
+                        draw_mode_ = MAIN;
+
                         window_->draw(sprite_);
                         window_->display();
 
@@ -365,6 +356,8 @@ void Puzabrot::run ()
                     draw_mode_ = MAIN;
                 else
                     draw_mode_ = JULIA;
+
+                DrawSet();
             }
 
             //Change max iterations
@@ -380,11 +373,7 @@ void Puzabrot::run ()
             {
                 itrn_max_ += event.mouseWheel.delta * 50;
 
-                switch (draw_mode_)
-                {
-                case MAIN:  DrawSet();   break;
-                case JULIA: DrawJulia(); break;
-                }
+                DrawSet();
             }
 
             //Change limit
@@ -400,11 +389,7 @@ void Puzabrot::run ()
             {
                 lim_ *= pow(2, event.mouseWheel.delta);
 
-                switch (draw_mode_)
-                {
-                case MAIN:  DrawSet();   break;
-                case JULIA: DrawJulia(); break;
-                }
+                DrawSet();
             }
 
             //Toggle action modes
@@ -423,11 +408,7 @@ void Puzabrot::run ()
             {
                 Zooming(event.mouseWheel.delta, Screen2Plane(sf::Mouse::getPosition(*window_)));
 
-                switch (draw_mode_)
-                {
-                case MAIN:  DrawSet();   break;
-                case JULIA: DrawJulia(); break;
-                }
+                DrawSet();
             }
             else if ((action_mode == ZOOMING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right)))
             {
@@ -435,11 +416,7 @@ void Puzabrot::run ()
                 {
                     changeBorders(newscreen);
 
-                    switch (draw_mode_)
-                    {
-                    case MAIN:  DrawSet();   break;
-                    case JULIA: DrawJulia(); break;
-                    }
+                    DrawSet();
                 }
             }
 
@@ -559,29 +536,13 @@ bool Puzabrot::InputBoxesIsVisible ()
 
 void Puzabrot::DrawSet ()
 {
-    shader_.setUniform("borders",  sf::Glsl::Vec4(borders_.Re_left, borders_.Re_right, borders_.Im_down, borders_.Im_up));
-    shader_.setUniform("winsizes", sf::Glsl::Ivec2(winsizes_.x, winsizes_.y));
-
-    shader_.setUniform("itrn_max", (int)itrn_max_);
-    shader_.setUniform("limit",    lim_);
-
-    shader_.setUniform("drawing_mode", MAIN);
-    shader_.setUniform("coloring",     coloring_);
-
-    render_texture_.draw(sprite_, &shader_);
-}
-
-//------------------------------------------------------------------------------
-
-void Puzabrot::DrawJulia ()
-{
     shader_.setUniform("borders", sf::Glsl::Vec4(borders_.Re_left, borders_.Re_right, borders_.Im_down, borders_.Im_up));
     shader_.setUniform("winsizes", sf::Glsl::Ivec2(winsizes_.x, winsizes_.y));
 
     shader_.setUniform("itrn_max", (int)itrn_max_);
     shader_.setUniform("limit",    lim_);
 
-    shader_.setUniform("drawing_mode", JULIA);
+    shader_.setUniform("drawing_mode", draw_mode_);
     shader_.setUniform("coloring",     coloring_);
 
     shader_.setUniform("julia_point", sf::Glsl::Vec2(julia_point_.x, julia_point_.y));
@@ -885,26 +846,40 @@ void Puzabrot::savePicture ()
 
     window_->draw(sprite_);
 
-    sf::Texture screen;
-    screen.create(window_->getSize().x, window_->getSize().y);
-    screen.update(*window_);
-
     sf::RectangleShape rectangle;
     rectangle.setPosition(0, 0);
-    rectangle.setSize(sf::Vector2f(window_->getSize()));
-
-    if (screen.copyToImage().saveToFile(filename))
-        rectangle.setFillColor(sf::Color(10, 10, 10, 150));  // grey screen if ok
-    else
-        rectangle.setFillColor(sf::Color(255, 10, 10, 200)); // red screen if error
+    rectangle.setSize(sf::Vector2f(winsizes_));
+    rectangle.setFillColor(sf::Color(10, 10, 10, 150));
 
     window_->draw(rectangle);
     window_->display();
 
-    sf::sleep(sf::milliseconds(300));
+    sf::Vector2u screenshot_sizes(SCREENSHOT_WIDTH, (float)SCREENSHOT_WIDTH / winsizes_.x * winsizes_.y);
 
-    sf::Sprite screen_sprite(screen);
-    window_->draw(screen_sprite);
+    shader_.setUniform("borders",  sf::Glsl::Vec4(borders_.Re_left, borders_.Re_right, borders_.Im_down, borders_.Im_up));
+    shader_.setUniform("winsizes", sf::Glsl::Ivec2(screenshot_sizes.x, screenshot_sizes.y));
+
+    shader_.setUniform("itrn_max", (int)itrn_max_);
+    shader_.setUniform("limit",    lim_);
+
+    shader_.setUniform("drawing_mode", draw_mode_);
+    shader_.setUniform("coloring",     coloring_);
+
+    shader_.setUniform("julia_point", sf::Glsl::Vec2(julia_point_.x, julia_point_.y));
+
+    sf::RenderTexture render_texture;
+    render_texture.create(screenshot_sizes.x, screenshot_sizes.y);
+
+    sf::Sprite sprite(render_texture.getTexture());
+
+    render_texture.draw(sprite, &shader_);
+    render_texture.display();
+
+    sf::Texture screen = render_texture.getTexture();
+
+    screen.copyToImage().saveToFile(filename);
+
+    window_->draw(sprite_);
     window_->display();
 }
 

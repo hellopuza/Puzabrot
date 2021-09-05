@@ -23,6 +23,8 @@
 constexpr size_t DEFAULT_WIDTH  = 640;
 constexpr size_t DEFAULT_HEIGHT = 480;
 
+constexpr size_t SCREENSHOT_WIDTH = 7680;
+
 constexpr float  LIMIT         = 100.0f;
 constexpr size_t MAX_ITERATION = 500;
 
@@ -114,7 +116,6 @@ private:
     bool         InputBoxesHasFocus  ();
     bool         InputBoxesIsVisible ();
     void         DrawSet             ();
-    void         DrawJulia           ();
     void         Zooming             (int wheel_delta, sf::Vector2f point);
     int          GetNewScreen        (Screen& newscreen);
     void         changeBorders       (Screen newscreen);
