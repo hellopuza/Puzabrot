@@ -1353,8 +1353,11 @@ char* Puzabrot::writeChecking ()
 
 int Puzabrot::Tree2GLSL (Node<CalcNodeData>* node_cur, char* str_cur)
 {
-    assert(node_cur != nullptr);
-    assert(str_cur  != nullptr);
+    if (node_cur == nullptr)
+    {
+        sprintf(str_cur, "vec2(0, 0)");
+        return 0;
+    }
 
     switch (node_cur->getData().node_type)
     {
