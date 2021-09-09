@@ -937,6 +937,8 @@ int Puzabrot::makeShader ()
     Expression expression1 = { expr1, expr1, CALC_OK };
     Expression expression2 = { expr2, expr2, CALC_OK };
 
+    Tree<CalcNodeData> test_tree((char*)"Test tree");
+
     switch (input_mode_)
     {
     case Z_INPUT:
@@ -947,8 +949,12 @@ int Puzabrot::makeShader ()
         strcpy(expr1, str);
         strcpy(expr2, str);
 
-        int err = Expr2Tree(expression1, expr_trees_[0]);
+        test_tree.Clean();
+        int err = Expr2Tree(expression1, test_tree);
         if (err) return expression1.err;
+
+        expr_trees_[0] = test_tree;
+        expr_trees_[0].name_ = (char*)"Expression tree 1";
 
         Expr2Tree(expression2, expr_trees_[1]);
         break;
@@ -964,11 +970,19 @@ int Puzabrot::makeShader ()
         strcpy(expr1, str1);
         strcpy(expr2, str2);
 
-        int err = Expr2Tree(expression1, expr_trees_[0]);
+        test_tree.Clean();
+        int err = Expr2Tree(expression1, test_tree);
         if (err) return expression1.err;
 
-        err = Expr2Tree(expression2, expr_trees_[1]);
+        expr_trees_[0] = test_tree;
+        expr_trees_[0].name_ = (char*)"Expression tree 1";
+
+        test_tree.Clean();
+        err = Expr2Tree(expression2, test_tree);
         if (err) return expression2.err;
+
+        expr_trees_[1] = test_tree;
+        expr_trees_[1].name_ = (char*)"Expression tree 2";
         break;
     }
     }
