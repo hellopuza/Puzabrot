@@ -701,7 +701,7 @@ void Puzabrot::changeBorders (Screen newscreen)
 
 //------------------------------------------------------------------------------
 
-void Puzabrot::initCalculator (Calculator& calc, float x, float y, float cx, float cy)
+void Puzabrot::initCalculator (Calculator& calc, sf::Vector2f z, sf::Vector2f c)
 {
     calc.trees_[0] = expr_trees_[0];
     calc.trees_[1] = expr_trees_[1];
@@ -710,17 +710,17 @@ void Puzabrot::initCalculator (Calculator& calc, float x, float y, float cx, flo
     {
     case Z_INPUT:
     {
-        calc.variables_.Push({ { cx, cy }, "c" });
-        calc.variables_.Push({ {  x,  y }, "z" });
+        calc.variables_.Push({ { c.x, c.y }, "c" });
+        calc.variables_.Push({ { z.x, z.y }, "z" });
         break;
     }
     case XY_INPUT:
     {
-        calc.variables_.Push({ { cx, 0 }, "cx" });
-        calc.variables_.Push({ { cy, 0 }, "cy" });
+        calc.variables_.Push({ { c.x, 0 }, "cx" });
+        calc.variables_.Push({ { c.y, 0 }, "cy" });
 
-        calc.variables_.Push({ {  x, 0 }, "x" });
-        calc.variables_.Push({ {  y, 0 }, "y" });
+        calc.variables_.Push({ { z.x, 0 }, "x" });
+        calc.variables_.Push({ { z.y, 0 }, "y" });
         break;
     }
     }
@@ -760,33 +760,18 @@ void Puzabrot::Mapping (Calculator& calc, float& mapped_x, float& mapped_y)
 
 sf::Vector2f Puzabrot::PointTrace (sf::Vector2f point, sf::Vector2f c_point)
 {
-    float re0 = point.x;
-    float im0 = point.y;
-
-    float x1 = 0;
-    float y1 = 0;
-    
+    static Calculator calc;
     switch (draw_mode_)
     {
-    case MAIN:
-    {
-        x1 = c_point.x;
-        y1 = c_point.y;
-        break;
+    case MAIN:  initCalculator(calc, point, c_point);      break;
+    case JULIA: initCalculator(calc, point, julia_point_); break;
     }
-    case JULIA:
-    {
-        x1 = julia_point_.x;
-        y1 = julia_point_.y;
-        break;
-    }
-    }
+
+    float x1 = point.x;
+    float y1 = point.y;
 
     float x2 = 0;
     float y2 = 0;
-
-    static Calculator calc;
-    initCalculator(calc, re0, im0, x1, y1);
 
     for (int i = 0; (i < itrn_max_) && (sqrt(x2 * x2 + y2 * y2) < lim_); ++i)
     {
@@ -1470,7 +1455,7 @@ void Synth::updateCalc ()
 {
     calc_.variables_.Clean();
     ADD_VAR(calc_.variables_);
-    puza_->initCalculator(calc_, point_.x, point_.y, c_point_.x, c_point_.y);
+    puza_->initCalculator(calc_, point_, c_point_);
 }
 
 //------------------------------------------------------------------------------

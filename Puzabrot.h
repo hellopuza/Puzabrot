@@ -119,7 +119,7 @@ private:
     void         Zooming             (int wheel_delta, sf::Vector2f point);
     int          GetNewScreen        (Screen& newscreen);
     void         changeBorders       (Screen newscreen);
-    void         initCalculator      (Calculator& calc, float x, float y, float cx, float cy);
+    void         initCalculator      (Calculator& calc, sf::Vector2f z, sf::Vector2f c);
     void         Mapping             (Calculator& calc, float& mapped_x, float& mapped_y);
     sf::Vector2f PointTrace          (sf::Vector2f point, sf::Vector2f c_point);
     void         savePicture         ();
