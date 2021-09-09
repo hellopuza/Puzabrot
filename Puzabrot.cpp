@@ -805,23 +805,6 @@ sf::Vector2f Puzabrot::PointTrace (sf::Vector2f point, sf::Vector2f c_point)
         y1 = y2;
 
         window_->draw(line, 2, sf::Lines);
-        ++i;
-
-        switch (input_mode_)
-        {
-        case Z_INPUT:
-        {
-            if (abs(calc.trees_[0].root_->getData().number) < lim_)
-                break;
-            break;
-        }
-        case XY_INPUT:
-        {
-            if (abs(std::complex<double>(real(calc.trees_[0].root_->getData().number), real(calc.trees_[1].root_->getData().number))) < lim_)
-                break;
-            break;
-        }
-        }
     }
 
     calc.variables_.Clean();
