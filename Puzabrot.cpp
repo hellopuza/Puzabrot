@@ -64,6 +64,7 @@ void Puzabrot::run ()
     bool showing_menu   = false;
     bool showing_trace  = false;
     bool julia_dragging = false;
+    bool left_pressed   = false;
     bool change_iter    = false;
     bool change_limit   = false;
 
@@ -421,7 +422,7 @@ void Puzabrot::run ()
             }
 
             //Point tracing and sounding
-            else if (((action_mode == POINT_TRACING) || (action_mode == SOUNDING)) && (sf::Mouse::isButtonPressed(sf::Mouse::Left)))
+            else if (((action_mode == POINT_TRACING) || (action_mode == SOUNDING)) && (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
             {
                 input_box_x_.is_visible_ = false;
                 input_box_x_.has_focus_  = false;
@@ -432,16 +433,19 @@ void Puzabrot::run ()
                 input_box_z_.is_visible_ = false;
                 input_box_z_.has_focus_  = false;
 
-                c_point = Screen2Plane(sf::Mouse::getPosition(*window_));
-                orbit   = c_point;
                 showing_trace = true;
-                    
+                left_pressed  = true;
+
                 if (action_mode == SOUNDING)
                 {
                     synth.SetPoint(Screen2Plane(sf::Mouse::getPosition(*window_)));
                     synth.audio_pause_ = false;
                     synth.play();
                 }
+            }
+            else if ((event.type == sf::Event::MouseButtonReleased) && (event.mouseButton.button == sf::Mouse::Left))
+            {
+                left_pressed = false;
             }
             else if (((action_mode == POINT_TRACING) || (action_mode == SOUNDING)) && (sf::Mouse::isButtonPressed(sf::Mouse::Right)))
             {
@@ -461,6 +465,14 @@ void Puzabrot::run ()
         {
             input_box_x_.draw(window_);
             input_box_y_.draw(window_);
+        }
+
+        if (left_pressed)
+        {
+            c_point = Screen2Plane(sf::Mouse::getPosition(*window_));
+            orbit = c_point;
+
+            synth.SetPoint(Screen2Plane(sf::Mouse::getPosition(*window_)));
         }
 
         if (showing_trace)
