@@ -853,7 +853,6 @@ void Puzabrot::savePicture ()
     sf::Sprite sprite(render_texture.getTexture());
 
     render_texture.draw(sprite, &shader_);
-    render_texture.display();
 
     sf::Texture screen = render_texture.getTexture();
 
