@@ -26,14 +26,7 @@ Stack<TYPE>::Stack (char* stack_name, size_t capacity) :
     STACK_ASSERTOK((capacity == 0),             STACK_WRONG_INPUT_CAPACITY_VALUE_NIL);
     STACK_ASSERTOK((stack_name == nullptr),     STACK_WRONG_INPUT_STACK_NAME);
     
-    try
-    {
-        data_ = new TYPE[capacity_];
-    }
-    catch (std::bad_alloc& err)
-    {
-        STACK_ASSERTOK(STACK_NO_MEMORY, STACK_NO_MEMORY);
-    }
+    data_ = new TYPE[capacity_];
 
     fillPoison();
 
@@ -59,14 +52,7 @@ Stack<TYPE>::Stack (const Stack& obj) :
     STACK_ASSERTOK((capacity_ > MAX_CAPACITY),  STACK_WRONG_INPUT_CAPACITY_VALUE_BIG);
     STACK_ASSERTOK((capacity_ == 0),            STACK_WRONG_INPUT_CAPACITY_VALUE_NIL);
 
-    try
-    {
-        data_ = new TYPE[capacity_];
-    }
-    catch (std::bad_alloc& err)
-    {
-        STACK_ASSERTOK(STACK_NO_MEMORY, STACK_NO_MEMORY);
-    }
+    data_ = new TYPE[capacity_];
 
     for (int i = 0; i < capacity_; ++i) data_[i] = obj.data_[i];
 
@@ -92,14 +78,8 @@ Stack<TYPE>& Stack<TYPE>::operator = (const Stack& obj)
     capacity_ = obj.capacity_;
     errCode_  = STACK_OK;
 
-    try
-    {
-        data_ = new TYPE[capacity_];
-    }
-    catch (std::bad_alloc& err)
-    {
-        STACK_ASSERTOK(STACK_NO_MEMORY, STACK_NO_MEMORY);
-    }
+    delete[] data_;
+    data_ = new TYPE[capacity_];
 
     for (int i = 0; i < capacity_; ++i) copyType(data_[i], obj.data_[i]);
 
@@ -221,14 +201,7 @@ void Stack<TYPE>::Clean ()
 
     capacity_ = DEFAULT_STACK_CAPACITY;
 
-    try
-    {
-        data_ = new TYPE[capacity_];
-    }
-    catch (std::bad_alloc& err)
-    {
-        STACK_ASSERTOK(STACK_NO_MEMORY, STACK_NO_MEMORY);
-    }
+    data_ = new TYPE[capacity_];
 
     fillPoison();
 
@@ -310,15 +283,7 @@ int Stack<TYPE>::Expand ()
 
     capacity_ *= 2;
 
-    TYPE* temp = nullptr;
-    try
-    {
-        temp = new TYPE[capacity_];
-    }
-    catch (std::bad_alloc& err)
-    {
-        STACK_ASSERTOK(STACK_NO_MEMORY, STACK_NO_MEMORY);
-    }
+    TYPE* temp = temp = new TYPE[capacity_];
 
     memcpy(temp, (char*)data_, capacity_ * sizeof(TYPE) / 2);
 
