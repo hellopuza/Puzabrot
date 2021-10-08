@@ -74,7 +74,6 @@ void Puzabrot::run ()
     sf::Vector2f c_point = sf::Vector2f(0, 0);
 
     Synth synth(this);
-    synth.play();
 
     while (window_->isOpen())
     {
@@ -757,8 +756,8 @@ void Puzabrot::Mapping (Calculator& calc, float& mapped_x, float& mapped_y)
         calc.Calculate(expr_trees_[0]);
         calc.Calculate(expr_trees_[1]);
 
-        calc.variables[calc.variables.size() - 2] = { expr_trees_[0].data.number, "x" };
-        calc.variables[calc.variables.size() - 1] = { expr_trees_[1].data.number, "y" };
+        calc.variables[calc.variables.size() - 2] = { {real(expr_trees_[0].data.number), 0.0}, "x" };
+        calc.variables[calc.variables.size() - 1] = { {real(expr_trees_[1].data.number), 0.0}, "y" };
 
         mapped_x = real(expr_trees_[0].data.number);
         mapped_y = real(expr_trees_[1].data.number);
@@ -975,9 +974,9 @@ char* Puzabrot::writeShader ()
         "    return a.x * a.x + a.y * a.y;\n"
         "}\n"
         "\n"
-        "float cabs(vec2 a)\n"
+        "vec2 cabs(vec2 a)\n"
         "{\n"
-        "    return sqrt(a.x * a.x + a.y * a.y);\n"
+        "    return vec2(sqrt(a.x * a.x + a.y * a.y), 0.0);\n"
         "}\n"
         "\n"
         "float arg(vec2 a)\n"
@@ -1285,8 +1284,8 @@ char* Puzabrot::writeChecking ()
 
     switch (input_mode_)
     {
-    case Z_INPUT:  sprintf(str_checking, "if (cabs(z) > limit) break;\n");          break;
-    case XY_INPUT: sprintf(str_checking, "if (cabs(vec2(x, y)) > limit) break;\nvec2 z = vec2(x, y);\n"); break;
+    case Z_INPUT:  sprintf(str_checking, "if (cabs(z).x > limit) break;\n"); break;
+    case XY_INPUT: sprintf(str_checking, "if (cabs(vec2(x, y)).x > limit) break;\nvec2 z = vec2(x, y);\n"); break;
     default: return nullptr;
     }
 
