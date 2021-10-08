@@ -14,19 +14,6 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-
-#if defined (__GNUC__) || defined (__clang__) || defined (__clang_major__)
-    #define __FUNC_NAME__   __PRETTY_FUNCTION__
-
-#elif defined (_MSC_VER)
-    #define __FUNC_NAME__   __FUNCSIG__
-
-#else
-    #define __FUNC_NAME__   __FUNCTION__
-
-#endif
-
-
 #include "../Tree/Tree.h"
 #include "Operations.h"
 #include <complex>
@@ -36,13 +23,6 @@ namespace puza {
 const std::complex<double> PI = {atan(1.0) * 4.0, 0.0};
 const std::complex<double> E  = {exp(1.0),        0.0};
 const std::complex<double> I  = {0.0,             1.0};
-
-#define ADD_VAR(variables)                     \
-        {                                      \
-            variables.push_back({ PI, "pi" }); \
-            variables.push_back({ E,  "e"  }); \
-            variables.push_back({ I,  "i"  }); \
-        } //
 
 enum CalculatorErrors
 {

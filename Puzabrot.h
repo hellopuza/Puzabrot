@@ -14,7 +14,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "Calculator/Calculator.h"
-
 #include "InputBox.h"
 
 #include <SFML/Graphics.hpp>

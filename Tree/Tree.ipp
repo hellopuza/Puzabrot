@@ -83,7 +83,7 @@ int Tree<TYPE>::dump (const char* dump_name) const
     char command[1024] = "";
 
     sprintf(command, "dot -Tpng -o %s.png %s", dump_name, DOT_FILE_NAME);
-    system(command);
+    return system(command);
 }
 
 //------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ int Tree<TYPE>::rdump (const char* dump_name) const
     char command[1024] = "";
 
     sprintf(command, "dot -Tpng -o %s.png %s", dump_name, DOT_FILE_NAME);
-    system(command);
+    return system(command);
 }
 
 //------------------------------------------------------------------------------
