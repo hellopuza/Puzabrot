@@ -14,8 +14,8 @@
 
 int main()
 {
-    Puzabrot puza;
-    puza.run();
+    puza::Puzabrot app;
+    app.run();
 
     return 0;
 }

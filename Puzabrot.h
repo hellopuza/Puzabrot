@@ -20,6 +20,8 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 
+namespace puza {
+
 constexpr size_t DEFAULT_WIDTH  = 640;
 constexpr size_t DEFAULT_HEIGHT = 480;
 
@@ -101,10 +103,11 @@ private:
 
     sf::Vector2f julia_point_ = sf::Vector2f(0, 0);
 
-    InputBox           input_box_x_;
-    InputBox           input_box_y_;
-    InputBox           input_box_z_;
-    Tree<CalcNodeData> expr_trees_[2];
+    InputBox input_box_x_;
+    InputBox input_box_y_;
+    InputBox input_box_z_;
+
+    Tree<CalcData> expr_trees_[2];
 
     sf::Shader         shader_;
     sf::Sprite         sprite_;
@@ -129,7 +132,7 @@ private:
     char*        writeInitialization ();
     char*        writeCalculation    ();
     char*        writeChecking       ();
-    int          Tree2GLSL           (Node<CalcNodeData>* node_cur, char* str_cur);
+    int          Tree2GLSL           (Tree<CalcData>& node, char* str_cur);
 
     friend class Synth;
 };
@@ -140,24 +143,28 @@ class Synth : public sf::SoundStream
 {
 public:
 
-    Puzabrot* puza_ = nullptr;
-    Calculator calc_;
+    Synth (Puzabrot* puza);
 
+    virtual void onSeek     (sf::Time timeOffset) override {}
+    virtual bool onGetData  (Chunk& data)         override;
+
+    void updateCalc ();
+    void SetPoint   (sf::Vector2f point);
+    
     bool audio_reset_;
     bool audio_pause_;
     bool sustain_;
     double volume_;
 
+private:
+
+    Puzabrot* puza_;
+    Calculator calc_;
+
     sf::Vector2f point_;
     sf::Vector2f c_point_;
     sf::Vector2f new_point_;
     sf::Vector2f prev_point_;
-
-                 Synth      (Puzabrot* puza);
-            void updateCalc ();
-            void SetPoint   (sf::Vector2f point);
-    virtual void onSeek     (sf::Time timeOffset) override {}
-    virtual bool onGetData  (Chunk& data)         override;
 
     int16_t m_samples[AUDIO_BUFF_SIZE] = {};
     int32_t m_audio_time = 0;
@@ -171,6 +178,6 @@ public:
     double dpy = 0;
 };
 
-//------------------------------------------------------------------------------
+} // namespace puza
 
 #endif // PUZABROT_H_INCLUDED

@@ -4,7 +4,7 @@ CC = g++
 CFLAGS = -c -openmp -O3 -std=c++17
 LDFLAGS =
 LIBS = -lsfml-system -lsfml-graphics -lsfml-window -lsfml-audio
-SOURCES = main.cpp Puzabrot.cpp Calculator/Calculator.cpp StringLib/StringLib.cpp
+SOURCES = main.cpp Puzabrot.cpp Calculator/Calculator.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 EXECUTABLE = Puzabrot
 

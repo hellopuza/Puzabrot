@@ -16,7 +16,7 @@
 #include <SFML/Graphics.hpp>
 #include "ConsolaFont.hpp"
 
-//------------------------------------------------------------------------------
+namespace puza {
 
 class InputBox
 {
@@ -170,6 +170,6 @@ public:
     bool is_visible_ = false;
 };
 
-//------------------------------------------------------------------------------
+} // namespace puza
 
 #endif // INPUTBOX_H_INCLUDED

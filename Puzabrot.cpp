@@ -9,8 +9,10 @@
     *///------------------------------------------------------------------------
 
 #include "Puzabrot.h"
+#include <cassert>
+#include <cstring>
 
-//------------------------------------------------------------------------------
+namespace puza {
 
 Puzabrot::Puzabrot () :
     winsizes_    ({ DEFAULT_WIDTH, DEFAULT_HEIGHT }),
@@ -26,8 +28,8 @@ Puzabrot::Puzabrot () :
     borders_.Re_left  = -(borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *3;
     borders_.Re_right =  (borders_.Im_up - borders_.Im_down) * winsizes_.x/winsizes_.y / 5 *2;
 
-    expr_trees_[0] = Tree<CalcNodeData>((char*)"Expression tree 1");
-    expr_trees_[1] = Tree<CalcNodeData>((char*)"Expression tree 2");
+    expr_trees_[0] = Tree<CalcData>();
+    expr_trees_[1] = Tree<CalcData>();
 
     input_box_x_.setLabel(sf::String("x:"));
     input_box_y_.setLabel(sf::String("y:"));
@@ -715,24 +717,21 @@ void Puzabrot::changeBorders (Screen newscreen)
 
 void Puzabrot::initCalculator (Calculator& calc, sf::Vector2f z, sf::Vector2f c)
 {
-    calc.trees_[0] = expr_trees_[0];
-    calc.trees_[1] = expr_trees_[1];
-
     switch (input_mode_)
     {
     case Z_INPUT:
     {
-        calc.variables_.Push({ { c.x, c.y }, "c" });
-        calc.variables_.Push({ { z.x, z.y }, "z" });
+        calc.variables.push_back({ { c.x, c.y }, "c" });
+        calc.variables.push_back({ { z.x, z.y }, "z" });
         break;
     }
     case XY_INPUT:
     {
-        calc.variables_.Push({ { c.x, 0 }, "cx" });
-        calc.variables_.Push({ { c.y, 0 }, "cy" });
+        calc.variables.push_back({ { c.x, 0 }, "cx" });
+        calc.variables.push_back({ { c.y, 0 }, "cy" });
 
-        calc.variables_.Push({ { z.x, 0 }, "x" });
-        calc.variables_.Push({ { z.y, 0 }, "y" });
+        calc.variables.push_back({ { z.x, 0 }, "x" });
+        calc.variables.push_back({ { z.y, 0 }, "y" });
         break;
     }
     }
@@ -746,23 +745,23 @@ void Puzabrot::Mapping (Calculator& calc, float& mapped_x, float& mapped_y)
     {
     case Z_INPUT:
     {
-        calc.Calculate(calc.trees_[0].root_, false);
-        calc.variables_[calc.variables_.getSize() - 1] = { calc.trees_[0].root_->getData().number, "z" };
+        calc.Calculate(expr_trees_[0]);
+        calc.variables[calc.variables.size() - 1] = { expr_trees_[0].data.number, "z" };
 
-        mapped_x = real(calc.trees_[0].root_->getData().number);
-        mapped_y = imag(calc.trees_[0].root_->getData().number);
+        mapped_x = real(expr_trees_[0].data.number);
+        mapped_y = imag(expr_trees_[0].data.number);
         break;
     }
     case XY_INPUT:
     {
-        calc.Calculate(calc.trees_[0].root_, false);
-        calc.Calculate(calc.trees_[1].root_, false);
+        calc.Calculate(expr_trees_[0]);
+        calc.Calculate(expr_trees_[1]);
 
-        calc.variables_[calc.variables_.getSize() - 1] = { calc.trees_[0].root_->getData().number, "x" };
-        calc.variables_[calc.variables_.getSize() - 2] = { calc.trees_[1].root_->getData().number, "y" };
+        calc.variables[calc.variables.size() - 2] = { expr_trees_[0].data.number, "x" };
+        calc.variables[calc.variables.size() - 1] = { expr_trees_[1].data.number, "y" };
 
-        mapped_x = real(calc.trees_[0].root_->getData().number);
-        mapped_y = real(calc.trees_[1].root_->getData().number);
+        mapped_x = real(expr_trees_[0].data.number);
+        mapped_y = real(expr_trees_[1].data.number);
         break;
     }
     }
@@ -804,8 +803,7 @@ sf::Vector2f Puzabrot::PointTrace (sf::Vector2f point, sf::Vector2f c_point)
         window_->draw(line, 2, sf::Lines);
     }
 
-    calc.variables_.Clean();
-    ADD_VAR(calc.variables_);
+    calc.clear();
 
     return sf::Vector2f(x1, y1);
 }
@@ -815,14 +813,7 @@ sf::Vector2f Puzabrot::PointTrace (sf::Vector2f point, sf::Vector2f c_point)
 void Puzabrot::savePicture ()
 {
     static int shot_num = 0;
-    char filename[256] = "screenshot";
-    char shot_num_str[13] = "";
-    sprintf(shot_num_str, "%d", shot_num++);
-
-    strcat(filename, "(");
-    strcat(filename, shot_num_str);
-    strcat(filename, ")");
-    strcat(filename, ".png");
+    std::string filename = "screenshot(" + std::to_string(shot_num++) + ")" + ".png";
 
     window_->draw(sprite_);
 
@@ -910,59 +901,26 @@ void Puzabrot::drawHelpMenu ()
 
 int Puzabrot::makeShader ()
 {
-    char* expr1 = new char[MAX_STR_LEN] {};
-    char* expr2 = new char[MAX_STR_LEN] {};
-
-    Expression expression1 = { expr1, expr1, CALC_OK };
-    Expression expression2 = { expr2, expr2, CALC_OK };
-
-    Tree<CalcNodeData> test_tree((char*)"Test tree");
-
     switch (input_mode_)
     {
     case Z_INPUT:
     {
-        std::string string = input_box_z_.getInput().toAnsiString();
-        char* str = (char*)string.c_str();
+        Expression expr_z(input_box_z_.getInput());
 
-        strcpy(expr1, str);
-        strcpy(expr2, str);
-
-        test_tree.Clean();
-        int err = Expr2Tree(expression1, test_tree);
-        if (err) return expression1.err;
-
-        expr_trees_[0] = test_tree;
-        expr_trees_[0].name_ = (char*)"Expression tree 1";
-
-        Expr2Tree(expression2, expr_trees_[1]);
+        int err = expr_z.getTree(expr_trees_[0]);
+        if (err) return err;
         break;
     }
     case XY_INPUT:
     {
-        std::string string1 = input_box_x_.getInput().toAnsiString();
-        std::string string2 = input_box_y_.getInput().toAnsiString();
+        Expression expr_x(input_box_x_.getInput());
+        Expression expr_y(input_box_y_.getInput());
 
-        char* str1 = (char*)string1.c_str();
-        char* str2 = (char*)string2.c_str();
+        int err = expr_x.getTree(expr_trees_[0]);
+        if (err) return err;
 
-        strcpy(expr1, str1);
-        strcpy(expr2, str2);
-
-        test_tree.Clean();
-        int err = Expr2Tree(expression1, test_tree);
-        if (err) return expression1.err;
-
-        expr_trees_[0] = test_tree;
-        expr_trees_[0].name_ = (char*)"Expression tree 1";
-
-        test_tree.Clean();
-        err = Expr2Tree(expression2, test_tree);
-        if (err) return expression2.err;
-
-        expr_trees_[1] = test_tree;
-        expr_trees_[1].name_ = (char*)"Expression tree 2";
-        break;
+        err = expr_y.getTree(expr_trees_[1]);
+        if (err) return err;
     }
     }
 
@@ -973,8 +931,6 @@ int Puzabrot::makeShader ()
     shader_.loadFromMemory(str_shader, sf::Shader::Fragment);
 
     delete [] str_shader;
-    delete [] expr1;
-    delete [] expr2;
 
     return 0;
 }
@@ -1275,7 +1231,7 @@ char* Puzabrot::writeCalculation ()
 
         sprintf(str_calculation + strlen(str_calculation), "z = ");
 
-        int err = Tree2GLSL(expr_trees_[0].root_, str_calculation + strlen(str_calculation));
+        int err = Tree2GLSL(expr_trees_[0], str_calculation + strlen(str_calculation));
         if (err)
         {
             delete [] str_calculation;
@@ -1295,7 +1251,7 @@ char* Puzabrot::writeCalculation ()
 
         sprintf(str_calculation + strlen(str_calculation), "vec2 x1 = ");
 
-        int err = Tree2GLSL(expr_trees_[0].root_, str_calculation + strlen(str_calculation));
+        int err = Tree2GLSL(expr_trees_[0], str_calculation + strlen(str_calculation));
         if (err)
         {
             delete [] str_calculation;
@@ -1304,7 +1260,7 @@ char* Puzabrot::writeCalculation ()
 
         sprintf(str_calculation + strlen(str_calculation), ";\nvec2 y1 = ");
 
-        err = Tree2GLSL(expr_trees_[1].root_, str_calculation + strlen(str_calculation));
+        err = Tree2GLSL(expr_trees_[1], str_calculation + strlen(str_calculation));
         if (err)
         {
             delete[] str_calculation;
@@ -1344,21 +1300,17 @@ char* Puzabrot::writeChecking ()
 
 //------------------------------------------------------------------------------
 
-int Puzabrot::Tree2GLSL (Node<CalcNodeData>* node_cur, char* str_cur)
+int Puzabrot::Tree2GLSL (Tree<CalcData>& node, char* str_cur)
 {
-    if (node_cur == nullptr)
-    {
-        sprintf(str_cur, "vec2(0, 0)");
-        return 0;
-    }
+    assert(str_cur != nullptr);
 
-    switch (node_cur->getData().node_type)
+    switch (node.data.node_type)
     {
     case NODE_FUNCTION:
     {
-        sprintf(str_cur, "c%s(", node_cur->getData().word);
+        sprintf(str_cur, "c%s(", node.data.word.c_str());
 
-        int err = Tree2GLSL(node_cur->right_, str_cur + strlen(str_cur));
+        int err = Tree2GLSL(node.branches[0], str_cur + strlen(str_cur));
         if (err) return err;
         sprintf(str_cur + strlen(str_cur), ")");
 
@@ -1366,7 +1318,7 @@ int Puzabrot::Tree2GLSL (Node<CalcNodeData>* node_cur, char* str_cur)
     }
     case NODE_OPERATOR:
     {
-        switch (node_cur->getData().op_code)
+        switch (node.data.op_code)
         {
         case OP_ADD: sprintf(str_cur, "cadd("); break;
         case OP_SUB: sprintf(str_cur, "csub("); break;
@@ -1376,12 +1328,18 @@ int Puzabrot::Tree2GLSL (Node<CalcNodeData>* node_cur, char* str_cur)
         default: assert(0);
         }
 
-        int err = Tree2GLSL(node_cur->left_, str_cur + strlen(str_cur));
-        if (err) return err;
+        if (node.branches.size() < 2)
+        {
+            sprintf(str_cur + strlen(str_cur), "vec2(0, 0), ");
+        }
+        else
+        {
+            int err = Tree2GLSL(node.branches[1], str_cur + strlen(str_cur));
+            if (err) return err;
+            sprintf(str_cur + strlen(str_cur), ", ");
+        }
 
-        sprintf(str_cur + strlen(str_cur), ", ");
-
-        err = Tree2GLSL(node_cur->right_, str_cur + strlen(str_cur));
+        int err = Tree2GLSL(node.branches[0], str_cur + strlen(str_cur));
         if (err) return err;
 
         sprintf(str_cur + strlen(str_cur), ")");
@@ -1394,33 +1352,28 @@ int Puzabrot::Tree2GLSL (Node<CalcNodeData>* node_cur, char* str_cur)
         {
         case Z_INPUT:
         {
-            if ((strcmp(node_cur->getData().word, "z") != 0) &&
-                (strcmp(node_cur->getData().word, "c") != 0) &&
-                (strcmp(node_cur->getData().word, "i") != 0))
+            if ((node.data.word != "z") && (node.data.word != "c") && (node.data.word != "pi") &&
+                (node.data.word != "e") && (node.data.word != "i"))
                 return -1;
 
             break;
         }
         case XY_INPUT:
         {
-            if ((strcmp(node_cur->getData().word, "x")  != 0) &&
-                (strcmp(node_cur->getData().word, "y")  != 0) &&
-                (strcmp(node_cur->getData().word, "cx") != 0) &&
-                (strcmp(node_cur->getData().word, "cy") != 0) &&
-                (strcmp(node_cur->getData().word, "i")  != 0))
+            if ((node.data.word != "x")  && (node.data.word != "y") && (node.data.word != "cx") && (node.data.word != "cy") &&
+                (node.data.word != "pi") && (node.data.word != "e") && (node.data.word != "i"))
                 return -1;
 
             break;
         }
         }
 
-        if (strcmp(node_cur->getData().word, "i") == 0)
-            sprintf(str_cur, "I");
+        if (node.data.word == "i") sprintf(str_cur, "I");
         else
             switch (input_mode_)
             {
-            case Z_INPUT:  sprintf(str_cur, "%s",          node_cur->getData().word); break;
-            case XY_INPUT: sprintf(str_cur, "vec2(%s, 0)", node_cur->getData().word); break;
+            case Z_INPUT:  sprintf(str_cur, "%s",          node.data.word.c_str()); break;
+            case XY_INPUT: sprintf(str_cur, "vec2(%s, 0)", node.data.word.c_str()); break;
             }
 
         break;
@@ -1429,8 +1382,8 @@ int Puzabrot::Tree2GLSL (Node<CalcNodeData>* node_cur, char* str_cur)
     {
         switch (input_mode_)
         {
-        case Z_INPUT:  sprintf(str_cur, "vec2(%f, %f)", real(node_cur->getData().number), imag(node_cur->getData().number)); break;
-        case XY_INPUT: sprintf(str_cur, "vec2(%f,  0)", real(node_cur->getData().number)); break;
+        case Z_INPUT:  sprintf(str_cur, "vec2(%f, %f)", real(node.data.number), imag(node.data.number)); break;
+        case XY_INPUT: sprintf(str_cur, "vec2(%f,  0)", real(node.data.number)); break;
         }
 
         break;
@@ -1464,8 +1417,7 @@ Synth::Synth (Puzabrot* puza) :
 
 void Synth::updateCalc ()
 {
-    calc_.variables_.Clean();
-    ADD_VAR(calc_.variables_);
+    calc_.variables.clear();
     puza_->initCalculator(calc_, point_, c_point_);
 }
 
@@ -1577,4 +1529,4 @@ bool Synth::onGetData (Chunk& data)
     return !audio_reset_;
 }
 
-//------------------------------------------------------------------------------
+} // namespace puza
