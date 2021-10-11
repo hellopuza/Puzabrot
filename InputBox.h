@@ -42,7 +42,7 @@ public:
 
     ~InputBox () {}
 
-    void draw (sf::RenderWindow* window)
+    void draw (sf::RenderWindow& window)
     {
         sf::RectangleShape input_box;
         if (input_text_.getString().isEmpty())
@@ -75,8 +75,8 @@ public:
         else
             input_box.setPosition(sf::Vector2f(box_pos_.x + 0.5f * input_box.getSize().y + 0.56f * font_size_ * label_.getString().getSize() + 0.25f * font_size_, box_pos_.y + 0.25f * input_box.getSize().y));
 
-        window->draw(box);
-        window->draw(input_box);
+        window.draw(box);
+        window.draw(input_box);
 
         if (not label_.getString().isEmpty())
         {
@@ -84,7 +84,7 @@ public:
             label_.setPosition(sf::Vector2f(input_box.getPosition().x - 0.56f * font_size_ * label_.getString().getSize() - 0.25f * font_size_, input_box.getPosition().y));
             label_.setCharacterSize(font_size_);
             label_.setFillColor(text_color_);
-            window->draw(label_);
+            window.draw(label_);
         }
 
         if (not output_text_.getString().isEmpty())
@@ -93,7 +93,7 @@ public:
             output_text_.setPosition(sf::Vector2f(input_box.getPosition().x, input_box.getPosition().y + input_box.getSize().y));
             output_text_.setCharacterSize(font_size_);
             output_text_.setFillColor(text_color_);
-            window->draw(output_text_);
+            window.draw(output_text_);
         }
 
         if (not input_text_.getString().isEmpty())
@@ -102,7 +102,7 @@ public:
             input_text_.setPosition(input_box.getPosition());
             input_text_.setCharacterSize(font_size_);
             input_text_.setFillColor(sf::Color::White);
-            window->draw(input_text_);
+            window.draw(input_text_);
         }
     }
 

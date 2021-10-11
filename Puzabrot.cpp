@@ -16,12 +16,11 @@ namespace puza {
 
 Puzabrot::Puzabrot () :
     winsizes_    ({ DEFAULT_WIDTH, DEFAULT_HEIGHT }),
+    window_      (sf::VideoMode(winsizes_.x, winsizes_.y), TITLE_STRING),
     input_box_x_ (sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20),
     input_box_y_ (sf::Vector2f(10, 50), sf::Color(128, 128, 128, 128), sf::Color::White, 20),
     input_box_z_ (sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20)
 {
-    window_ = new sf::RenderWindow(sf::VideoMode(winsizes_.x, winsizes_.y), title_string);
-    
     borders_.Im_up   =  UPPER_BORDER;
     borders_.Im_down = -UPPER_BORDER;
 
@@ -46,17 +45,9 @@ Puzabrot::Puzabrot () :
 
 //------------------------------------------------------------------------------
 
-Puzabrot::~Puzabrot ()
-{
-    if (window_->isOpen()) window_->close();
-    delete window_;
-}
-
-//------------------------------------------------------------------------------
-
 void Puzabrot::run ()
 {
-    window_->setVerticalSyncEnabled(true);
+    window_.setVerticalSyncEnabled(true);
 
     int action_mode  = POINT_TRACING;
 
@@ -75,18 +66,18 @@ void Puzabrot::run ()
 
     Synth synth(this);
 
-    while (window_->isOpen())
+    while (window_.isOpen())
     {
         sf::Event event;
         Screen newscreen = {};
         bool was_screenshot = 0;
-        while (window_->pollEvent(event))
+        while (window_.pollEvent(event))
         {
             //Close window
             if ( ( event.type == sf::Event::Closed) ||
                  ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Escape)) )
             {
-                window_->close();
+                window_.close();
                 return;
             }
 
@@ -94,7 +85,6 @@ void Puzabrot::run ()
             else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::F11))
             {
                 toggleFullScreen();
-
                 DrawSet();
             }
 
@@ -102,8 +92,8 @@ void Puzabrot::run ()
             else if (event.type == sf::Event::Resized)
             {
                 sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
-                window_->setView(sf::View(visibleArea));
-                updateWinSizes(window_->getSize().x, window_->getSize().y);
+                window_.setView(sf::View(visibleArea));
+                updateWinSizes(window_.getSize().x, window_.getSize().y);
 
                 DrawSet();
             }
@@ -334,14 +324,14 @@ void Puzabrot::run ()
                 {
                     while (sf::Keyboard::isKeyPressed(sf::Keyboard::J))
                     {
-                        julia_point_ = Screen2Plane(sf::Mouse::getPosition(*window_));
+                        julia_point_ = Screen2Plane(sf::Mouse::getPosition(window_));
 
                         draw_mode_ = JULIA;
                         DrawSet();
                         draw_mode_ = MAIN;
 
-                        window_->draw(sprite_);
-                        window_->display();
+                        window_.draw(sprite_);
+                        window_.display();
 
                         julia_dragging = true;
                     }
@@ -408,7 +398,7 @@ void Puzabrot::run ()
             //Zooming
             else if (event.type == sf::Event::MouseWheelMoved)
             {
-                Zooming(event.mouseWheel.delta, Screen2Plane(sf::Mouse::getPosition(*window_)));
+                Zooming(event.mouseWheel.delta, Screen2Plane(sf::Mouse::getPosition(window_)));
 
                 DrawSet();
             }
@@ -439,7 +429,7 @@ void Puzabrot::run ()
 
                 if (action_mode == SOUNDING)
                 {
-                    synth.SetPoint(Screen2Plane(sf::Mouse::getPosition(*window_)));
+                    synth.SetPoint(Screen2Plane(sf::Mouse::getPosition(window_)));
                     synth.audio_pause_ = false;
                     synth.play();
                 }
@@ -456,8 +446,8 @@ void Puzabrot::run ()
             }
         }
 
-        window_->clear();
-        window_->draw(sprite_);
+        window_.clear();
+        window_.draw(sprite_);
 
         if ((input_mode_ == Z_INPUT) && input_box_z_.is_visible_)
             input_box_z_.draw(window_);
@@ -470,10 +460,10 @@ void Puzabrot::run ()
 
         if (left_pressed)
         {
-            c_point = Screen2Plane(sf::Mouse::getPosition(*window_));
+            c_point = Screen2Plane(sf::Mouse::getPosition(window_));
             orbit = c_point;
 
-            synth.SetPoint(Screen2Plane(sf::Mouse::getPosition(*window_)));
+            synth.SetPoint(Screen2Plane(sf::Mouse::getPosition(window_)));
         }
 
         if (showing_trace)
@@ -482,7 +472,7 @@ void Puzabrot::run ()
         if (showing_menu)
             drawHelpMenu();
 
-        window_->display();
+        window_.display();
     }
 
     synth.stop();
@@ -516,17 +506,14 @@ void Puzabrot::updateWinSizes (size_t new_width, size_t new_height)
 
 void Puzabrot::toggleFullScreen ()
 {
-    if (window_->isOpen()) window_->close();
-    delete window_;
-
     if ((winsizes_.x == sf::VideoMode::getDesktopMode().width) && (winsizes_.y == sf::VideoMode::getDesktopMode().height))
     {
-        window_ = new sf::RenderWindow(sf::VideoMode(DEFAULT_WIDTH, DEFAULT_HEIGHT), title_string);
+        window_.create(sf::VideoMode(DEFAULT_WIDTH, DEFAULT_HEIGHT), TITLE_STRING);
         updateWinSizes(DEFAULT_WIDTH, DEFAULT_HEIGHT);
     }
     else
     {
-        window_ = new sf::RenderWindow(sf::VideoMode::getDesktopMode(), title_string, sf::Style::Fullscreen);
+        window_.create(sf::VideoMode::getDesktopMode(), TITLE_STRING, sf::Style::Fullscreen);
         updateWinSizes(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height);
     }
 }
@@ -604,12 +591,12 @@ int Puzabrot::GetNewScreen (Screen& newscreen)
     {
         if (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right))
         {
-            start = sf::Mouse::getPosition(*window_);
+            start = sf::Mouse::getPosition(window_);
             rectangle.setPosition(start.x, start.y);
 
             while (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right))
             {
-                end = sf::Mouse::getPosition(*window_) + sf::Vector2i(1, 1);
+                end = sf::Mouse::getPosition(window_) + sf::Vector2i(1, 1);
 
                 if ((abs(end.x - start.x) > 8) && (abs(end.y - start.y) > 8))
                 {
@@ -645,15 +632,15 @@ int Puzabrot::GetNewScreen (Screen& newscreen)
 
                     rectangle.setSize(sf::Vector2f(end - start));
 
-                    window_->draw(sprite_);
-                    window_->draw(rectangle);
-                    window_->display();
+                    window_.draw(sprite_);
+                    window_.draw(rectangle);
+                    window_.display();
                 }
                 else end.x = -1;
             }
         }
 
-        window_->draw(sprite_);
+        window_.draw(sprite_);
 
         if (end.x != -1) break;
         else return 0;
@@ -783,7 +770,7 @@ sf::Vector2f Puzabrot::PointTrace (sf::Vector2f point, sf::Vector2f c_point)
     float x2 = 0;
     float y2 = 0;
 
-    for (int i = 0; (i < itrn_max_) && (sqrt(x2 * x2 + y2 * y2) < lim_); ++i)
+    for (size_t i = 0; (i < itrn_max_) && (sqrt(x2 * x2 + y2 * y2) < lim_); ++i)
     {
         Mapping(calc, x2, y2);
 
@@ -799,7 +786,7 @@ sf::Vector2f Puzabrot::PointTrace (sf::Vector2f point, sf::Vector2f c_point)
         x1 = x2;
         y1 = y2;
 
-        window_->draw(line, 2, sf::Lines);
+        window_.draw(line, 2, sf::Lines);
     }
 
     calc.clear();
@@ -814,15 +801,15 @@ void Puzabrot::savePicture ()
     static int shot_num = 0;
     std::string filename = "screenshot(" + std::to_string(shot_num++) + ")" + ".png";
 
-    window_->draw(sprite_);
+    window_.draw(sprite_);
 
     sf::RectangleShape rectangle;
     rectangle.setPosition(0, 0);
     rectangle.setSize(sf::Vector2f(winsizes_));
     rectangle.setFillColor(sf::Color(10, 10, 10, 150));
 
-    window_->draw(rectangle);
-    window_->display();
+    window_.draw(rectangle);
+    window_.display();
 
     sf::Vector2u screenshot_sizes(SCREENSHOT_WIDTH, (float)SCREENSHOT_WIDTH / winsizes_.x * winsizes_.y);
 
@@ -848,8 +835,8 @@ void Puzabrot::savePicture ()
 
     screen.copyToImage().saveToFile(filename);
 
-    window_->draw(sprite_);
-    window_->display();
+    window_.draw(sprite_);
+    window_.display();
 }
 
 //------------------------------------------------------------------------------
@@ -858,7 +845,7 @@ void Puzabrot::drawHelpMenu ()
 {
     sf::RectangleShape dimRect(sf::Vector2f((float)winsizes_.x, (float)winsizes_.y));
     dimRect.setFillColor(sf::Color(0, 0, 0, 128));
-    window_->draw(dimRect);
+    window_.draw(dimRect);
     
     sf::Font font;
     font.loadFromMemory(consola_ttf, consola_ttf_len);
@@ -893,7 +880,7 @@ void Puzabrot::drawHelpMenu ()
         "        Borders: upper: %.5lf, bottom: %.5lf, left: %.5lf, right: %.5lf\n", itrn_max_, lim_, borders_.Im_up, borders_.Im_down, borders_.Re_left, borders_.Re_right);
 
     helpMenu.setString(str);
-    window_->draw(helpMenu);
+    window_.draw(helpMenu);
 }
 
 //------------------------------------------------------------------------------
@@ -1128,7 +1115,7 @@ char* Puzabrot::writeShader ()
         "{\n"
         "    if (itrn < itrn_max)\n"
         "    {\n"
-        "        itrn = itrn * 4 % 1530;\n"
+        "        itrn = itrn * 4 %% 1530;\n"
         "             if (itrn < 256)  return vec3( 255,         itrn,        0           ) / 255 * (1.0 - float(coloring)*0.85);\n"
         "        else if (itrn < 511)  return vec3( 510 - itrn,  255,         0           ) / 255 * (1.0 - float(coloring)*0.85);\n"
         "        else if (itrn < 766)  return vec3( 0,           255,         itrn - 510  ) / 255 * (1.0 - float(coloring)*0.85);\n"

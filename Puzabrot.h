@@ -37,7 +37,7 @@ constexpr int AUDIO_BUFF_SIZE = 4096;
 constexpr int SAMPLE_RATE     = 48000;
 constexpr int MAX_FREQ        = 4000;
 
-const sf::String title_string = "Puzabrot";
+const sf::String TITLE_STRING = "Puzabrot";
 
 struct Screen
 {
@@ -84,33 +84,9 @@ class Puzabrot
 public:
 
     Puzabrot ();
-   ~Puzabrot ();
-
     void run ();
 
 private:
-
-    sf::RenderWindow* window_ = nullptr;
-    ComplexFrame      borders_;
-    sf::Vector2u      winsizes_;
-
-    size_t itrn_max_   = MAX_ITERATION;
-    float  lim_        = LIMIT;
-    int    input_mode_ = Z_INPUT;
-    int    draw_mode_  = MAIN;
-    bool   coloring_   = false;
-
-    sf::Vector2f julia_point_ = sf::Vector2f(0, 0);
-
-    InputBox input_box_x_;
-    InputBox input_box_y_;
-    InputBox input_box_z_;
-
-    Tree<CalcData> expr_trees_[2];
-
-    sf::Shader         shader_;
-    sf::Sprite         sprite_;
-    sf::RenderTexture  render_texture_;
 
     sf::Vector2f Screen2Plane        (sf::Vector2i point);
     void         updateWinSizes      (size_t new_width, size_t new_height);
@@ -132,6 +108,28 @@ private:
     char*        writeCalculation    ();
     char*        writeChecking       ();
     int          Tree2GLSL           (Tree<CalcData>& node, char* str_cur);
+
+    sf::Vector2u     winsizes_;
+    sf::RenderWindow window_;
+    ComplexFrame     borders_;
+
+    size_t itrn_max_   = MAX_ITERATION;
+    float  lim_        = LIMIT;
+    int    input_mode_ = Z_INPUT;
+    int    draw_mode_  = MAIN;
+    bool   coloring_   = false;
+
+    sf::Vector2f julia_point_;
+
+    InputBox input_box_x_;
+    InputBox input_box_y_;
+    InputBox input_box_z_;
+
+    Tree<CalcData> expr_trees_[2];
+
+    sf::Shader         shader_;
+    sf::Sprite         sprite_;
+    sf::RenderTexture  render_texture_;
 
     friend class Synth;
 };
