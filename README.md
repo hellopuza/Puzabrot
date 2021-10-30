@@ -6,13 +6,6 @@ Escape-time fractals viewer
 A program that allows you view any different escape-time fractals and sets such as mandelbrot and other.
 Inspired by CodeParade (https://github.com/HackerPoet/FractalSoundExplorer)
 
-## Usage
-
-**How to build**
-
-```console
-$ make
-```
 **Requirements:**
 
 - GCC compiler, GNU make,
