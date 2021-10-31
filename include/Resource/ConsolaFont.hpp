@@ -1,6 +1,6 @@
 
-#ifndef CONSOLAFONT_HPP_INCLUDED
-#define CONSOLAFONT_HPP_INCLUDED
+#ifndef CONSOLAFONT_HPP
+#define CONSOLAFONT_HPP
 
 const unsigned char consola_ttf[] = {
     0x00, 0x01, 0x00, 0x00, 0x00, 0x14, 0x01, 0x00, 0x00, 0x04, 0x00, 0x40, 0x44, 0x53, 0x49, 0x47, 0x86, 0x8e, 0x15,
@@ -24174,4 +24174,4 @@ const unsigned char consola_ttf[] = {
 };
 const unsigned int consola_ttf_len = 459180;
 
-#endif // CONSOLAFONT_HPP_INCLUDED
+#endif // CONSOLAFONT_HPP

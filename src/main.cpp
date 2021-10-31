@@ -10,10 +10,10 @@
 
 #include "Puzabrot.h"
 
-int main ()
+int main()
 {
     puza::Puzabrot app;
-    app.run ();
+    app.run();
 
     return 0;
 }

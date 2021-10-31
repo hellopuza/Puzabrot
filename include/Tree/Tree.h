@@ -19,27 +19,27 @@ namespace puza {
 template<typename TYPE>
 struct Tree
 {
-    TYPE data;
+    TYPE                    data;
     std::vector<Tree<TYPE>> branches;
 
-    Tree ();
-    Tree (TYPE value);
-    ~Tree ();
+    Tree();
+    Tree(TYPE value);
+    ~Tree();
 
-    Tree (const Tree& obj);
+    Tree(const Tree& obj);
 
-    Tree& operator= (const Tree& obj);
+    Tree& operator=(const Tree& obj);
 
-    bool operator== (const Tree& obj) const;
-    bool operator!= (const Tree& obj) const;
+    bool operator==(const Tree& obj) const;
+    bool operator!=(const Tree& obj) const;
 
-    void clear ();
-    int dump (const char* dump_name) const;
-    int rdump (const char* dump_name) const;
+    void clear();
+    int  dump(const char* dump_name) const;
+    int  rdump(const char* dump_name) const;
 
 private:
-    void dump (std::ofstream& dump_file) const;
-    void rdump (std::ofstream& dump_file) const;
+    void dump(std::ofstream& dump_file) const;
+    void rdump(std::ofstream& dump_file) const;
 };
 
 } // namespace puza

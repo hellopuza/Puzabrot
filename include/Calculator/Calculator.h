@@ -18,14 +18,14 @@
 
 namespace puza {
 
-const std::complex<double> PI = { atan (1.0) * 4.0, 0.0 };
-const std::complex<double> E = { exp (1.0), 0.0 };
-const std::complex<double> I = { 0.0, 1.0 };
+const std::complex<double> PI = { atan(1.0) * 4.0, 0.0 };
+const std::complex<double> E  = { exp(1.0), 0.0 };
+const std::complex<double> I  = { 0.0, 1.0 };
 
 enum CalculatorErrors
 {
     CALC_NOT_OK = -1,
-    CALC_OK = 0,
+    CALC_OK     = 0,
     CALC_DESTRUCTED,
     CALC_NULL_INPUT_CALCULATOR_PTR,
     CALC_SYNTAX_ERROR,
@@ -60,7 +60,7 @@ enum NODE_TYPE
     NODE_FUNCTION = 1,
     NODE_OPERATOR = 2,
     NODE_VARIABLE = 3,
-    NODE_NUMBER = 4,
+    NODE_NUMBER   = 4,
 };
 
 struct CalcData
@@ -68,54 +68,54 @@ struct CalcData
     std::complex<double> number { 0.0, 0.0 };
 
     std::string word;
-    char op_code = 0;
-    char node_type = 0;
+    char        op_code   = 0;
+    char        node_type = 0;
 
-    CalcData () = default;
-    CalcData (std::complex<double> number_, std::string word_, char op_code_, char node_type_);
+    CalcData() = default;
+    CalcData(std::complex<double> number_, std::string word_, char op_code_, char node_type_);
 
-    friend std::ostream& operator<< (std::ostream& os, const CalcData& data);
+    friend std::ostream& operator<<(std::ostream& os, const CalcData& data);
 };
 
 struct Variable
 {
     std::complex<double> value { 0.0, 0.0 };
-    std::string name;
+    std::string          name;
 
-    Variable () = default;
-    Variable (std::complex<double> value_, std::string name_);
+    Variable() = default;
+    Variable(std::complex<double> value_, std::string name_);
 };
 
 struct Expression
 {
     std::string str;
 
-    Expression () = default;
-    Expression (std::string string);
+    Expression() = default;
+    Expression(std::string string);
 
-    int getTree (Tree<CalcData>& tree);
+    int getTree(Tree<CalcData>& tree);
 
 private:
     size_t pos = 0;
 
-    int pass_Plus_Minus (Tree<CalcData>& node);
-    int pass_Mul_Div (Tree<CalcData>& node);
-    int pass_Power (Tree<CalcData>& node);
-    int pass_Brackets (Tree<CalcData>& node);
-    int pass_Function (Tree<CalcData>& node);
-    int pass_Number (Tree<CalcData>& node);
+    int pass_Plus_Minus(Tree<CalcData>& node);
+    int pass_Mul_Div(Tree<CalcData>& node);
+    int pass_Power(Tree<CalcData>& node);
+    int pass_Brackets(Tree<CalcData>& node);
+    int pass_Function(Tree<CalcData>& node);
+    int pass_Number(Tree<CalcData>& node);
 
-    static char findFunc (std::string word);
+    static char findFunc(std::string word);
 };
 
 struct Calculator
 {
     std::vector<Variable> variables;
 
-    Calculator ();
+    Calculator();
 
-    int Calculate (Tree<CalcData>& node);
-    void clear ();
+    int  Calculate(Tree<CalcData>& node);
+    void clear();
 };
 
 } // namespace puza

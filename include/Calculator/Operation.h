@@ -17,41 +17,41 @@ namespace puza {
 
 enum OperationsCodes
 {
-    OP_ERR = 0x00,
-    OP_ADD = 0x01,
-    OP_SUB = 0x02,
-    OP_MUL = 0x03,
-    OP_DIV = 0x04,
-    OP_POW = 0x05,
-    OP_ABS = 0x06,
-    OP_ARCCOS = 0x07,
+    OP_ERR     = 0x00,
+    OP_ADD     = 0x01,
+    OP_SUB     = 0x02,
+    OP_MUL     = 0x03,
+    OP_DIV     = 0x04,
+    OP_POW     = 0x05,
+    OP_ABS     = 0x06,
+    OP_ARCCOS  = 0x07,
     OP_ARCCOSH = 0x08,
-    OP_ARCCOT = 0x09,
+    OP_ARCCOT  = 0x09,
     OP_ARCCOTH = 0x0A,
-    OP_ARCSIN = 0x0B,
+    OP_ARCSIN  = 0x0B,
     OP_ARCSINH = 0x0C,
-    OP_ARCTAN = 0x0D,
+    OP_ARCTAN  = 0x0D,
     OP_ARCTANH = 0x0E,
-    OP_COS = 0x0F,
-    OP_COSH = 0x10,
-    OP_COT = 0x11,
-    OP_COTH = 0x12,
-    OP_EXP = 0x13,
-    OP_LG = 0x14,
-    OP_LN = 0x15,
-    OP_SIN = 0x16,
-    OP_SINH = 0x17,
-    OP_SQRT = 0x18,
-    OP_TAN = 0x19,
-    OP_TANH = 0x1A,
+    OP_COS     = 0x0F,
+    OP_COSH    = 0x10,
+    OP_COT     = 0x11,
+    OP_COTH    = 0x12,
+    OP_EXP     = 0x13,
+    OP_LG      = 0x14,
+    OP_LN      = 0x15,
+    OP_SIN     = 0x16,
+    OP_SINH    = 0x17,
+    OP_SQRT    = 0x18,
+    OP_TAN     = 0x19,
+    OP_TANH    = 0x1A,
 };
 
 struct Operation
 {
-    char code = 0;
+    char        code = 0;
     std::string word = 0;
 
-    Operation (char code_, std::string word_);
+    Operation(char code_, std::string word_);
 };
 
 static Operation op_names[] = {
@@ -64,9 +64,9 @@ static Operation op_names[] = {
     { OP_SQRT, "sqrt" },       { OP_TAN, "tan" },       { OP_TANH, "tanh" },
 };
 
-const size_t OP_NUM = sizeof (op_names) / sizeof (op_names[0]);
+const size_t OP_NUM = sizeof(op_names) / sizeof(op_names[0]);
 
-int compare_OpNames (const void* p1, const void* p2);
+int compare_OpNames(const void* p1, const void* p2);
 
 } // namespace puza
 
