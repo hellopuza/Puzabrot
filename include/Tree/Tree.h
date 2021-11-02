@@ -17,18 +17,19 @@
 namespace puza {
 
 template<typename TYPE>
-struct Tree
+struct Tree final
 {
     TYPE                    data;
     std::vector<Tree<TYPE>> branches;
 
-    Tree();
+    Tree() = default;
     Tree(TYPE value);
-    ~Tree();
-
     Tree(const Tree& obj);
+    Tree(Tree&& obj) noexcept;
+    ~Tree() = default;
 
     Tree& operator=(const Tree& obj);
+    Tree& operator=(Tree&& obj) noexcept;
 
     bool operator==(const Tree& obj) const;
     bool operator!=(const Tree& obj) const;

@@ -16,15 +16,7 @@
 namespace puza {
 
 template<typename TYPE>
-Tree<TYPE>::Tree()
-{}
-
-template<typename TYPE>
 Tree<TYPE>::Tree(TYPE value) : data(value)
-{}
-
-template<typename TYPE>
-Tree<TYPE>::~Tree()
 {}
 
 template<typename TYPE>
@@ -32,10 +24,22 @@ Tree<TYPE>::Tree(const Tree& obj) : data(obj.data), branches(obj.branches)
 {}
 
 template<typename TYPE>
+Tree<TYPE>::Tree(Tree&& obj) noexcept : data(std::move(obj.data)), branches(std::move(obj.branches))
+{}
+
+template<typename TYPE>
 Tree<TYPE>& Tree<TYPE>::operator=(const Tree& obj)
 {
     data     = obj.data;
     branches = obj.branches;
+    return *this;
+}
+
+template<typename TYPE>
+Tree<TYPE>& Tree<TYPE>::operator=(Tree&& obj) noexcept
+{
+    data     = std::move(obj.data);
+    branches = std::move(obj.branches);
     return *this;
 }
 

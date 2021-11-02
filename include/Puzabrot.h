@@ -35,9 +35,9 @@ constexpr size_t AUDIO_BUFF_SIZE = 4096;
 constexpr size_t SAMPLE_RATE     = 48000;
 constexpr size_t MAX_FREQ        = 4000;
 
-const sf::String TITLE_STRING = "Puzabrot";
+static const sf::String TITLE_STRING = "Puzabrot";
 
-struct Screen
+struct Screen final
 {
     unsigned int x1   = 0;
     unsigned int x2   = 0;
@@ -46,7 +46,7 @@ struct Screen
     double       zoom = 0;
 };
 
-struct ComplexFrame
+struct ComplexFrame final
 {
     double re_left   = 0;
     double re_right  = 0;
@@ -76,35 +76,39 @@ enum InputModes
     XY_INPUT,
 };
 
-class Synth;
+typedef sf::Vector2<double> point_t;
 
-class Puzabrot
+class Puzabrot final
 {
 public:
     Puzabrot();
     void run();
 
+    void    initCalculator(Calculator& calc, point_t z, point_t c) const;
+    void    Mapping(Calculator& calc, double& mapped_x, double& mapped_y);
+    int     getDrawMode() const;
+    double  getLimit() const;
+    point_t getJuliaPoint() const;
+
 private:
-    sf::Vector2<double> Screen2Plane(sf::Vector2i point) const;
-    void                updateWinSizes(size_t new_width, size_t new_height);
-    void                toggleFullScreen();
-    bool                InputBoxesHasFocus();
-    bool                InputBoxesIsVisible();
-    void                DrawSet();
-    void                Zooming(double wheel_delta, sf::Vector2<double> point);
-    int                 GetNewScreen(Screen& newscreen);
-    void                changeBorders(Screen newscreen);
-    void                initCalculator(Calculator& calc, sf::Vector2<double> z, sf::Vector2<double> c) const;
-    void                Mapping(Calculator& calc, double& mapped_x, double& mapped_y);
-    sf::Vector2<double> PointTrace(sf::Vector2<double> point, sf::Vector2<double> c_point);
-    void                savePicture();
-    void                drawHelpMenu();
-    int                 makeShader();
-    char*               writeShader();
-    char*               writeInitialization() const;
-    char*               writeCalculation();
-    char*               writeChecking() const;
-    int                 Tree2GLSL(Tree<CalcData>& node, char* str_cur);
+    point_t Screen2Plane(sf::Vector2i point) const;
+    void    updateWinSizes(size_t new_width, size_t new_height);
+    void    toggleFullScreen();
+    bool    InputBoxesHasFocus();
+    bool    InputBoxesIsVisible();
+    void    DrawSet();
+    void    Zooming(double wheel_delta, point_t point);
+    int     GetNewScreen(Screen& newscreen);
+    void    changeBorders(Screen newscreen);
+    point_t PointTrace(point_t point, point_t c_point);
+    void    savePicture();
+    void    drawHelpMenu();
+    int     makeShader();
+    char*   writeShader();
+    char*   writeInitialization() const;
+    char*   writeCalculation();
+    char*   writeChecking() const;
+    int     Tree2GLSL(Tree<CalcData>& node, char* str_cur);
 
     sf::Vector2u     winsizes_;
     sf::RenderWindow window_;
@@ -116,7 +120,7 @@ private:
     int    draw_mode_  = MAIN;
     bool   coloring_   = false;
 
-    sf::Vector2<double> julia_point_;
+    point_t julia_point_;
 
     InputBox input_box_x_;
     InputBox input_box_y_;
@@ -127,8 +131,6 @@ private:
     sf::Shader        shader_;
     sf::Sprite        sprite_;
     sf::RenderTexture render_texture_;
-
-    friend class Synth;
 };
 
 class Synth : public sf::SoundStream
@@ -140,7 +142,7 @@ public:
     virtual bool onGetData(Chunk& data) override;
 
     void updateCalc();
-    void SetPoint(sf::Vector2<double> point);
+    void SetPoint(point_t point);
 
     bool   audio_reset_;
     bool   audio_pause_;
@@ -151,10 +153,10 @@ private:
     Puzabrot*  puza_;
     Calculator calc_;
 
-    sf::Vector2<double> point_;
-    sf::Vector2<double> c_point_;
-    sf::Vector2<double> new_point_;
-    sf::Vector2<double> prev_point_;
+    point_t point_;
+    point_t c_point_;
+    point_t new_point_;
+    point_t prev_point_;
 
     int16_t m_samples[AUDIO_BUFF_SIZE] = {};
     int32_t m_audio_time               = 0;

@@ -35,10 +35,10 @@ void InputBox::draw(sf::RenderWindow& window)
     if (input_text_.getString().isEmpty())
         input_box.setSize(sf::Vector2f(8.0F * font_size_, 1.3F * font_size_));
     else
-        input_box.setSize(sf::Vector2f(
-            (8.0F * font_size_ > 0.56F * font_size_ * input_text_size ? 8.0F * font_size_ :
-                                                                        0.56F * font_size_ * input_text_size),
-            1.3F * font_size_));
+        input_box.setSize(sf::Vector2f((8.0F * font_size_ > 0.56F * font_size_ * input_text_size ?
+                                            8.0F * font_size_ :
+                                            0.56F * font_size_ * input_text_size),
+                                       1.3F * font_size_));
 
     input_box.setFillColor(sf::Color(40, 40, 40));
     input_box.setOutlineThickness(2.0F);
@@ -70,9 +70,9 @@ void InputBox::draw(sf::RenderWindow& window)
         input_box.setPosition(
             sf::Vector2f(box_pos_.x + 0.5F * input_box.getSize().y, box_pos_.y + 0.25F * input_box.getSize().y));
     else
-        input_box.setPosition(sf::Vector2f(
-            box_pos_.x + 0.5F * input_box.getSize().y + 0.56F * font_size_ * label_size + 0.25F * font_size_,
-            box_pos_.y + 0.25F * input_box.getSize().y));
+        input_box.setPosition(sf::Vector2f(box_pos_.x + 0.5F * input_box.getSize().y + 0.56F * font_size_ * label_size +
+                                               0.25F * font_size_,
+                                           box_pos_.y + 0.25F * input_box.getSize().y));
 
     window.draw(box);
     window.draw(input_box);

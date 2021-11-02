@@ -65,8 +65,8 @@ void Puzabrot::run()
     bool change_iter    = false;
     bool change_limit   = false;
 
-    sf::Vector2<double> orbit(0.0, 0.0);
-    sf::Vector2<double> c_point(0.0, 0.0);
+    point_t orbit(0.0, 0.0);
+    point_t c_point(0.0, 0.0);
 
     Synth synth(this);
 
@@ -496,10 +496,10 @@ void Puzabrot::run()
     synth.stop();
 }
 
-sf::Vector2<double> Puzabrot::Screen2Plane(sf::Vector2i point) const
+point_t Puzabrot::Screen2Plane(sf::Vector2i point) const
 {
-    return sf::Vector2<double>(borders_.re_left + (borders_.re_right - borders_.re_left) * point.x / winsizes_.x,
-                               borders_.im_top - (borders_.im_top - borders_.im_bottom) * point.y / winsizes_.y);
+    return point_t(borders_.re_left + (borders_.re_right - borders_.re_left) * point.x / winsizes_.x,
+                   borders_.im_top - (borders_.im_top - borders_.im_bottom) * point.y / winsizes_.y);
 }
 
 void Puzabrot::updateWinSizes(size_t new_width, size_t new_height)
@@ -559,7 +559,7 @@ void Puzabrot::DrawSet()
     render_texture_.draw(sprite_, &shader_);
 }
 
-void Puzabrot::Zooming(double wheel_delta, sf::Vector2<double> point)
+void Puzabrot::Zooming(double wheel_delta, point_t point)
 {
     double width  = borders_.re_right - borders_.re_left;
     double height = borders_.im_top - borders_.im_bottom;
@@ -697,7 +697,7 @@ void Puzabrot::changeBorders(Screen newscreen)
     }
 }
 
-void Puzabrot::initCalculator(Calculator& calc, sf::Vector2<double> z, sf::Vector2<double> c) const
+void Puzabrot::initCalculator(Calculator& calc, point_t z, point_t c) const
 {
     switch (input_mode_)
     {
@@ -747,7 +747,7 @@ void Puzabrot::Mapping(Calculator& calc, double& mapped_x, double& mapped_y)
     }
 }
 
-sf::Vector2<double> Puzabrot::PointTrace(sf::Vector2<double> point, sf::Vector2<double> c_point)
+point_t Puzabrot::PointTrace(point_t point, point_t c_point)
 {
     static Calculator calc;
     switch (draw_mode_)
@@ -788,7 +788,22 @@ sf::Vector2<double> Puzabrot::PointTrace(sf::Vector2<double> point, sf::Vector2<
 
     calc.clear();
 
-    return sf::Vector2<double>(x1, y1);
+    return point_t(x1, y1);
+}
+
+int Puzabrot::getDrawMode() const
+{
+    return draw_mode_;
+}
+
+double Puzabrot::getLimit() const
+{
+    return lim_;
+}
+
+point_t Puzabrot::getJuliaPoint() const
+{
+    return julia_point_;
 }
 
 void Puzabrot::savePicture()
@@ -806,9 +821,9 @@ void Puzabrot::savePicture()
     window_.draw(rectangle);
     window_.display();
 
-    sf::Vector2u screenshot_sizes(
-        SCREENSHOT_WIDTH, static_cast<unsigned int>(static_cast<float>(SCREENSHOT_WIDTH) /
-                                                    static_cast<float>(winsizes_.x) * static_cast<float>(winsizes_.y)));
+    sf::Vector2u screenshot_sizes(SCREENSHOT_WIDTH, static_cast<unsigned int>(static_cast<float>(SCREENSHOT_WIDTH) /
+                                                                              static_cast<float>(winsizes_.x) *
+                                                                              static_cast<float>(winsizes_.y)));
 
     shader_.setUniform("borders",
                        sf::Glsl::Vec4(static_cast<float>(borders_.re_left), static_cast<float>(borders_.re_right),
@@ -1117,18 +1132,12 @@ char* Puzabrot::writeShader()
             "    if (itrn < itrn_max)\n"
             "    {\n"
             "        itrn = itrn * 4 %% 1530;\n"
-            "             if (itrn < 256)  return vec3( 255,         itrn,        0           ) / 255 * (1.0 - "
-            "float(coloring)*0.85);\n"
-            "        else if (itrn < 511)  return vec3( 510 - itrn,  255,         0           ) / 255 * (1.0 - "
-            "float(coloring)*0.85);\n"
-            "        else if (itrn < 766)  return vec3( 0,           255,         itrn - 510  ) / 255 * (1.0 - "
-            "float(coloring)*0.85);\n"
-            "        else if (itrn < 1021) return vec3( 0,           1020 - itrn, 255         ) / 255 * (1.0 - "
-            "float(coloring)*0.85);\n"
-            "        else if (itrn < 1276) return vec3( itrn - 1020, 0,           255         ) / 255 * (1.0 - "
-            "float(coloring)*0.85);\n"
-            "        else if (itrn < 1530) return vec3( 255,         0,           1529 - itrn ) / 255 * (1.0 - "
-            "float(coloring)*0.85);\n"
+            "             if (itrn < 256)  return vec3(255, itrn, 0)        / 255 * (1.0 - float(coloring)*0.85);\n"
+            "        else if (itrn < 511)  return vec3(510 - itrn, 255, 0)  / 255 * (1.0 - float(coloring)*0.85);\n"
+            "        else if (itrn < 766)  return vec3(0, 255, itrn - 510)  / 255 * (1.0 - float(coloring)*0.85);\n"
+            "        else if (itrn < 1021) return vec3(0, 1020 - itrn, 255) / 255 * (1.0 - float(coloring)*0.85);\n"
+            "        else if (itrn < 1276) return vec3(itrn - 1020, 0, 255) / 255 * (1.0 - float(coloring)*0.85);\n"
+            "        else if (itrn < 1530) return vec3(255, 0, 1529 - itrn) / 255 * (1.0 - float(coloring)*0.85);\n"
             "    }\n"
             "    else if (coloring) return sin(abs(abs(sumz) / itrn_max * 5.0)) * 0.45 + 0.5;\n"
             "    else return vec3( 0, 0, 0 );\n"
@@ -1381,9 +1390,8 @@ int Puzabrot::Tree2GLSL(Tree<CalcData>& node, char* str_cur)
 }
 
 Synth::Synth(Puzabrot* puza) :
-    audio_reset_(true), audio_pause_(false), sustain_(true), volume_(8000.0), puza_(puza),
-    point_(sf::Vector2<double>(0.0, 0.0)), c_point_(sf::Vector2<double>(0.0, 0.0)),
-    new_point_(sf::Vector2<double>(0.0, 0.0)), prev_point_(sf::Vector2<double>(0.0, 0.0))
+    audio_reset_(true), audio_pause_(false), sustain_(true), volume_(8000.0), puza_(puza), point_(point_t(0.0, 0.0)),
+    c_point_(point_t(0.0, 0.0)), new_point_(point_t(0.0, 0.0)), prev_point_(point_t(0.0, 0.0))
 {
     initialize(2, SAMPLE_RATE);
     setLoop(true);
@@ -1397,7 +1405,7 @@ void Synth::updateCalc()
     puza_->initCalculator(calc_, point_, c_point_);
 }
 
-void Synth::SetPoint(sf::Vector2<double> point)
+void Synth::SetPoint(point_t point)
 {
     new_point_ = point;
 
@@ -1415,10 +1423,10 @@ bool Synth::onGetData(Chunk& data)
     {
         m_audio_time = 0;
 
-        switch (puza_->draw_mode_)
+        switch (puza_->getDrawMode())
         {
         case MAIN: c_point_ = new_point_; break;
-        case JULIA: c_point_ = puza_->julia_point_; break;
+        case JULIA: c_point_ = puza_->getJuliaPoint(); break;
         }
 
         point_      = new_point_;
@@ -1445,7 +1453,7 @@ bool Synth::onGetData(Chunk& data)
             updateCalc();
             puza_->Mapping(calc_, point_.x, point_.y);
 
-            if (sqrt(point_.x * point_.x + point_.y * point_.y) > puza_->lim_)
+            if (sqrt(point_.x * point_.x + point_.y * point_.y) > puza_->getLimit())
             {
                 audio_pause_ = true;
                 return true;

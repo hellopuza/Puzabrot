@@ -28,7 +28,6 @@ target_include_directories(${EXEC_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inclu
 set_target_properties(${EXEC_NAME} PROPERTIES
     CXX_STANDARD          11
     CXX_STANDARD_REQUIRED ON
-    CXX_CLANG_TIDY        "${CMAKE_CXX_CLANG_TIDY}"
 )
 
 if(ADD_SANITIZERS)

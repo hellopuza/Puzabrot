@@ -20,7 +20,6 @@ class InputBox
 public:
     InputBox();
     InputBox(sf::Vector2f box_pos, sf::Color box_color, sf::Color text_color, float font_size);
-    ~InputBox() = default;
 
     void draw(sf::RenderWindow& window);
 

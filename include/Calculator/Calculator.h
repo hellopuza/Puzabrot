@@ -63,7 +63,7 @@ enum NODE_TYPE
     NODE_NUMBER   = 4,
 };
 
-struct CalcData
+struct CalcData final
 {
     std::complex<double> number { 0.0, 0.0 };
 
@@ -77,7 +77,7 @@ struct CalcData
     friend std::ostream& operator<<(std::ostream& os, const CalcData& data);
 };
 
-struct Variable
+struct Variable final
 {
     std::complex<double> value { 0.0, 0.0 };
     std::string          name;
@@ -86,7 +86,7 @@ struct Variable
     Variable(std::complex<double> value_, std::string name_);
 };
 
-struct Expression
+struct Expression final
 {
     std::string str;
 
@@ -108,7 +108,7 @@ private:
     static char findFunc(std::string word);
 };
 
-struct Calculator
+struct Calculator final
 {
     std::vector<Variable> variables;
 
