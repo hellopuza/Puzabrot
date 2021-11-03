@@ -1,17 +1,17 @@
 /*------------------------------------------------------------------------------
- * File:        Puzabrot.h                                                  *
- * Description: Declaration of functions and data types for application     *
- * Created:     30 jun 2021                                                 *
- * Author:      Artem Puzankov                                              *
- * Email:       puzankov.ao@phystech.edu                                    *
- * GitHub:      https://github.com/hellopuza                                *
- * Copyright © 2021 Artem Puzankov. All rights reserved.                    *
- *///------------------------------------------------------------------------
+ * File:        Puzabrot.h                                                     *
+ * Description: Declaration of functions and data types for application        *
+ * Created:     30 jun 2021                                                    *
+ * Author:      Artem Puzankov                                                 *
+ * Email:       puzankov.ao@phystech.edu                                       *
+ * GitHub:      https://github.com/hellopuza                                   *
+ * Copyright © 2021 Artem Puzankov. All rights reserved.                       *
+ *///---------------------------------------------------------------------------
 
 #ifndef PUZABROT_H
 #define PUZABROT_H
 
-#include "Calculator/Calculator.h"
+#include "ComplexShader.h"
 #include "InputBox.h"
 
 #include <SFML/Audio.hpp>
@@ -24,59 +24,11 @@ constexpr size_t DEFAULT_HEIGHT = 480;
 
 constexpr size_t SCREENSHOT_WIDTH = 7680;
 
-constexpr double LIMIT         = 100.0f;
-constexpr size_t MAX_ITERATION = 500;
-
-constexpr double UPPER_BORDER = 1.3f;
-
-constexpr double ZOOMING_RATIO = 0.33f;
-
 constexpr size_t AUDIO_BUFF_SIZE = 4096;
 constexpr size_t SAMPLE_RATE     = 48000;
 constexpr size_t MAX_FREQ        = 4000;
 
 static const sf::String TITLE_STRING = "Puzabrot";
-
-struct Screen final
-{
-    unsigned int x1   = 0;
-    unsigned int x2   = 0;
-    unsigned int y1   = 0;
-    unsigned int y2   = 0;
-    double       zoom = 0;
-};
-
-struct ComplexFrame final
-{
-    double re_left   = 0;
-    double re_right  = 0;
-    double im_bottom = 0;
-    double im_top    = 0;
-
-    ComplexFrame() = default;
-    ComplexFrame(double re_left_, double re_right_, double im_bottom_, double im_top_);
-};
-
-enum ActionModes
-{
-    ZOOMING,
-    POINT_TRACING,
-    SOUNDING,
-};
-
-enum DrawingModes
-{
-    MAIN,
-    JULIA,
-};
-
-enum InputModes
-{
-    Z_INPUT,
-    XY_INPUT,
-};
-
-typedef sf::Vector2<double> point_t;
 
 class Puzabrot final
 {
@@ -84,90 +36,89 @@ public:
     Puzabrot();
     void run();
 
-    void    initCalculator(Calculator& calc, point_t z, point_t c) const;
-    void    Mapping(Calculator& calc, double& mapped_x, double& mapped_y);
-    int     getDrawMode() const;
-    double  getLimit() const;
-    point_t getJuliaPoint() const;
+    enum ActionModes
+    {
+        ZOOMING,
+        POINT_TRACING,
+        SOUNDING,
+    };
+
+    enum DrawingModes
+    {
+        MAIN,
+        JULIA,
+    };
 
 private:
-    point_t Screen2Plane(sf::Vector2i point) const;
+    void    initCalculator(Calculator& calc, point_t z, point_t c) const;
+    void    Mapping(Calculator& calc, point_t& mapped_point);
     void    updateWinSizes(size_t new_width, size_t new_height);
     void    toggleFullScreen();
     bool    InputBoxesHasFocus();
     bool    InputBoxesIsVisible();
     void    DrawSet();
-    void    Zooming(double wheel_delta, point_t point);
-    int     GetNewScreen(Screen& newscreen);
-    void    changeBorders(Screen newscreen);
+    int     GetZoomingFrame(Frame& frame);
     point_t PointTrace(point_t point, point_t c_point);
     void    savePicture();
     void    drawHelpMenu();
     int     makeShader();
-    char*   writeShader();
-    char*   writeInitialization() const;
-    char*   writeCalculation();
-    char*   writeChecking() const;
-    int     Tree2GLSL(Tree<CalcData>& node, char* str_cur);
 
-    sf::Vector2u     winsizes_;
+    ComplexSolver    solver_;
+    ComplexShader    shader_;
     sf::RenderWindow window_;
-    ComplexFrame     borders_;
 
-    size_t itrn_max_   = MAX_ITERATION;
-    double lim_        = LIMIT;
-    int    input_mode_ = Z_INPUT;
-    int    draw_mode_  = MAIN;
-    bool   coloring_   = false;
+    struct Options final
+    {
+        int  input_mode = ComplexShader::Z_INPUT;
+        int  draw_mode  = MAIN;
+        bool coloring   = false;
+    } options_;
 
-    point_t julia_point_;
+    struct InputBoxes
+    {
+        InputBox x;
+        InputBox y;
+        InputBox z;
+    } input_boxes_;
 
-    InputBox input_box_x_;
-    InputBox input_box_y_;
-    InputBox input_box_z_;
+    ComplexShader::ExprTrees expr_trees_;
 
-    Tree<CalcData> expr_trees_[2];
+    class Synth final : public sf::SoundStream
+    {
+    public:
+        Synth(Puzabrot* app);
 
-    sf::Shader        shader_;
-    sf::Sprite        sprite_;
-    sf::RenderTexture render_texture_;
-};
+        virtual void onSeek(sf::Time) override {}
+        virtual bool onGetData(Chunk& data) override;
 
-class Synth : public sf::SoundStream
-{
-public:
-    Synth(Puzabrot* puza);
+        void updateCalc();
+        void SetPoint(point_t point);
 
-    virtual void onSeek(sf::Time) override {}
-    virtual bool onGetData(Chunk& data) override;
+        bool   audio_reset_;
+        bool   audio_pause_;
+        bool   sustain_;
+        double volume_;
 
-    void updateCalc();
-    void SetPoint(point_t point);
+    private:
+        Puzabrot*  app_;
+        Calculator calc_;
 
-    bool   audio_reset_;
-    bool   audio_pause_;
-    bool   sustain_;
-    double volume_;
+        point_t point_;
+        point_t c_point_;
+        point_t new_point_;
+        point_t prev_point_;
 
-private:
-    Puzabrot*  puza_;
-    Calculator calc_;
+        int16_t m_samples[AUDIO_BUFF_SIZE] = {};
+        int32_t m_audio_time               = 0;
 
-    point_t point_;
-    point_t c_point_;
-    point_t new_point_;
-    point_t prev_point_;
+        double mean_x = 0;
+        double mean_y = 0;
 
-    int16_t m_samples[AUDIO_BUFF_SIZE] = {};
-    int32_t m_audio_time               = 0;
-
-    double mean_x = 0;
-    double mean_y = 0;
-
-    double dx  = 0;
-    double dy  = 0;
-    double dpx = 0;
-    double dpy = 0;
+        double dx  = 0;
+        double dy  = 0;
+        double dpx = 0;
+        double dpy = 0;
+    } synth_;
 };
 
 } // namespace puza

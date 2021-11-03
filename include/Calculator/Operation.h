@@ -15,53 +15,55 @@
 
 namespace puza {
 
-enum OperationsCodes
-{
-    OP_ERR     = 0x00,
-    OP_ADD     = 0x01,
-    OP_SUB     = 0x02,
-    OP_MUL     = 0x03,
-    OP_DIV     = 0x04,
-    OP_POW     = 0x05,
-    OP_ABS     = 0x06,
-    OP_ARCCOS  = 0x07,
-    OP_ARCCOSH = 0x08,
-    OP_ARCCOT  = 0x09,
-    OP_ARCCOTH = 0x0A,
-    OP_ARCSIN  = 0x0B,
-    OP_ARCSINH = 0x0C,
-    OP_ARCTAN  = 0x0D,
-    OP_ARCTANH = 0x0E,
-    OP_COS     = 0x0F,
-    OP_COSH    = 0x10,
-    OP_COT     = 0x11,
-    OP_COTH    = 0x12,
-    OP_EXP     = 0x13,
-    OP_LG      = 0x14,
-    OP_LN      = 0x15,
-    OP_SIN     = 0x16,
-    OP_SINH    = 0x17,
-    OP_SQRT    = 0x18,
-    OP_TAN     = 0x19,
-    OP_TANH    = 0x1A,
-};
-
 struct Operation
 {
     char        code = 0;
     std::string word = 0;
 
+    enum OperationsCodes
+    {
+        ERR     = 0x00,
+        ADD     = 0x01,
+        SUB     = 0x02,
+        MUL     = 0x03,
+        DIV     = 0x04,
+        POW     = 0x05,
+        ABS     = 0x06,
+        ARCCOS  = 0x07,
+        ARCCOSH = 0x08,
+        ARCCOT  = 0x09,
+        ARCCOTH = 0x0A,
+        ARCSIN  = 0x0B,
+        ARCSINH = 0x0C,
+        ARCTAN  = 0x0D,
+        ARCTANH = 0x0E,
+        COS     = 0x0F,
+        COSH    = 0x10,
+        COT     = 0x11,
+        COTH    = 0x12,
+        EXP     = 0x13,
+        LG      = 0x14,
+        LN      = 0x15,
+        SIN     = 0x16,
+        SINH    = 0x17,
+        SQRT    = 0x18,
+        TAN     = 0x19,
+        TANH    = 0x1A,
+    };
+
     Operation(char code_, std::string word_);
 };
 
 static Operation op_names[] = {
-    { OP_ERR, "#ERR#" },       { OP_ADD, "+" },         { OP_SUB, "-" },           { OP_MUL, "*" },
-    { OP_DIV, "/" },           { OP_POW, "^" },         { OP_ABS, "abs" },         { OP_ARCCOS, "arccos" },
-    { OP_ARCCOSH, "arccosh" }, { OP_ARCCOT, "arccot" }, { OP_ARCCOTH, "arccoth" }, { OP_ARCSIN, "arcsin" },
-    { OP_ARCSINH, "arcsinh" }, { OP_ARCTAN, "arctan" }, { OP_ARCTANH, "arctanh" }, { OP_COS, "cos" },
-    { OP_COSH, "cosh" },       { OP_COT, "cot" },       { OP_COTH, "coth" },       { OP_EXP, "exp" },
-    { OP_LG, "lg" },           { OP_LN, "ln" },         { OP_SIN, "sin" },         { OP_SINH, "sinh" },
-    { OP_SQRT, "sqrt" },       { OP_TAN, "tan" },       { OP_TANH, "tanh" },
+    { Operation::ERR, "#ERR#" },       { Operation::ADD, "+" },           { Operation::SUB, "-" },
+    { Operation::MUL, "*" },           { Operation::DIV, "/" },           { Operation::POW, "^" },
+    { Operation::ABS, "abs" },         { Operation::ARCCOS, "arccos" },   { Operation::ARCCOSH, "arccosh" },
+    { Operation::ARCCOT, "arccot" },   { Operation::ARCCOTH, "arccoth" }, { Operation::ARCSIN, "arcsin" },
+    { Operation::ARCSINH, "arcsinh" }, { Operation::ARCTAN, "arctan" },   { Operation::ARCTANH, "arctanh" },
+    { Operation::COS, "cos" },         { Operation::COSH, "cosh" },       { Operation::COT, "cot" },
+    { Operation::COTH, "coth" },       { Operation::EXP, "exp" },         { Operation::LG, "lg" },
+    { Operation::LN, "ln" },           { Operation::SIN, "sin" },         { Operation::SINH, "sinh" },
+    { Operation::SQRT, "sqrt" },       { Operation::TAN, "tan" },         { Operation::TANH, "tanh" },
 };
 
 const size_t OP_NUM = sizeof(op_names) / sizeof(op_names[0]);

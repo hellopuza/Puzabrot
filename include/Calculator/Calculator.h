@@ -55,14 +55,6 @@ char const* const calc_errstr[] = {
     "Wrong variable detected",
 };
 
-enum NODE_TYPE
-{
-    NODE_FUNCTION = 1,
-    NODE_OPERATOR = 2,
-    NODE_VARIABLE = 3,
-    NODE_NUMBER   = 4,
-};
-
 struct CalcData final
 {
     std::complex<double> number { 0.0, 0.0 };
@@ -70,6 +62,14 @@ struct CalcData final
     std::string word;
     char        op_code   = 0;
     char        node_type = 0;
+
+    enum NodeType
+    {
+        FUNCTION = 1,
+        OPERATOR = 2,
+        VARIABLE = 3,
+        NUMBER   = 4,
+    };
 
     CalcData() = default;
     CalcData(std::complex<double> number_, std::string word_, char op_code_, char node_type_);
