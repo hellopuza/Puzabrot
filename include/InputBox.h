@@ -24,19 +24,14 @@ public:
     void draw(sf::RenderWindow& window);
 
     void setInput(const sf::String& text);
-
     void setLabel(const sf::String& text);
-
     void setOutput(const sf::String& text);
 
     const sf::String& getInput() const;
-
     const sf::Vector2f& getPosition() const;
-
     const sf::Vector2f& getSize() const;
 
     void setPosition(const sf::Vector2f& pos);
-
     void setSize(const sf::Vector2f& size);
 
 private:

@@ -35,13 +35,7 @@ if(ADD_SANITIZERS)
     set_target_properties(${EXEC_NAME} PROPERTIES LINK_FLAGS "-fsanitize=address")
 endif()
 
-find_package(SFML 2.5.1 REQUIRED
-    COMPONENTS
-        graphics
-        window
-        system
-        audio
-)
+find_package(SFML 2.5.1 REQUIRED COMPONENTS graphics window system audio)
 
 include_directories(${SFML_INCLUDE_DIR})
 target_link_libraries(${EXEC_NAME} PRIVATE sfml-graphics sfml-window sfml-system sfml-audio)

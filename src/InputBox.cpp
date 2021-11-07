@@ -31,7 +31,9 @@ InputBox::InputBox(sf::Vector2f box_pos, sf::Color box_color, sf::Color text_col
 void InputBox::draw(sf::RenderWindow& window)
 {
     sf::RectangleShape input_box;
-    auto               input_text_size = static_cast<float>(input_text_.getString().getSize());
+    sf::RectangleShape box;
+
+    auto input_text_size = static_cast<float>(input_text_.getString().getSize());
     if (input_text_.getString().isEmpty())
         input_box.setSize(sf::Vector2f(8.0F * font_size_, 1.3F * font_size_));
     else
@@ -47,9 +49,8 @@ void InputBox::draw(sf::RenderWindow& window)
     else
         input_box.setOutlineColor(sf::Color(200, 200, 200));
 
-    sf::RectangleShape box;
-    auto               label_size       = static_cast<float>(label_.getString().getSize());
-    auto               output_text_size = static_cast<float>(output_text_.getString().getSize());
+    auto label_size       = static_cast<float>(label_.getString().getSize());
+    auto output_text_size = static_cast<float>(output_text_.getString().getSize());
     if (output_text_.getString().isEmpty())
         box_size_ = sf::Vector2f(input_box.getSize().x + input_box.getSize().y, 1.5F * input_box.getSize().y);
     else
