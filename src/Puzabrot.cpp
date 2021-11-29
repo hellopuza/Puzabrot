@@ -10,8 +10,6 @@
 
 #include "Puzabrot.h"
 
-#include "Resource/ConsolaFont.hpp"
-
 #include <cstring>
 
 namespace puza {
@@ -31,6 +29,8 @@ Puzabrot::Puzabrot() :
     input_boxes_.x.setInput(sf::String("x*x-y*y+cx"));
     input_boxes_.y.setInput(sf::String("2*x*y+cy"));
     input_boxes_.z.setInput(sf::String("z^2+c"));
+
+    font_.loadFromFile("assets/consola.ttf");
 }
 
 void Puzabrot::run()
@@ -711,11 +711,8 @@ void Puzabrot::drawHelpMenu()
     dim_rect.setFillColor(sf::Color(0, 0, 0, 128));
     window_.draw(dim_rect);
 
-    sf::Font font;
-    font.loadFromMemory(consola_ttf, consola_ttf_len);
-
     sf::Text help_menu;
-    help_menu.setFont(font);
+    help_menu.setFont(font_);
     help_menu.setCharacterSize(22);
     help_menu.setPosition(10.0F, 10.0F);
     help_menu.setFillColor(sf::Color::White);

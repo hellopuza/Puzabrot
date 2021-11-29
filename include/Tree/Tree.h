@@ -23,7 +23,7 @@ struct Tree final
     std::vector<Tree<TYPE>> branches;
 
     Tree() = default;
-    Tree(TYPE value);
+    explicit Tree(TYPE value);
     Tree(const Tree& obj);
     Tree(Tree&& obj) noexcept;
     ~Tree() = default;

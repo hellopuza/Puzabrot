@@ -66,6 +66,7 @@ private:
     ComplexSolver    solver_;
     ComplexShader    shader_;
     sf::RenderWindow window_;
+    sf::Font font_;
 
     struct Options final
     {

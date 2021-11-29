@@ -49,7 +49,7 @@ struct ComplexSolver final
     point_t      julia_point;
     sf::Vector2u winsizes;
 
-    ComplexSolver(sf::Vector2u winsizes_);
+    explicit ComplexSolver(sf::Vector2u winsizes_);
 
     void    updateWinSizes(size_t new_width, size_t new_height);
     void    zoom(double wheel_delta, point_t point);

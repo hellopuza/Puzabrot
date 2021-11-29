@@ -91,7 +91,7 @@ struct Expression final
     std::string str;
 
     Expression() = default;
-    Expression(std::string string);
+    explicit Expression(std::string string);
 
     int getTree(Tree<CalcData>& tree);
 

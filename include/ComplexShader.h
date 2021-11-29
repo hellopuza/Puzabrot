@@ -37,7 +37,7 @@ struct ComplexShader final
         XY_INPUT,
     };
 
-    ComplexShader(sf::Vector2u winsizes);
+    explicit ComplexShader(sf::Vector2u winsizes);
 
     void         draw(const ComplexSolver& solver, int draw_mode, bool coloring);
     int          make(const ExprTrees& expr_trees, int input_mode);
