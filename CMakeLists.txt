@@ -3,16 +3,6 @@ cmake_minimum_required(VERSION 3.9)
 set(EXEC_NAME Puzabrot)
 project(${EXEC_NAME} VERSION 1.2 DESCRIPTION "Escape-time fractals viewer")
 
-file(GLOB_RECURSE ALL_CXX_SOURCE_FILES *.cpp *.h*)
-find_program(CLANG_FORMAT "clang-format")
-add_custom_target(
-    format
-    COMMAND clang-format-12
-    -i
-    -style=file
-    ${ALL_CXX_SOURCE_FILES}
-)
-
 set(CMAKE_CXX_CLANG_TIDY
     clang-tidy;
     --format-style=file;
@@ -24,6 +14,9 @@ file(GLOB_RECURSE HEADERS *.h*)
 
 add_executable(${EXEC_NAME} ${SOURCES})
 target_include_directories(${EXEC_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+file(COPY ${RESOURCE_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 set_target_properties(${EXEC_NAME} PROPERTIES
     CXX_STANDARD          11
