@@ -15,8 +15,8 @@
 namespace puza {
 
 Puzabrot::Puzabrot() :
-    solver_(sf::Vector2u(DEFAULT_WIDTH, DEFAULT_HEIGHT)), shader_(sf::Vector2u(DEFAULT_WIDTH, DEFAULT_HEIGHT)),
-    window_(sf::VideoMode(solver_.winsizes.x, solver_.winsizes.y), TITLE_STRING),
+    holder_(sf::Vector2u(DEFAULT_WIDTH, DEFAULT_HEIGHT)), shader_(sf::Vector2u(DEFAULT_WIDTH, DEFAULT_HEIGHT)),
+    window_(sf::VideoMode(holder_.winsizes.x, holder_.winsizes.y), TITLE_STRING),
     input_boxes_ { InputBox(sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20.0F),
                    InputBox(sf::Vector2f(10, 50), sf::Color(128, 128, 128, 128), sf::Color::White, 20.0F),
                    InputBox(sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20.0F) },
@@ -88,7 +88,7 @@ void Puzabrot::run()
             else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) &&
                      (!InputBoxesHasFocus()))
             {
-                solver_.reset();
+                holder_.reset();
 
                 options_.draw_mode = MAIN;
                 DrawSet();
@@ -305,7 +305,7 @@ void Puzabrot::run()
                 {
                     while (sf::Keyboard::isKeyPressed(sf::Keyboard::J))
                     {
-                        solver_.julia_point = solver_.Screen2Plane(sf::Mouse::getPosition(window_));
+                        holder_.julia_point = holder_.Screen2Plane(sf::Mouse::getPosition(window_));
 
                         options_.draw_mode = JULIA;
                         DrawSet();
@@ -347,7 +347,7 @@ void Puzabrot::run()
             }
             else if ((event.type == sf::Event::MouseWheelMoved) && change_iter)
             {
-                solver_.itrn_max += static_cast<size_t>(event.mouseWheel.delta * 50);
+                holder_.itrn_max += static_cast<size_t>(event.mouseWheel.delta * 50);
                 DrawSet();
             }
 
@@ -364,7 +364,7 @@ void Puzabrot::run()
             }
             else if ((event.type == sf::Event::MouseWheelMoved) && change_limit)
             {
-                solver_.limit *= pow(2.0, static_cast<float>(event.mouseWheel.delta));
+                holder_.limit *= pow(2.0, static_cast<float>(event.mouseWheel.delta));
                 DrawSet();
             }
 
@@ -383,8 +383,7 @@ void Puzabrot::run()
             // Zooming
             else if (event.type == sf::Event::MouseWheelMoved)
             {
-                solver_.zoom(static_cast<float>(event.mouseWheel.delta),
-                             solver_.Screen2Plane(sf::Mouse::getPosition(window_)));
+                holder_.zoom(static_cast<float>(event.mouseWheel.delta), holder_.Screen2Plane(sf::Mouse::getPosition(window_)));
                 DrawSet();
             }
             else if ((action_mode == ZOOMING) &&
@@ -392,7 +391,7 @@ void Puzabrot::run()
             {
                 if (GetZoomingFrame(zooming_frame))
                 {
-                    solver_.changeBorders(zooming_frame);
+                    holder_.changeBorders(zooming_frame);
                     DrawSet();
                 }
             }
@@ -415,10 +414,11 @@ void Puzabrot::run()
 
                 if (action_mode == SOUNDING)
                 {
-                    synth_.SetPoint(solver_.Screen2Plane(sf::Mouse::getPosition(window_)));
+                    synth_.SetPoint(holder_.Screen2Plane(sf::Mouse::getPosition(window_)));
                     synth_.audio_pause_ = false;
                     synth_.play();
                 }
+                else synth_.pause();
             }
             else if ((event.type == sf::Event::MouseButtonReleased) && (event.mouseButton.button == sf::Mouse::Left))
             {
@@ -448,10 +448,10 @@ void Puzabrot::run()
 
         if (left_pressed)
         {
-            c_point = solver_.Screen2Plane(sf::Mouse::getPosition(window_));
+            c_point = holder_.Screen2Plane(sf::Mouse::getPosition(window_));
             orbit   = c_point;
 
-            synth_.SetPoint(solver_.Screen2Plane(sf::Mouse::getPosition(window_)));
+            synth_.SetPoint(c_point);
         }
 
         if (showing_trace)
@@ -468,14 +468,14 @@ void Puzabrot::run()
 
 void Puzabrot::updateWinSizes(size_t new_width, size_t new_height)
 {
-    solver_.updateWinSizes(new_width, new_height);
+    holder_.updateWinSizes(new_width, new_height);
     shader_.updateWinSizes(new_width, new_height);
 }
 
 void Puzabrot::toggleFullScreen()
 {
-    if ((solver_.winsizes.x == sf::VideoMode::getDesktopMode().width) &&
-        (solver_.winsizes.y == sf::VideoMode::getDesktopMode().height))
+    if ((holder_.winsizes.x == sf::VideoMode::getDesktopMode().width) &&
+        (holder_.winsizes.y == sf::VideoMode::getDesktopMode().height))
     {
         window_.create(sf::VideoMode(DEFAULT_WIDTH, DEFAULT_HEIGHT), TITLE_STRING);
         updateWinSizes(DEFAULT_WIDTH, DEFAULT_HEIGHT);
@@ -499,13 +499,13 @@ bool Puzabrot::InputBoxesIsVisible()
 
 void Puzabrot::DrawSet()
 {
-    shader_.draw(solver_, options_.draw_mode, options_.coloring);
+    shader_.draw(holder_, options_.draw_mode, options_.coloring);
 }
 
 int Puzabrot::GetZoomingFrame(Frame& frame)
 {
-    unsigned int w = solver_.winsizes.x;
-    unsigned int h = solver_.winsizes.y;
+    unsigned int w = holder_.winsizes.x;
+    unsigned int h = holder_.winsizes.y;
 
     sf::Vector2i start(-1, -1);
     sf::Vector2i end(-1, -1);
@@ -619,27 +619,27 @@ void Puzabrot::initCalculator(Calculator& calc, point_t z, point_t c) const
     }
 }
 
-void Puzabrot::Mapping(Calculator& calc, point_t& mapped_point)
+void Puzabrot::Mapping(Calculator& calc, ComplexShader::ExprTrees& expr_trees, point_t& mapped_point) const
 {
     switch (options_.input_mode)
     {
     case ComplexShader::Z_INPUT:
     {
-        calc.Calculate(expr_trees_.z);
-        calc.variables[calc.variables.size() - 1] = { expr_trees_.z.data.number, "z" };
+        calc.Calculate(expr_trees.z);
+        calc.variables[calc.variables.size() - 1] = { expr_trees.z.data.number, "z" };
 
-        mapped_point = point_t(real(expr_trees_.z.data.number), imag(expr_trees_.z.data.number));
+        mapped_point = point_t(real(expr_trees.z.data.number), imag(expr_trees.z.data.number));
         break;
     }
     case ComplexShader::XY_INPUT:
     {
-        calc.Calculate(expr_trees_.x);
-        calc.Calculate(expr_trees_.y);
+        calc.Calculate(expr_trees.x);
+        calc.Calculate(expr_trees.y);
 
-        calc.variables[calc.variables.size() - 2] = { { real(expr_trees_.x.data.number), 0.0 }, "x" };
-        calc.variables[calc.variables.size() - 1] = { { real(expr_trees_.y.data.number), 0.0 }, "y" };
+        calc.variables[calc.variables.size() - 2] = { { real(expr_trees.x.data.number), 0.0 }, "x" };
+        calc.variables[calc.variables.size() - 1] = { { real(expr_trees.y.data.number), 0.0 }, "y" };
 
-        mapped_point = point_t(real(expr_trees_.x.data.number), real(expr_trees_.y.data.number));
+        mapped_point = point_t(real(expr_trees.x.data.number), real(expr_trees.y.data.number));
         break;
     }
     }
@@ -647,28 +647,25 @@ void Puzabrot::Mapping(Calculator& calc, point_t& mapped_point)
 
 point_t Puzabrot::PointTrace(point_t point, point_t c_point)
 {
-    static Calculator calc;
-    switch (options_.draw_mode)
-    {
-    case MAIN: initCalculator(calc, point, c_point); break;
-    case JULIA: initCalculator(calc, point, solver_.julia_point); break;
-    }
+    Calculator calc;
+    initCalculator(calc, point, (options_.draw_mode == MAIN) ? c_point : holder_.julia_point);
 
     point_t point1 = point;
-    point_t point2(0.0, 0.0);
+    point_t point2;
 
-    for (size_t i = 0; (i < solver_.itrn_max) && (sqrt(pow(point2.x, 2.0) + pow(point2.y, 2.0)) < solver_.limit); ++i)
+    for (size_t i = 0; i < holder_.itrn_max; ++i)
     {
-        Mapping(calc, point2);
+        Mapping(calc, expr_trees_, point2);
 
-        sf::Vertex line[] = { sf::Vertex(sf::Vector2f(solver_.Plane2Screen(point1)), sf::Color::White),
-                              sf::Vertex(sf::Vector2f(solver_.Plane2Screen(point2)), sf::Color::Black) };
-        point1            = point2;
+        if (sqrt(pow(point2.x, 2.0) + pow(point2.y, 2.0)) > holder_.limit)
+            break;
+
+        sf::Vertex line[] = { sf::Vertex(sf::Vector2f(holder_.Plane2Screen(point1)), sf::Color::White),
+                              sf::Vertex(sf::Vector2f(holder_.Plane2Screen(point2)), sf::Color::Black) };
+        point1 = point2;
 
         window_.draw(line, 2, sf::Lines);
     }
-
-    calc.clear();
 
     return point1;
 }
@@ -682,21 +679,21 @@ void Puzabrot::savePicture()
 
     sf::RectangleShape rectangle;
     rectangle.setPosition(0, 0);
-    rectangle.setSize(sf::Vector2f(solver_.winsizes));
+    rectangle.setSize(sf::Vector2f(holder_.winsizes));
     rectangle.setFillColor(sf::Color(10, 10, 10, 150));
 
     window_.draw(rectangle);
     window_.display();
 
     sf::Vector2u  screenshot_sizes(SCREENSHOT_WIDTH, static_cast<unsigned int>(static_cast<float>(SCREENSHOT_WIDTH) /
-                                                                              static_cast<float>(solver_.winsizes.x) *
-                                                                              static_cast<float>(solver_.winsizes.y)));
-    ComplexSolver solver = solver_;
-    solver.winsizes      = screenshot_sizes;
+                                                                              static_cast<float>(holder_.winsizes.x) *
+                                                                              static_cast<float>(holder_.winsizes.y)));
+    ComplexHolder holder = holder_;
+    holder.winsizes      = screenshot_sizes;
 
     ComplexShader shader(screenshot_sizes);
     shader.make(expr_trees_, options_.input_mode);
-    shader.draw(solver, options_.draw_mode, options_.coloring);
+    shader.draw(holder, options_.draw_mode, options_.coloring);
 
     sf::Texture screen = shader.render_texture.getTexture();
     screen.copyToImage().saveToFile(filename);
@@ -707,7 +704,7 @@ void Puzabrot::savePicture()
 
 void Puzabrot::drawHelpMenu()
 {
-    sf::RectangleShape dim_rect(sf::Vector2f(solver_.winsizes));
+    sf::RectangleShape dim_rect(sf::Vector2f(holder_.winsizes));
     dim_rect.setFillColor(sf::Color(0, 0, 0, 128));
     window_.draw(dim_rect);
 
@@ -739,8 +736,8 @@ void Puzabrot::drawHelpMenu()
             "\n"
             "        Current max iteration: %lu, current limit: %f\n"
             "        Borders: upper: %.5lf, bottom: %.5lf, left: %.5lf, right: %.5lf\n",
-            solver_.itrn_max, solver_.limit, solver_.borders.im_top, solver_.borders.im_bottom, solver_.borders.re_left,
-            solver_.borders.re_right);
+            holder_.itrn_max, holder_.limit, holder_.borders.im_top, holder_.borders.im_bottom, holder_.borders.re_left,
+            holder_.borders.re_right);
 
     help_menu.setString(str);
     window_.draw(help_menu);
@@ -773,6 +770,7 @@ int Puzabrot::makeShader()
             return err;
     }
     }
+    synth_.copyTrees(expr_trees_);
 
     if (shader_.make(expr_trees_, options_.input_mode))
         return CALC_WRONG_VARIABLE;
@@ -786,14 +784,6 @@ Puzabrot::Synth::Synth(Puzabrot* app) :
 {
     initialize(2, SAMPLE_RATE);
     setLoop(true);
-
-    updateCalc();
-}
-
-void Puzabrot::Synth::updateCalc()
-{
-    calc_.variables.clear();
-    app_->initCalculator(calc_, point_, c_point_);
 }
 
 void Puzabrot::Synth::SetPoint(point_t point)
@@ -802,6 +792,11 @@ void Puzabrot::Synth::SetPoint(point_t point)
 
     audio_reset_ = true;
     audio_pause_ = false;
+}
+
+void Puzabrot::Synth::copyTrees(ComplexShader::ExprTrees& expr_trees)
+{
+    expr_trees_ = expr_trees;
 }
 
 bool Puzabrot::Synth::onGetData(Chunk& data)
@@ -813,12 +808,6 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
     if (audio_reset_)
     {
         m_audio_time = 0;
-
-        switch (app_->options_.draw_mode)
-        {
-        case MAIN: c_point_ = new_point_; break;
-        case JULIA: c_point_ = app_->solver_.julia_point; break;
-        }
 
         point_      = new_point_;
         prev_point_ = new_point_;
@@ -833,7 +822,11 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
     if (audio_pause_)
         return true;
 
+    c_point_ = (app_->options_.draw_mode == MAIN) ? new_point_ : app_->holder_.julia_point;
+
+    Calculator calc;
     const int steps = SAMPLE_RATE / MAX_FREQ;
+
     for (size_t i = 0; i < AUDIO_BUFF_SIZE; i += 2)
     {
         const int j = m_audio_time % steps;
@@ -841,10 +834,11 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
         {
             prev_point_ = point_;
 
-            updateCalc();
-            app_->Mapping(calc_, point_);
+            calc.clear();
+            app_->initCalculator(calc, point_, c_point_);
+            app_->Mapping(calc, expr_trees_, point_);
 
-            if (sqrt(pow(point_.x, 2.0) + pow(point_.y, 2.0)) > app_->solver_.limit)
+            if (sqrt(pow(point_.x, 2.0) + pow(point_.y, 2.0)) > app_->holder_.limit)
             {
                 audio_pause_ = true;
                 return true;

@@ -51,7 +51,7 @@ public:
 
 private:
     void    initCalculator(Calculator& calc, point_t z, point_t c) const;
-    void    Mapping(Calculator& calc, point_t& mapped_point);
+    void    Mapping(Calculator& calc, ComplexShader::ExprTrees& expr_trees, point_t& mapped_point) const;
     void    updateWinSizes(size_t new_width, size_t new_height);
     void    toggleFullScreen();
     bool    InputBoxesHasFocus();
@@ -63,7 +63,7 @@ private:
     void    drawHelpMenu();
     int     makeShader();
 
-    ComplexSolver    solver_;
+    ComplexHolder    holder_;
     ComplexShader    shader_;
     sf::RenderWindow window_;
     sf::Font font_;
@@ -92,8 +92,8 @@ private:
         virtual void onSeek(sf::Time) override {}
         virtual bool onGetData(Chunk& data) override;
 
-        void updateCalc();
         void SetPoint(point_t point);
+        void copyTrees(ComplexShader::ExprTrees& expr_trees);
 
         bool   audio_reset_;
         bool   audio_pause_;
@@ -101,8 +101,8 @@ private:
         double volume_;
 
     private:
-        Puzabrot*  app_;
-        Calculator calc_;
+        Puzabrot* app_;
+        ComplexShader::ExprTrees expr_trees_;
 
         point_t point_;
         point_t c_point_;

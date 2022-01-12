@@ -5,14 +5,14 @@
  * Author:      Artem Puzankov                                                 *
  * Email:       puzankov.ao@phystech.edu                                       *
  * GitHub:      https://github.com/hellopuza                                   *
- * Copyright © 2021 Artem Puzankov. All rights reserved.                       *
+ * Copyright Â© 2021 Artem Puzankov. All rights reserved.                       *
  *///---------------------------------------------------------------------------
 
 #ifndef COMPLEXSHADER_H
 #define COMPLEXSHADER_H
 
 #include "Calculator/Calculator.h"
-#include "ComplexSolver.h"
+#include "ComplexHolder.h"
 
 #include <SFML/Graphics.hpp>
 
@@ -39,7 +39,7 @@ struct ComplexShader final
 
     explicit ComplexShader(sf::Vector2u winsizes);
 
-    void         draw(const ComplexSolver& solver, int draw_mode, bool coloring);
+    void         draw(const ComplexHolder& holder, int draw_mode, bool coloring);
     int          make(const ExprTrees& expr_trees, int input_mode);
     void         updateWinSizes(size_t new_width, size_t new_height);
     static char* writeInitialization(int input_mode);

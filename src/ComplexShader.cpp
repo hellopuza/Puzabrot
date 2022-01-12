@@ -5,7 +5,7 @@
  * Author:      Artem Puzankov                                                 *
  * Email:       puzankov.ao@phystech.edu                                       *
  * GitHub:      https://github.com/hellopuza                                   *
- * Copyright © 2021 Artem Puzankov. All rights reserved.                       *
+ * Copyright Â© 2021 Artem Puzankov. All rights reserved.                       *
  *///---------------------------------------------------------------------------
 
 #include "ComplexShader.h"
@@ -27,22 +27,22 @@ void ComplexShader::updateWinSizes(size_t new_width, size_t new_height)
     sprite = sf::Sprite(render_texture.getTexture());
 }
 
-void ComplexShader::draw(const ComplexSolver& solver, int draw_mode, bool coloring)
+void ComplexShader::draw(const ComplexHolder& holder, int draw_mode, bool coloring)
 {
-    shader.setUniform("borders", sf::Glsl::Vec4(static_cast<float>(solver.borders.re_left),
-                                                static_cast<float>(solver.borders.re_right),
-                                                static_cast<float>(solver.borders.im_bottom),
-                                                static_cast<float>(solver.borders.im_top)));
+    shader.setUniform("borders", sf::Glsl::Vec4(static_cast<float>(holder.borders.re_left),
+                                                static_cast<float>(holder.borders.re_right),
+                                                static_cast<float>(holder.borders.im_bottom),
+                                                static_cast<float>(holder.borders.im_top)));
 
-    shader.setUniform("winsizes", sf::Glsl::Ivec2(sf::Vector2i(solver.winsizes)));
+    shader.setUniform("winsizes", sf::Glsl::Ivec2(sf::Vector2i(holder.winsizes)));
 
-    shader.setUniform("itrn_max", static_cast<int>(solver.itrn_max));
-    shader.setUniform("limit", static_cast<float>(solver.limit));
+    shader.setUniform("itrn_max", static_cast<int>(holder.itrn_max));
+    shader.setUniform("limit", static_cast<float>(holder.limit));
 
     shader.setUniform("drawing_mode", draw_mode);
     shader.setUniform("coloring", coloring);
 
-    shader.setUniform("julia_point", sf::Glsl::Vec2(sf::Vector2f(solver.julia_point)));
+    shader.setUniform("julia_point", sf::Glsl::Vec2(sf::Vector2f(holder.julia_point)));
 
     render_texture.draw(sprite, &shader);
 }
@@ -241,15 +241,15 @@ int ComplexShader::make(const ExprTrees& expr_trees, int input_mode)
             "    if (itrn < itrn_max)\n"
             "    {\n"
             "        itrn = itrn * 4 %% 1530;\n"
-            "             if (itrn < 256)  return vec3(255, itrn, 0)        / 255 * (1.0 - float(coloring)*0.85);\n"
-            "        else if (itrn < 511)  return vec3(510 - itrn, 255, 0)  / 255 * (1.0 - float(coloring)*0.85);\n"
-            "        else if (itrn < 766)  return vec3(0, 255, itrn - 510)  / 255 * (1.0 - float(coloring)*0.85);\n"
-            "        else if (itrn < 1021) return vec3(0, 1020 - itrn, 255) / 255 * (1.0 - float(coloring)*0.85);\n"
-            "        else if (itrn < 1276) return vec3(itrn - 1020, 0, 255) / 255 * (1.0 - float(coloring)*0.85);\n"
-            "        else if (itrn < 1530) return vec3(255, 0, 1529 - itrn) / 255 * (1.0 - float(coloring)*0.85);\n"
+            "        if (itrn < 256)  return vec3(255, itrn, 0)        / 255 * (1.0 - float(coloring)*0.85);\n"
+            "        if (itrn < 511)  return vec3(510 - itrn, 255, 0)  / 255 * (1.0 - float(coloring)*0.85);\n"
+            "        if (itrn < 766)  return vec3(0, 255, itrn - 510)  / 255 * (1.0 - float(coloring)*0.85);\n"
+            "        if (itrn < 1021) return vec3(0, 1020 - itrn, 255) / 255 * (1.0 - float(coloring)*0.85);\n"
+            "        if (itrn < 1276) return vec3(itrn - 1020, 0, 255) / 255 * (1.0 - float(coloring)*0.85);\n"
+            "        if (itrn < 1530) return vec3(255, 0, 1529 - itrn) / 255 * (1.0 - float(coloring)*0.85);\n"
             "    }\n"
-            "    else if (coloring) return sin(abs(abs(sumz) / itrn_max * 5.0)) * 0.45 + 0.5;\n"
-            "    else return vec3( 0, 0, 0 );\n"
+            "    if (coloring) return sin(abs(abs(sumz) / itrn_max * 5.0)) * 0.45 + 0.5;\n"
+            "    return vec3( 0, 0, 0 );\n"
             "}\n"
             "\n"
             "void main()\n"

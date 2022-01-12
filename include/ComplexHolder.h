@@ -1,15 +1,15 @@
 /*------------------------------------------------------------------------------
- * File:        ComplexSolver.h                                                *
- * Description: Solver for drawing sets                                        *
+ * File:        ComplexHolder.h                                                *
+ * Description: Holder for drawing sets                                        *
  * Created:     3 nov 2021                                                     *
  * Author:      Artem Puzankov                                                 *
  * Email:       puzankov.ao@phystech.edu                                       *
  * GitHub:      https://github.com/hellopuza                                   *
- * Copyright © 2021 Artem Puzankov. All rights reserved.                       *
+ * Copyright Â© 2021 Artem Puzankov. All rights reserved.                       *
  *///---------------------------------------------------------------------------
 
-#ifndef COMPLEXSOLVER_H
-#define COMPLEXSOLVER_H
+#ifndef COMPLEXHOLDER_H
+#define COMPLEXHOLDER_H
 
 #include <SFML/Graphics.hpp>
 
@@ -31,7 +31,7 @@ struct Frame final
 
 typedef sf::Vector2<double> point_t;
 
-struct ComplexSolver final
+struct ComplexHolder final
 {
     struct Borders final
     {
@@ -49,7 +49,7 @@ struct ComplexSolver final
     point_t      julia_point;
     sf::Vector2u winsizes;
 
-    explicit ComplexSolver(sf::Vector2u winsizes_);
+    explicit ComplexHolder(sf::Vector2u winsizes_);
 
     void    updateWinSizes(size_t new_width, size_t new_height);
     void    zoom(double wheel_delta, point_t point);
@@ -61,4 +61,4 @@ struct ComplexSolver final
 
 } // namespace puza
 
-#endif // COMPLEXSOLVER_H
+#endif // COMPLEXHOLDER_H
