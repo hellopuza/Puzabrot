@@ -768,8 +768,7 @@ int Puzabrot::makeShader()
 }
 
 Puzabrot::Synth::Synth(Puzabrot* app) :
-    audio_reset_(true), audio_pause_(false), sustain_(true), volume_(8000.0), app_(app), point_(point_t(0.0, 0.0)),
-    c_point_(point_t(0.0, 0.0)), new_point_(point_t(0.0, 0.0)), prev_point_(point_t(0.0, 0.0))
+    audio_reset_(true), audio_pause_(false), sustain_(true), volume_(8000.0), app_(app)
 {
     initialize(2, SAMPLE_RATE);
     setLoop(true);
@@ -790,19 +789,22 @@ void Puzabrot::Synth::copyTrees(ComplexShader::ExprTrees& expr_trees)
 
 bool Puzabrot::Synth::onGetData(Chunk& data)
 {
-    data.samples     = m_samples;
+    data.samples     = m_samples_;
     data.sampleCount = AUDIO_BUFF_SIZE;
-    memset(m_samples, 0, AUDIO_BUFF_SIZE * sizeof(int16_t));
+    memset(m_samples_, 0, AUDIO_BUFF_SIZE * sizeof(int16_t));
 
     if (audio_reset_)
     {
-        m_audio_time = 0;
+        m_audio_time_ = 0;
 
         point_      = new_point_;
         prev_point_ = new_point_;
+        mean_       = new_point_;
 
-        mean_x  = new_point_.x;
-        mean_y  = new_point_.y;
+        mag   = 0.0;
+        pmag  = 0.0;
+        phase = 0.0;
+
         volume_ = 8000.0;
 
         audio_reset_ = false;
@@ -818,7 +820,7 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
 
     for (size_t i = 0; i < AUDIO_BUFF_SIZE; i += 2)
     {
-        const int j = m_audio_time % steps;
+        const int j = m_audio_time_ % steps;
         if (j == 0)
         {
             prev_point_ = point_;
@@ -833,34 +835,24 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
                 return true;
             }
 
-            dpx = prev_point_.x - c_point_.x;
-            dpy = prev_point_.y - c_point_.y;
-            dx  = point_.x - c_point_.x;
-            dy  = point_.y - c_point_.y;
+            d_  = point_      - mean_;
+            dp_ = prev_point_ - mean_;
 
-            if (dx != 0.0 || dy != 0.0)
-            {
-                double dpmag = 1.0 / std::sqrt(1e-12 + dpx * dpx + dpy * dpy);
-                double dmag  = 1.0 / std::sqrt(1e-12 + dx * dx + dy * dy);
+            pmag = sqrt(1e-12 + dp_.x * dp_.x + dp_.y * dp_.y);
+            mag  = sqrt(1e-12 + d_.x * d_.x + d_.y * d_.y);
 
-                dpx *= dpmag;
-                dpy *= dpmag;
-                dx *= dmag;
-                dy *= dmag;
-            }
+            mean_ = mean_ * 0.99 + point_ * 0.01;
 
-            double m = dx * dx + dy * dy;
+            double m = d_.x * d_.x + d_.y * d_.y;
             if (m > 2.0)
             {
-                dx *= 2.0 / m;
-                dy *= 2.0 / m;
+                d_ *= 2.0 / m;
             }
 
-            m = dpx * dpx + dpy * dpy;
+            m = dp_.x * dp_.x + dp_.y * dp_.y;
             if (m > 2.0)
             {
-                dpx *= 2.0 / m;
-                dpy *= 2.0 / m;
+                dp_ *= 2.0 / m;
             }
 
             if (!sustain_)
@@ -871,13 +863,16 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
 
         double t = 0.5 - 0.5 * cos(double(j) / double(steps) * real(PI));
 
-        double wx = t * dx + (1.0 - t) * dpx;
-        double wy = t * dy + (1.0 - t) * dpy;
+        double wy   = t * point_.y + (1.0 - t) * prev_point_.y;
+        double wmag = t * mag      + (1.0 - t) * pmag;
 
-        m_samples[i]     = static_cast<int16_t>(std::min(std::max(wx * volume_, -32000.0), 32000.0));
-        m_samples[i + 1] = static_cast<int16_t>(std::min(std::max(wy * volume_, -32000.0), 32000.0));
+        phase += wy / real(PI) / steps;
+        double s = std::sin(phase) * wmag;
 
-        m_audio_time += 1;
+        m_samples_[i]     = static_cast<int16_t>(std::min(std::max(s * volume_, -32000.0), 32000.0));
+        m_samples_[i + 1] = static_cast<int16_t>(std::min(std::max(s * volume_, -32000.0), 32000.0));
+
+        m_audio_time_ += 1;
     }
 
     return !audio_reset_;

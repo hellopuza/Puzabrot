@@ -99,16 +99,17 @@ private:
         point_t new_point_;
         point_t prev_point_;
 
-        int16_t m_samples[AUDIO_BUFF_SIZE] = {};
-        int32_t m_audio_time               = 0;
+        int16_t m_samples_[AUDIO_BUFF_SIZE] = {};
+        int32_t m_audio_time_               = 0;
 
-        double mean_x = 0;
-        double mean_y = 0;
+        point_t d_;
+        point_t dp_;
+        point_t mean_;
 
-        double dx  = 0;
-        double dy  = 0;
-        double dpx = 0;
-        double dpy = 0;
+        double mag   = 0;
+        double pmag  = 0;
+        double phase = 0;
+
     } synth_;
 };
 
