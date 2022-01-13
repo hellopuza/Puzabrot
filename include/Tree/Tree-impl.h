@@ -1,13 +1,3 @@
-/*------------------------------------------------------------------------------
- * File:        Tree-impl.h                                                    *
- * Description: Tree library implementation.                                   *
- * Created:     18 apr 2021                                                    *
- * Author:      Artem Puzankov                                                 *
- * Email:       puzankov.ao@phystech.edu                                       *
- * GitHub:      https://github.com/hellopuza                                   *
- * Copyright © 2021 Artem Puzankov. All rights reserved.                       *
- *///---------------------------------------------------------------------------
-
 #ifndef TREE_TREE_IMPL_H
 #define TREE_TREE_IMPL_H
 

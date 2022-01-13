@@ -1,13 +1,3 @@
-/*------------------------------------------------------------------------------
- * File:        ComplexHolder.cpp                                              *
- * Description: Implementation of complex holder                               *
- * Created:     3 nov 2021                                                     *
- * Author:      Artem Puzankov                                                 *
- * Email:       puzankov.ao@phystech.edu                                       *
- * GitHub:      https://github.com/hellopuza                                   *
- * Copyright © 2021 Artem Puzankov. All rights reserved.                       *
- *///---------------------------------------------------------------------------
-
 #include "ComplexHolder.h"
 
 namespace puza {

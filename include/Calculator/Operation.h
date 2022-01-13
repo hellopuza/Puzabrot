@@ -1,13 +1,3 @@
-/*------------------------------------------------------------------------------
- * File:        Operation.h                                                *
- * Description: Names of operators, functions and their codes.              *
- * Created:     15 may 2021                                                 *
- * Author:      Artem Puzankov                                              *
- * Email:       puzankov.ao@phystech.edu                                    *
- * GitHub:      https://github.com/hellopuza                                *
- * Copyright © 2021 Artem Puzankov. All rights reserved.                    *
- *///------------------------------------------------------------------------
-
 #ifndef CALCULATOR_OPERATIONS_H_INCLUDED
 #define CALCULATOR_OPERATIONS_H_INCLUDED
 

@@ -1,13 +1,3 @@
-/*------------------------------------------------------------------------------
- * File:        Calculator.h                                                *
- * Description: Calculator library.                                         *
- * Created:     15 may 2021                                                 *
- * Author:      Artem Puzankov                                              *
- * Email:       puzankov.ao@phystech.edu                                    *
- * GitHub:      https://github.com/hellopuza                                *
- * Copyright © 2021 Artem Puzankov. All rights reserved.                    *
- *///------------------------------------------------------------------------
-
 #ifndef CALCULATOR_CALCULATOR_H
 #define CALCULATOR_CALCULATOR_H
 

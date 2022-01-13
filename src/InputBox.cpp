@@ -1,13 +1,3 @@
-/*------------------------------------------------------------------------------
- * File:        InputBox.cpp                                                   *
- * Description: Implementation of input box for sfml                           *
- * Created:     30 jun 2021                                                    *
- * Author:      Artem Puzankov                                                 *
- * Email:       puzankov.ao@phystech.edu                                       *
- * GitHub:      https://github.com/hellopuza                                   *
- * Copyright © 2021 Artem Puzankov. All rights reserved.                       *
- *///---------------------------------------------------------------------------
-
 #include "InputBox.h"
 
 #include "Resource/ConsolaFont.hpp"
@@ -38,9 +28,8 @@ void InputBox::draw(sf::RenderWindow& window)
         input_box.setSize(sf::Vector2f(8.0F * font_size_, 1.3F * font_size_));
     else
         input_box.setSize(sf::Vector2f((8.0F * font_size_ > 0.56F * font_size_ * input_text_size ?
-                                            8.0F * font_size_ :
-                                            0.56F * font_size_ * input_text_size),
-                                       1.3F * font_size_));
+                                        8.0F * font_size_ : 0.56F * font_size_ * input_text_size),
+                                        1.3F * font_size_));
 
     input_box.setFillColor(sf::Color(40, 40, 40));
     input_box.setOutlineThickness(2.0F);
@@ -56,8 +45,8 @@ void InputBox::draw(sf::RenderWindow& window)
     else
         box_size_ =
             sf::Vector2f(1.5F * input_box.getSize().y + (input_box.getSize().x > 0.56F * font_size_ * output_text_size ?
-                                                             input_box.getSize().x :
-                                                             0.56F * font_size_ * output_text_size),
+                                                         input_box.getSize().x :
+                                                         0.56F * font_size_ * output_text_size),
                          1.5F * input_box.getSize().y + font_size_);
 
     if (not label_.getString().isEmpty())
@@ -72,8 +61,7 @@ void InputBox::draw(sf::RenderWindow& window)
             sf::Vector2f(box_pos_.x + 0.5F * input_box.getSize().y, box_pos_.y + 0.25F * input_box.getSize().y));
     else
         input_box.setPosition(sf::Vector2f(box_pos_.x + 0.5F * input_box.getSize().y + 0.56F * font_size_ * label_size +
-                                               0.25F * font_size_,
-                                           box_pos_.y + 0.25F * input_box.getSize().y));
+                                           0.25F * font_size_, box_pos_.y + 0.25F * input_box.getSize().y));
 
     window.draw(box);
     window.draw(input_box);

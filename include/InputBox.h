@@ -1,13 +1,3 @@
-/*------------------------------------------------------------------------------
- * File:        InputBox.h                                                     *
- * Description: Input box for sfml                                             *
- * Created:     30 jun 2021                                                    *
- * Author:      Artem Puzankov                                                 *
- * Email:       puzankov.ao@phystech.edu                                       *
- * GitHub:      https://github.com/hellopuza                                   *
- * Copyright © 2021 Artem Puzankov. All rights reserved.                       *
- *///---------------------------------------------------------------------------
-
 #ifndef INPUTBOX_H
 #define INPUTBOX_H
 

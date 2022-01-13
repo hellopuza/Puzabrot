@@ -1,13 +1,3 @@
-/*------------------------------------------------------------------------------
- * File:        Calculator.cpp                                                 *
- * Description: Calculator libary implementation.                              *
- * Created:     15 may 2021                                                    *
- * Author:      Artem Puzankov                                                 *
- * Email:       puzankov.ao@phystech.edu                                       *
- * GitHub:      https://github.com/hellopuza                                   *
- * Copyright © 2021 Artem Puzankov. All rights reserved.                       *
- *///---------------------------------------------------------------------------
-
 #include "Calculator/Calculator.h"
 
 #include <cassert>
@@ -32,8 +22,8 @@ std::ostream& operator<<(std::ostream& os, const CalcData& data)
     {
     case CalcData::FUNCTION:
     case CalcData::OPERATOR:
-    case CalcData::VARIABLE: return os << data.word; break;
-    case CalcData::NUMBER: return os << data.number; break;
+    case CalcData::VARIABLE: return os << data.word;   break;
+    case CalcData::NUMBER:   return os << data.number; break;
     }
 
     return os;
@@ -70,27 +60,27 @@ int Calculator::Calculate(Tree<CalcData>& node)
 
         switch (node.data.op_code)
         {
-        case Operation::ABS: number = abs(number); break;
-        case Operation::ARCCOS: number = acos(number); break;
-        case Operation::ARCCOSH: number = acosh(number); break;
-        case Operation::ARCCOT: number = PI / kTwo - atan(number); break;
-        case Operation::ARCCOTH: number = atanh(kOne / number); break;
-        case Operation::ARCSIN: number = asin(number); break;
-        case Operation::ARCSINH: number = asinh(number); break;
-        case Operation::ARCTAN: number = atan(number); break;
-        case Operation::ARCTANH: number = atanh(number); break;
-        case Operation::COS: number = cos(number); break;
-        case Operation::COSH: number = cosh(number); break;
-        case Operation::COT: number = kOne / tan(number); break;
-        case Operation::COTH: number = kOne / tanh(number); break;
-        case Operation::EXP: number = exp(number); break;
-        case Operation::LG: number = log10(number); break;
-        case Operation::LN: number = log(number); break;
-        case Operation::SIN: number = sin(number); break;
-        case Operation::SINH: number = sinh(number); break;
-        case Operation::SQRT: number = sqrt(number); break;
-        case Operation::TAN: number = tan(number); break;
-        case Operation::TANH: number = tanh(number); break;
+        case Operation::ABS:     number = abs(number);              break;
+        case Operation::ARCCOS:  number = acos(number);             break;
+        case Operation::ARCCOSH: number = acosh(number);            break;
+        case Operation::ARCCOT:  number = PI / kTwo - atan(number); break;
+        case Operation::ARCCOTH: number = atanh(kOne / number);     break;
+        case Operation::ARCSIN:  number = asin(number);             break;
+        case Operation::ARCSINH: number = asinh(number);            break;
+        case Operation::ARCTAN:  number = atan(number);             break;
+        case Operation::ARCTANH: number = atanh(number);            break;
+        case Operation::COS:     number = cos(number);              break;
+        case Operation::COSH:    number = cosh(number);             break;
+        case Operation::COT:     number = kOne / tan(number);       break;
+        case Operation::COTH:    number = kOne / tanh(number);      break;
+        case Operation::EXP:     number = exp(number);              break;
+        case Operation::LG:      number = log10(number);            break;
+        case Operation::LN:      number = log(number);              break;
+        case Operation::SIN:     number = sin(number);              break;
+        case Operation::SINH:    number = sinh(number);             break;
+        case Operation::SQRT:    number = sqrt(number);             break;
+        case Operation::TAN:     number = tan(number);              break;
+        case Operation::TANH:    number = tanh(number);             break;
         default: assert(0);
         }
 
@@ -122,10 +112,10 @@ int Calculator::Calculate(Tree<CalcData>& node)
 
         switch (node.data.op_code)
         {
-        case Operation::ADD: number = left_num + right_num; break;
-        case Operation::SUB: number = left_num - right_num; break;
-        case Operation::MUL: number = left_num * right_num; break;
-        case Operation::DIV: number = left_num / right_num; break;
+        case Operation::ADD: number = left_num + right_num;     break;
+        case Operation::SUB: number = left_num - right_num;     break;
+        case Operation::MUL: number = left_num * right_num;     break;
+        case Operation::DIV: number = left_num / right_num;     break;
         case Operation::POW: number = pow(left_num, right_num); break;
         default: assert(0);
         }
@@ -323,7 +313,7 @@ int Expression::pass_Function(Tree<CalcData>& node)
             return CALC_SYNTAX_UNIDENTIFIED_FUNCTION;
 
         Tree<CalcData> right;
-        int            err = pass_Brackets(right);
+        int err = pass_Brackets(right);
         if (err)
             return err;
 
