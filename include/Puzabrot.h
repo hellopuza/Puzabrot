@@ -7,8 +7,6 @@
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 
-namespace puza {
-
 constexpr size_t DEFAULT_WIDTH  = 640;
 constexpr size_t DEFAULT_HEIGHT = 480;
 
@@ -112,7 +110,5 @@ private:
 
     } synth_;
 };
-
-} // namespace puza
 
 #endif // PUZABROT_H

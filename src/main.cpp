@@ -2,7 +2,7 @@
 
 int main()
 {
-    puza::Puzabrot app;
+    Puzabrot app;
     app.run();
 
     return 0;

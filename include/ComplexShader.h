@@ -6,8 +6,6 @@
 
 #include <SFML/Graphics.hpp>
 
-namespace puza {
-
 struct ComplexShader final
 {
     sf::Shader        shader;
@@ -37,7 +35,5 @@ struct ComplexShader final
     static char* writeChecking(int input_mode);
     int          Tree2GLSL(const Tree<CalcData>& node, int input_mode, char* str_cur) const;
 };
-
-} // namespace puza
 
 #endif // COMPLEXSHADER_H

@@ -3,12 +3,10 @@
 
 #include <SFML/Graphics.hpp>
 
-namespace puza {
-
-constexpr double LIMIT         = 100.0f;
-constexpr double UPPER_BORDER  = 1.3f;
+constexpr double LIMIT         = 100.0;
+constexpr double UPPER_BORDER  = 1.3;
 constexpr size_t MAX_ITERATION = 500;
-constexpr double ZOOMING_RATIO = 0.33f;
+constexpr double ZOOMING_RATIO = 0.33;
 
 struct Frame final
 {
@@ -23,6 +21,15 @@ typedef sf::Vector2<double> point_t;
 
 struct ComplexHolder final
 {
+    explicit ComplexHolder(sf::Vector2u winsizes_);
+
+    void    updateWinSizes(size_t new_width, size_t new_height);
+    void    zoom(double wheel_delta, point_t point);
+    point_t Screen2Plane(sf::Vector2i pixel) const;
+    point_t Plane2Screen(point_t point) const;
+    void    changeBorders(Frame frame);
+    void    reset();
+
     struct Borders final
     {
         double re_left   = -1;
@@ -38,17 +45,6 @@ struct ComplexHolder final
     double       limit    = LIMIT;
     point_t      julia_point;
     sf::Vector2u winsizes;
-
-    explicit ComplexHolder(sf::Vector2u winsizes_);
-
-    void    updateWinSizes(size_t new_width, size_t new_height);
-    void    zoom(double wheel_delta, point_t point);
-    point_t Screen2Plane(sf::Vector2i pixel) const;
-    point_t Plane2Screen(point_t point) const;
-    void    changeBorders(Frame frame);
-    void    reset();
 };
-
-} // namespace puza
 
 #endif // COMPLEXHOLDER_H

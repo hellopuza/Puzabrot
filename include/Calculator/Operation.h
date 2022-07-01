@@ -3,11 +3,9 @@
 
 #include <string>
 
-namespace puza {
-
 struct Operation
 {
-    char        code = 0;
+    char code = 0;
     std::string word = 0;
 
     enum OperationsCodes
@@ -27,18 +25,19 @@ struct Operation
         ARCSINH = 0x0C,
         ARCTAN  = 0x0D,
         ARCTANH = 0x0E,
-        COS     = 0x0F,
-        COSH    = 0x10,
-        COT     = 0x11,
-        COTH    = 0x12,
-        EXP     = 0x13,
-        LG      = 0x14,
-        LN      = 0x15,
-        SIN     = 0x16,
-        SINH    = 0x17,
-        SQRT    = 0x18,
-        TAN     = 0x19,
-        TANH    = 0x1A,
+        ARG     = 0x0F,
+        COS     = 0x10,
+        COSH    = 0x11,
+        COT     = 0x12,
+        COTH    = 0x13,
+        EXP     = 0x14,
+        LG      = 0x15,
+        LN      = 0x16,
+        SIN     = 0x17,
+        SINH    = 0x18,
+        SQRT    = 0x19,
+        TAN     = 0x1A,
+        TANH    = 0x1B,
     };
 
     Operation(char code_, std::string word_);
@@ -60,6 +59,7 @@ static Operation op_names[] = {
     { Operation::ARCSINH, "arcsinh" },
     { Operation::ARCTAN,  "arctan"  },
     { Operation::ARCTANH, "arctanh" },
+    { Operation::ARG,     "arg"     },
     { Operation::COS,     "cos"     },
     { Operation::COSH,    "cosh"    },
     { Operation::COT,     "cot"     },
@@ -77,7 +77,5 @@ static Operation op_names[] = {
 const size_t OP_NUM = sizeof(op_names) / sizeof(op_names[0]);
 
 int compare_OpNames(const void* p1, const void* p2);
-
-} // namespace puza
 
 #endif // CALCULATOR_OPERATIONS_H_INCLUDED

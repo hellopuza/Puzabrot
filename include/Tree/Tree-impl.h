@@ -3,70 +3,127 @@
 
 #include "Tree/Tree.h"
 
-namespace puza {
+template<typename T>
+Tree<T>::Tree(const T& value) : value_(value) {}
 
-template<typename TYPE>
-Tree<TYPE>::Tree(TYPE value) : data(value)
-{}
+template<typename T>
+Tree<T>::Tree(T&& value) : value_(std::move(value)) {}
 
-template<typename TYPE>
-Tree<TYPE>::Tree(const Tree& obj) : data(obj.data), branches(obj.branches)
-{}
+template<typename T>
+Tree<T>::Tree(const Tree& obj) : value_(obj.value_), branches_(obj.branches_) {}
 
-template<typename TYPE>
-Tree<TYPE>::Tree(Tree&& obj) noexcept : data(std::move(obj.data)), branches(std::move(obj.branches))
-{}
+template<typename T>
+Tree<T>::Tree(Tree&& obj) noexcept : value_(std::move(obj.value_)), branches_(std::move(obj.branches_)) {}
 
-template<typename TYPE>
-Tree<TYPE>& Tree<TYPE>::operator=(const Tree& obj)
+template<typename T>
+Tree<T>& Tree<T>::operator=(const Tree& obj)
 {
-    data     = obj.data;
-    branches = obj.branches;
+    value_ = obj.value_;
+    branches_ = obj.branches_;
     return *this;
 }
 
-template<typename TYPE>
-Tree<TYPE>& Tree<TYPE>::operator=(Tree&& obj) noexcept
+template<typename T>
+Tree<T>& Tree<T>::operator=(Tree&& obj) noexcept
 {
-    data     = std::move(obj.data);
-    branches = std::move(obj.branches);
+    value_ = std::move(obj.value_);
+    branches_ = std::move(obj.branches_);
     return *this;
 }
 
-template<typename TYPE>
-bool Tree<TYPE>::operator==(const Tree& obj) const
+template<typename T>
+Tree<T>& Tree<T>::operator[](size_t branch_ind)
 {
-    return (data == obj.data) && (branches == obj.branches);
+    return branches_[branch_ind];
 }
 
-template<typename TYPE>
-bool Tree<TYPE>::operator!=(const Tree& obj) const
+template<typename T>
+const Tree<T>& Tree<T>::operator[](size_t branch_ind) const
 {
-    return !(*this == obj);
+    return branches_[branch_ind];
 }
 
-template<typename TYPE>
-void Tree<TYPE>::clear()
+template<typename T>
+size_t Tree<T>::size() const
 {
-    branches.clear();
+    size_t size = 1;
+    for (const auto& node : branches_)
+    {
+        size += node.size();
+    }
+    return size;
 }
 
-template<typename TYPE>
-int Tree<TYPE>::dump(const char* dump_name) const
+template<typename T>
+size_t Tree<T>::branches_num() const
 {
-    if (dump_name == nullptr)
-        return -1;
-    const char* const DOT_FILE_NAME = "graph.dot";
+    return branches_.size();
+}
 
-    std::ofstream dump_file(DOT_FILE_NAME);
+template<typename T>
+void Tree<T>::clear_branches()
+{
+    branches_.clear();
+}
+
+template<typename T>
+void Tree<T>::push_branch(const Tree& tree)
+{
+    branches_.push_back(tree);
+}
+
+template<typename T>
+void Tree<T>::emplace_branch(Tree&& tree)
+{
+    branches_.emplace_back(tree);
+}
+
+template<typename T>
+void Tree<T>::push_branch(const T& value)
+{
+    branches_.emplace_back(Tree<T>(value));
+}
+
+template<typename T>
+void Tree<T>::emplace_branch(T&& value)
+{
+    branches_.emplace_back(Tree<T>(std::move(value)));
+}
+
+template<typename T>
+void Tree<T>::pop_branch()
+{
+    branches_.pop_back();
+}
+
+template<typename T>
+T& Tree<T>::value()
+{
+    return value_;
+}
+
+template<typename T>
+const T& Tree<T>::value() const
+{
+    return value_;
+}
+
+template<typename T>
+int Tree<T>::dot_dump(const char* dump_name) const
+{
+    const char* dot_file_name = "graph.dot";
+
+    std::ofstream dump_file(dot_file_name);
     if (!dump_file.is_open())
+    {
         return -1;
+    }
 
     dump_file << "digraph G{\n"
                  " rankdir = HR;\n"
                  " node[shape=box];\n";
 
-    dump(dump_file);
+    dot_dump(dump_file);
 
     dump_file << "\tlabelloc=\"t\";"
                  "\tlabel=\""
@@ -75,68 +132,25 @@ int Tree<TYPE>::dump(const char* dump_name) const
     dump_file.close();
 
     char command[1024] = "";
-
-    sprintf(command, "dot -Tpng -o %s.png %s", dump_name, DOT_FILE_NAME);
+    sprintf(command, "dot -Tpng -o %s.png %s", dump_name, dot_file_name);
     return system(command);
 }
 
-template<typename TYPE>
-int Tree<TYPE>::rdump(const char* dump_name) const
-{
-    if (dump_name == nullptr)
-        return -1;
-    const char* const DOT_FILE_NAME = "graph.dot";
-
-    std::ofstream dump_file(DOT_FILE_NAME);
-    if (!dump_file.is_open())
-        return -1;
-
-    dump_file << "digraph G{\n"
-                 " rankdir = HR;\n"
-                 " node[shape=box];\n";
-
-    rdump(dump_file);
-
-    dump_file << "\tlabelloc=\"t\";"
-                 "\tlabel=\""
-              << dump_name << "\"; }\n";
-
-    dump_file.close();
-
-    char command[1024] = "";
-
-    sprintf(command, "dot -Tpng -o %s.png %s", dump_name, DOT_FILE_NAME);
-    return system(command);
-}
-
-template<typename TYPE>
-void Tree<TYPE>::dump(std::ofstream& dump_file) const
+template<typename T>
+void Tree<T>::dot_dump(std::ofstream& dump_file) const
 {
     dump_file << "\t\"" << this << "\"[shape = box, style = filled, color = black, fillcolor = lightskyblue, label = \""
-              << data << "\"]\n";
+              << value_ << "\"]\n";
 
-    for (auto node = branches.begin(); node != branches.end(); ++node)
+    for (const auto& node : branches_)
     {
-        dump_file << "\t\"" << this << "\" -> \"" << &*node << "\"\n";
+        dump_file << "\t\"" << this << "\" -> \"" << &node << "\"\n";
     }
 
-    for (auto node = branches.begin(); node != branches.end(); ++node) { node->dump(dump_file); }
-}
-
-template<typename TYPE>
-void Tree<TYPE>::rdump(std::ofstream& dump_file) const
-{
-    dump_file << "\t\"" << this << "\"[shape = box, style = filled, color = black, fillcolor = lightskyblue, label = \""
-              << data << "\"]\n";
-
-    for (auto node = branches.rbegin(); node != branches.rend(); ++node)
+    for (const auto& node : branches_)
     {
-        dump_file << "\t\"" << this << "\" -> \"" << &*node << "\"\n";
+        node.dot_dump(dump_file);
     }
-
-    for (auto node = branches.rbegin(); node != branches.rend(); ++node) { node->rdump(dump_file); }
 }
-
-} // namespace puza
 
 #endif // TREE_TREE_IMPL_H

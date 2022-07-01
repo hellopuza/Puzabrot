@@ -1,7 +1,11 @@
 #include "Puzabrot.h"
 #include <cstring>
 
-namespace puza {
+#define COND_RETURN(cond, ret) \
+    if (cond)                  \
+    {                          \
+        return (ret);          \
+    } //
 
 Puzabrot::Puzabrot() :
     holder_(sf::Vector2u(DEFAULT_WIDTH, DEFAULT_HEIGHT)), shader_(sf::Vector2u(DEFAULT_WIDTH, DEFAULT_HEIGHT)),
@@ -74,8 +78,7 @@ void Puzabrot::run()
             }
 
             // Reset set drawing
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) &&
-                     (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) && (!InputBoxesHasFocus()))
             {
                 holder_.reset();
 
@@ -84,71 +87,66 @@ void Puzabrot::run()
             }
 
             // Take a screenshot
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Space) &&
-                     (!was_screenshot) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Space) && (!was_screenshot) && (!InputBoxesHasFocus()))
             {
                 savePicture();
                 was_screenshot = true;
             }
 
             // Toggle audio dampening
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::D) &&
-                     (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::D) && (!InputBoxesHasFocus()))
             {
                 synth_.sustain_ = !synth_.sustain_;
             }
 
             // Toggle sound coloring
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::C) &&
-                     (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::C) && (!InputBoxesHasFocus()))
             {
                 options_.coloring = !options_.coloring;
                 DrawSet();
             }
 
             // Toggle help menu showing
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::H) &&
-                     (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::H) && (!InputBoxesHasFocus()))
             {
                 showing_menu = !showing_menu;
                 if (showing_menu)
                 {
-                    input_boxes_.x.is_visible_ = false;
-                    input_boxes_.y.is_visible_ = false;
-                    input_boxes_.z.is_visible_ = false;
+                    input_boxes_.x.is_visible = false;
+                    input_boxes_.y.is_visible = false;
+                    input_boxes_.z.is_visible = false;
                 }
             }
 
             // Toggle input mode
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Tab) &&
-                     (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Tab) && (!InputBoxesHasFocus()))
             {
                 switch (options_.input_mode)
                 {
                 case ComplexShader::Z_INPUT:
                 {
-                    input_boxes_.x.has_focus_  = false;
-                    input_boxes_.x.is_visible_ = input_boxes_.z.is_visible_;
+                    input_boxes_.x.has_focus  = false;
+                    input_boxes_.x.is_visible = input_boxes_.z.is_visible;
 
-                    input_boxes_.y.has_focus_  = false;
-                    input_boxes_.y.is_visible_ = input_boxes_.z.is_visible_;
+                    input_boxes_.y.has_focus  = false;
+                    input_boxes_.y.is_visible = input_boxes_.z.is_visible;
 
-                    input_boxes_.z.has_focus_  = false;
-                    input_boxes_.z.is_visible_ = false;
+                    input_boxes_.z.has_focus  = false;
+                    input_boxes_.z.is_visible = false;
 
                     options_.input_mode = ComplexShader::XY_INPUT;
                     break;
                 }
                 case ComplexShader::XY_INPUT:
                 {
-                    input_boxes_.z.has_focus_  = false;
-                    input_boxes_.z.is_visible_ = input_boxes_.x.is_visible_;
+                    input_boxes_.z.has_focus  = false;
+                    input_boxes_.z.is_visible = input_boxes_.x.is_visible;
 
-                    input_boxes_.x.has_focus_  = false;
-                    input_boxes_.x.is_visible_ = false;
+                    input_boxes_.x.has_focus  = false;
+                    input_boxes_.x.is_visible = false;
 
-                    input_boxes_.y.has_focus_  = false;
-                    input_boxes_.y.is_visible_ = false;
+                    input_boxes_.y.has_focus  = false;
+                    input_boxes_.y.is_visible = false;
 
                     options_.input_mode = ComplexShader::Z_INPUT;
                     break;
@@ -157,27 +155,28 @@ void Puzabrot::run()
             }
 
             // Toggle input box visibility
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Tilde) &&
-                     (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Tilde) && (!InputBoxesHasFocus()))
             {
                 switch (options_.input_mode)
                 {
                 case ComplexShader::Z_INPUT:
                 {
-                    input_boxes_.z.is_visible_ = !input_boxes_.z.is_visible_;
-                    if (!input_boxes_.z.is_visible_)
-                        input_boxes_.z.has_focus_ = false;
+                    input_boxes_.z.is_visible = !input_boxes_.z.is_visible;
+                    if (!input_boxes_.z.is_visible)
+                    {
+                        input_boxes_.z.has_focus = false;
+                    }
                     break;
                 }
                 case ComplexShader::XY_INPUT:
                 {
-                    input_boxes_.x.is_visible_ = !input_boxes_.x.is_visible_;
-                    input_boxes_.y.is_visible_ = !input_boxes_.y.is_visible_;
+                    input_boxes_.x.is_visible = !input_boxes_.x.is_visible;
+                    input_boxes_.y.is_visible = !input_boxes_.y.is_visible;
 
-                    if (!input_boxes_.x.is_visible_)
+                    if (!input_boxes_.x.is_visible)
                     {
-                        input_boxes_.x.has_focus_ = false;
-                        input_boxes_.y.has_focus_ = false;
+                        input_boxes_.x.has_focus = false;
+                        input_boxes_.y.has_focus = false;
                     }
                     break;
                 }
@@ -185,16 +184,14 @@ void Puzabrot::run()
             }
 
             // Toggle input box focus
-            else if (InputBoxesIsVisible() && (event.type == sf::Event::MouseButtonPressed) &&
-                     (event.mouseButton.button == sf::Mouse::Left))
+            else if (InputBoxesIsVisible() && (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
             {
-                sf::Vector2f mouse_button(static_cast<float>(event.mouseButton.x),
-                                          static_cast<float>(event.mouseButton.y));
+                sf::Vector2f mouse_button(static_cast<float>(event.mouseButton.x), static_cast<float>(event.mouseButton.y));
                 switch (options_.input_mode)
                 {
                 case ComplexShader::Z_INPUT:
                 {
-                    input_boxes_.z.has_focus_ =
+                    input_boxes_.z.has_focus =
                         ((input_boxes_.z.getPosition().x < mouse_button.x) &&
                          (mouse_button.x < input_boxes_.z.getPosition().x + input_boxes_.z.getSize().x) &&
                          (input_boxes_.z.getPosition().y < mouse_button.y) &&
@@ -203,13 +200,13 @@ void Puzabrot::run()
                 }
                 case ComplexShader::XY_INPUT:
                 {
-                    input_boxes_.x.has_focus_ =
+                    input_boxes_.x.has_focus =
                         ((input_boxes_.x.getPosition().x < mouse_button.x) &&
                          (mouse_button.x < input_boxes_.x.getPosition().x + input_boxes_.x.getSize().x) &&
                          (input_boxes_.x.getPosition().y < mouse_button.y) &&
                          (mouse_button.y < input_boxes_.x.getPosition().y + input_boxes_.x.getSize().y));
 
-                    input_boxes_.y.has_focus_ =
+                    input_boxes_.y.has_focus =
                         ((input_boxes_.y.getPosition().x < mouse_button.x) &&
                          (mouse_button.x < input_boxes_.y.getPosition().x + input_boxes_.y.getSize().x) &&
                          (input_boxes_.y.getPosition().y < mouse_button.y) &&
@@ -231,18 +228,21 @@ void Puzabrot::run()
                 }
                 case ComplexShader::XY_INPUT:
                 {
-                    if (input_boxes_.x.has_focus_)
+                    if (input_boxes_.x.has_focus)
+                    {
                         input_boxes_.x.setInput(event.text.unicode);
+                    }
                     else
+                    {
                         input_boxes_.y.setInput(event.text.unicode);
+                    }
                     break;
                 }
                 }
             }
 
             // Enter expression from input box
-            else if (InputBoxesHasFocus() && (event.type == sf::Event::KeyPressed) &&
-                     (event.key.code == sf::Keyboard::Enter))
+            else if (InputBoxesHasFocus() && (event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Enter))
             {
                 int err = makeShader();
 
@@ -257,38 +257,46 @@ void Puzabrot::run()
                 case ComplexShader::Z_INPUT:
                 {
                     if (err)
+                    {
                         input_boxes_.z.setOutput(sf::String(calc_errstr[err + 1]));
+                    }
                     else
+                    {
                         input_boxes_.z.setOutput(sf::String());
+                    }
                     break;
                 }
                 case ComplexShader::XY_INPUT:
                 {
-                    if (input_boxes_.x.has_focus_)
+                    if (input_boxes_.x.has_focus)
+                    {
                         if (err)
                         {
                             input_boxes_.x.setOutput(sf::String(calc_errstr[err + 1]));
                             input_boxes_.y.setPosition(
-                                sf::Vector2f(input_boxes_.y.getPosition().x,
-                                             input_boxes_.y.getPosition().y + 0.5F * input_boxes_.x.getSize().y));
+                                sf::Vector2f(input_boxes_.y.getPosition().x, input_boxes_.y.getPosition().y + 0.5F * input_boxes_.x.getSize().y));
                         }
                         else
                         {
                             input_boxes_.x.setOutput(sf::String());
                             input_boxes_.y.setPosition(sf::Vector2f(10.0F, 50.0F));
                         }
+                    }
                     else if (err)
+                    {
                         input_boxes_.y.setOutput(sf::String(calc_errstr[err + 1]));
+                    }
                     else
+                    {
                         input_boxes_.y.setOutput(sf::String());
+                    }
                     break;
                 }
                 }
             }
 
             // Julia set drawing
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::J) &&
-                     (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::J) && (!InputBoxesHasFocus()))
             {
                 if (options_.draw_mode != JULIA)
                 {
@@ -312,25 +320,19 @@ void Puzabrot::run()
                     julia_dragging = false;
                 }
             }
-            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::J) &&
-                     (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::J) && (!InputBoxesHasFocus()))
             {
-                if (!julia_dragging)
-                    options_.draw_mode = MAIN;
-                else
-                    options_.draw_mode = JULIA;
+                options_.draw_mode = !julia_dragging ? MAIN : JULIA;
 
                 DrawSet();
             }
 
             // Change max iterations
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::I) &&
-                     (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::I) && (!InputBoxesHasFocus()))
             {
                 change_iter = true;
             }
-            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::I) &&
-                     (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::I) && (!InputBoxesHasFocus()))
             {
                 change_iter = false;
             }
@@ -341,13 +343,11 @@ void Puzabrot::run()
             }
 
             // Change limit
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::L) &&
-                     (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::L) && (!InputBoxesHasFocus()))
             {
                 change_limit = true;
             }
-            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::L) &&
-                     (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::L) && (!InputBoxesHasFocus()))
             {
                 change_limit = false;
             }
@@ -375,8 +375,7 @@ void Puzabrot::run()
                 holder_.zoom(static_cast<float>(event.mouseWheel.delta), holder_.Screen2Plane(sf::Mouse::getPosition(window_)));
                 DrawSet();
             }
-            else if ((action_mode == ZOOMING) &&
-                     (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right)))
+            else if ((action_mode == ZOOMING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right)))
             {
                 if (GetZoomingFrame(zooming_frame))
                 {
@@ -386,17 +385,17 @@ void Puzabrot::run()
             }
 
             // Point tracing and sounding
-            else if (((action_mode == POINT_TRACING) || (action_mode == SOUNDING)) &&
-                     (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
+            else if (((action_mode == POINT_TRACING) || (action_mode == SOUNDING)) && (event.type == sf::Event::MouseButtonPressed) &&
+                     (event.mouseButton.button == sf::Mouse::Left))
             {
-                input_boxes_.x.is_visible_ = false;
-                input_boxes_.x.has_focus_  = false;
+                input_boxes_.x.is_visible = false;
+                input_boxes_.x.has_focus  = false;
 
-                input_boxes_.y.is_visible_ = false;
-                input_boxes_.y.has_focus_  = false;
+                input_boxes_.y.is_visible = false;
+                input_boxes_.y.has_focus  = false;
 
-                input_boxes_.z.is_visible_ = false;
-                input_boxes_.z.has_focus_  = false;
+                input_boxes_.z.is_visible = false;
+                input_boxes_.z.has_focus  = false;
 
                 showing_trace = true;
                 left_pressed  = true;
@@ -407,14 +406,16 @@ void Puzabrot::run()
                     synth_.audio_pause_ = false;
                     synth_.play();
                 }
-                else synth_.pause();
+                else
+                {
+                    synth_.pause();
+                }
             }
             else if ((event.type == sf::Event::MouseButtonReleased) && (event.mouseButton.button == sf::Mouse::Left))
             {
                 left_pressed = false;
             }
-            else if (((action_mode == POINT_TRACING) || (action_mode == SOUNDING)) &&
-                     (sf::Mouse::isButtonPressed(sf::Mouse::Right)))
+            else if (((action_mode == POINT_TRACING) || (action_mode == SOUNDING)) && (sf::Mouse::isButtonPressed(sf::Mouse::Right)))
             {
                 showing_trace       = false;
                 synth_.audio_pause_ = true;
@@ -425,15 +426,9 @@ void Puzabrot::run()
         window_.clear();
         window_.draw(shader_.sprite);
 
-        if ((options_.input_mode == ComplexShader::Z_INPUT) && input_boxes_.z.is_visible_)
-        {
-            input_boxes_.z.draw(window_);
-        }
-        if ((options_.input_mode == ComplexShader::XY_INPUT) && input_boxes_.x.is_visible_)
-        {
-            input_boxes_.x.draw(window_);
-            input_boxes_.y.draw(window_);
-        }
+        input_boxes_.x.draw(window_);
+        input_boxes_.y.draw(window_);
+        input_boxes_.z.draw(window_);
 
         if (left_pressed)
         {
@@ -444,10 +439,14 @@ void Puzabrot::run()
         }
 
         if (showing_trace)
+        {
             orbit = PointTrace(orbit, c_point);
+        }
 
         if (showing_menu)
+        {
             drawHelpMenu();
+        }
 
         window_.display();
     }
@@ -478,12 +477,12 @@ void Puzabrot::toggleFullScreen()
 
 bool Puzabrot::InputBoxesHasFocus()
 {
-    return (input_boxes_.x.has_focus_) || (input_boxes_.y.has_focus_) || (input_boxes_.z.has_focus_);
+    return (input_boxes_.x.has_focus) || (input_boxes_.y.has_focus) || (input_boxes_.z.has_focus);
 }
 
 bool Puzabrot::InputBoxesIsVisible()
 {
-    return (input_boxes_.x.is_visible_) || (input_boxes_.y.is_visible_) || (input_boxes_.z.is_visible_);
+    return (input_boxes_.x.is_visible) || (input_boxes_.y.is_visible) || (input_boxes_.z.is_visible);
 }
 
 void Puzabrot::DrawSet()
@@ -550,14 +549,18 @@ int Puzabrot::GetZoomingFrame(Frame& frame)
                     window_.display();
                 }
                 else
+                {
                     end.x = 0;
+                }
             }
         }
 
         window_.draw(shader_.sprite);
 
         if (end.x != -1)
+        {
             break;
+        }
         return 0;
     }
 
@@ -598,11 +601,11 @@ void Puzabrot::initCalculator(Calculator& calc, point_t z, point_t c) const
     }
     case ComplexShader::XY_INPUT:
     {
-        calc.variables.push_back({ { c.x, 0 }, "cx" });
-        calc.variables.push_back({ { c.y, 0 }, "cy" });
+        calc.variables.push_back({ { c.x, 0.0 }, "cx" });
+        calc.variables.push_back({ { c.y, 0.0 }, "cy" });
 
-        calc.variables.push_back({ { z.x, 0 }, "x" });
-        calc.variables.push_back({ { z.y, 0 }, "y" });
+        calc.variables.push_back({ { z.x, 0.0 }, "x" });
+        calc.variables.push_back({ { z.y, 0.0 }, "y" });
         break;
     }
     }
@@ -615,9 +618,9 @@ void Puzabrot::Mapping(Calculator& calc, ComplexShader::ExprTrees& expr_trees, p
     case ComplexShader::Z_INPUT:
     {
         calc.Calculate(expr_trees.z);
-        calc.variables[calc.variables.size() - 1] = { expr_trees.z.data.number, "z" };
+        calc.variables[calc.variables.size() - 1] = { expr_trees.z.value().number, "z" };
 
-        mapped_point = point_t(real(expr_trees.z.data.number), imag(expr_trees.z.data.number));
+        mapped_point = point_t(real(expr_trees.z.value().number), imag(expr_trees.z.value().number));
         break;
     }
     case ComplexShader::XY_INPUT:
@@ -625,10 +628,10 @@ void Puzabrot::Mapping(Calculator& calc, ComplexShader::ExprTrees& expr_trees, p
         calc.Calculate(expr_trees.x);
         calc.Calculate(expr_trees.y);
 
-        calc.variables[calc.variables.size() - 2] = { { real(expr_trees.x.data.number), 0.0 }, "x" };
-        calc.variables[calc.variables.size() - 1] = { { real(expr_trees.y.data.number), 0.0 }, "y" };
+        calc.variables[calc.variables.size() - 2] = { { real(expr_trees.x.value().number), 0.0 }, "x" };
+        calc.variables[calc.variables.size() - 1] = { { real(expr_trees.y.value().number), 0.0 }, "y" };
 
-        mapped_point = point_t(real(expr_trees.x.data.number), real(expr_trees.y.data.number));
+        mapped_point = point_t(real(expr_trees.x.value().number), real(expr_trees.y.value().number));
         break;
     }
     }
@@ -647,7 +650,9 @@ point_t Puzabrot::PointTrace(point_t point, point_t c_point)
         Mapping(calc, expr_trees_, point2);
 
         if (sqrt(pow(point2.x, 2.0) + pow(point2.y, 2.0)) > holder_.limit)
+        {
             break;
+        }
 
         sf::Vertex line[] = { sf::Vertex(sf::Vector2f(holder_.Plane2Screen(point1)), sf::Color::White),
                               sf::Vertex(sf::Vector2f(holder_.Plane2Screen(point2)), sf::Color::Black) };
@@ -667,7 +672,7 @@ void Puzabrot::savePicture()
     window_.draw(shader_.sprite);
 
     sf::RectangleShape rectangle;
-    rectangle.setPosition(0, 0);
+    rectangle.setPosition(0.0F, 0.0F);
     rectangle.setSize(sf::Vector2f(holder_.winsizes));
     rectangle.setFillColor(sf::Color(10, 10, 10, 150));
 
@@ -706,27 +711,27 @@ void Puzabrot::drawHelpMenu()
     char str[1000] = "";
 
     sprintf(str,
-            "    H - Toggle help menu viewing\n"
-            "    Z - Choose zooming mode       (draw a rectangle by left and right mouse button to zoom in-out)\n"
-            "    P - Choose point tracing mode (press left mouse button to trace point)\n"
-            "    S - Choose sounding mode      (press left mouse button to trace point and hear sound)\n"
-            "  F11 - Toggle Fullscreen\n"
-            "  Esc - Exit program\n"
-            "Space - Take a screenshot\n"
-            "    R - Reset View\n"
-            "Tilde - Open input box (enter text expression, then press enter to output the set)\n"
-            "  Tab - Change input method\n"
-            "    D - Toggle audio dampening\n"
-            "    C - Toggle sound coloring\n"
-            "    J - Hold down, move mouse, and release to make Julia sets. Press again to switch back\n"
-            "    I - Hold down, scroll mouse wheel to increase or decrease max iterations\n"
-            "    L - Hold down, scroll mouse wheel to increase or decrease limit\n"
-            "\n"
-            "\n"
-            "        Current max iteration: %lu, current limit: %f\n"
-            "        Borders: upper: %.5lf, bottom: %.5lf, left: %.5lf, right: %.5lf\n",
-            holder_.itrn_max, holder_.limit, holder_.borders.im_top, holder_.borders.im_bottom, holder_.borders.re_left,
-            holder_.borders.re_right);
+        "    H - Toggle help menu viewing\n"
+        "    Z - Choose zooming mode       (draw a rectangle by left and right mouse button to zoom in-out)\n"
+        "    P - Choose point tracing mode (press left mouse button to trace point)\n"
+        "    S - Choose sounding mode      (press left mouse button to trace point and hear sound)\n"
+        "  F11 - Toggle Fullscreen\n"
+        "  Esc - Exit program\n"
+        "Space - Take a screenshot\n"
+        "    R - Reset View\n"
+        "Tilde - Open input box (enter text expression, then press enter to output the set)\n"
+        "  Tab - Change input method\n"
+        "    D - Toggle audio dampening\n"
+        "    C - Toggle sound coloring\n"
+        "    J - Hold down, move mouse, and release to make Julia sets. Press again to switch back\n"
+        "    I - Hold down, scroll mouse wheel to increase or decrease max iterations\n"
+        "    L - Hold down, scroll mouse wheel to increase or decrease limit\n"
+        "\n"
+        "\n"
+        "        Current max iteration: %lu, current limit: %f\n"
+        "        Borders: upper: %.5lf, bottom: %.5lf, left: %.5lf, right: %.5lf\n",
+        holder_.itrn_max, holder_.limit, holder_.borders.im_top, holder_.borders.im_bottom, holder_.borders.re_left, holder_.borders.re_right
+    );
 
     help_menu.setString(str);
     window_.draw(help_menu);
@@ -741,8 +746,7 @@ int Puzabrot::makeShader()
         Expression expr_z(input_boxes_.z.getInput());
 
         int err = expr_z.getTree(expr_trees_.z);
-        if (err)
-            return err;
+        COND_RETURN(err, err);
         break;
     }
     case ComplexShader::XY_INPUT:
@@ -751,18 +755,15 @@ int Puzabrot::makeShader()
         Expression expr_y(input_boxes_.y.getInput());
 
         int err = expr_x.getTree(expr_trees_.x);
-        if (err)
-            return err;
+        COND_RETURN(err, err);
 
         err = expr_y.getTree(expr_trees_.y);
-        if (err)
-            return err;
+        COND_RETURN(err, err);
     }
     }
     synth_.copyTrees(expr_trees_);
 
-    if (shader_.make(expr_trees_, options_.input_mode))
-        return CALC_WRONG_VARIABLE;
+    COND_RETURN(shader_.make(expr_trees_, options_.input_mode), CALC_WRONG_VARIABLE);
 
     return 0;
 }
@@ -810,8 +811,7 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
         audio_reset_ = false;
     }
 
-    if (audio_pause_)
-        return true;
+    COND_RETURN(audio_pause_, true);
 
     c_point_ = (app_->options_.draw_mode == MAIN) ? new_point_ : app_->holder_.julia_point;
 
@@ -877,5 +877,3 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
 
     return !audio_reset_;
 }
-
-} // namespace puza

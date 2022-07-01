@@ -1,6 +1,7 @@
 #include "ComplexHolder.h"
 
-namespace puza {
+const float INITIAL_LEFT_RATIO = 3.0F / 5.0F;
+const float INITIAL_RIGHT_RATIO = 2.0F / 5.0F;
 
 ComplexHolder::Borders::Borders(double re_left_, double re_right_, double im_bottom_, double im_top_) :
     re_left(re_left_), re_right(re_right_), im_bottom(im_bottom_), im_top(im_top_)
@@ -11,20 +12,20 @@ ComplexHolder::ComplexHolder(sf::Vector2u winsizes_) : winsizes(winsizes_)
     borders.im_top    = UPPER_BORDER;
     borders.im_bottom = -UPPER_BORDER;
 
-    borders.re_left  = -(borders.im_top - borders.im_bottom) * winsizes.x / winsizes.y / 5 * 3;
-    borders.re_right =  (borders.im_top - borders.im_bottom) * winsizes.x / winsizes.y / 5 * 2;
+    borders.re_left  = -(borders.im_top - borders.im_bottom) * winsizes.x / winsizes.y * INITIAL_LEFT_RATIO;
+    borders.re_right =  (borders.im_top - borders.im_bottom) * winsizes.x / winsizes.y * INITIAL_RIGHT_RATIO;
 }
 
 point_t ComplexHolder::Screen2Plane(sf::Vector2i pixel) const
 {
-    return point_t(borders.re_left + (borders.re_right - borders.re_left) * pixel.x / winsizes.x,
-                   borders.im_top  - (borders.im_top - borders.im_bottom) * pixel.y / winsizes.y);
+    return {borders.re_left + (borders.re_right - borders.re_left) * pixel.x / winsizes.x,
+            borders.im_top  - (borders.im_top - borders.im_bottom) * pixel.y / winsizes.y};
 }
 
 point_t ComplexHolder::Plane2Screen(point_t point) const
 {
-    return point_t((point.x - borders.re_left) / (borders.re_right - borders.re_left) * winsizes.x,
-                   (borders.im_top - point.y)  / (borders.im_top - borders.im_bottom) * winsizes.y);
+    return {(point.x - borders.re_left) / (borders.re_right - borders.re_left) * winsizes.x,
+            (borders.im_top - point.y)  / (borders.im_top - borders.im_bottom) * winsizes.y};
 }
 
 void ComplexHolder::zoom(double wheel_delta, point_t point)
@@ -50,8 +51,8 @@ void ComplexHolder::reset()
     borders.im_top    = UPPER_BORDER;
     borders.im_bottom = -UPPER_BORDER;
 
-    borders.re_left  = -(borders.im_top - borders.im_bottom) * winsizes.x / winsizes.y / 5 * 3;
-    borders.re_right =  (borders.im_top - borders.im_bottom) * winsizes.x / winsizes.y / 5 * 2;
+    borders.re_left  = -(borders.im_top - borders.im_bottom) * winsizes.x / winsizes.y * INITIAL_LEFT_RATIO;
+    borders.re_right =  (borders.im_top - borders.im_bottom) * winsizes.x / winsizes.y * INITIAL_RIGHT_RATIO;
 
     itrn_max = MAX_ITERATION;
     limit    = LIMIT;
@@ -89,5 +90,3 @@ void ComplexHolder::changeBorders(Frame frame)
         borders.im_top = borders.im_bottom + (borders.re_right - borders.re_left) * winsizes.y / winsizes.x;
     }
 }
-
-} // namespace puza

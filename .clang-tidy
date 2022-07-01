@@ -2,20 +2,17 @@ Checks: >
   -*,
   bugprone-*,
   google-*,
+  llvm-*,
   misc-*,
   modernize-*,
   performance-*,
   portability-*,
   readability-*,
-  -google-readability-braces-around-statements,
-  -google-readability-namespace-comments,
+  -bugprone-signed-char-misuse,
   -google-runtime-references,
-  -misc-non-private-member-variables-in-classes,
-  -modernize-return-braced-init-list,
-  -modernize-use-trailing-return-type,
+  -misc-no-recursion,
   -modernize-avoid-c-arrays,
-  -performance-move-const-arg,
-  -readability-braces-around-statements,
+  -modernize-use-trailing-return-type,
   -readability-magic-numbers,
   -readability-named-parameter,
   -readability-redundant-declaration,
@@ -35,15 +32,10 @@ CheckOptions:
   - { key: readability-identifier-naming.ClassMemberSuffix,      value: _          }
   - { key: readability-identifier-naming.PrivateMemberSuffix,    value: _          }
   - { key: readability-identifier-naming.ProtectedMemberSuffix,  value: _          }
-  - { key: readability-identifier-naming.EnumConstantCase,         value: CamelCase }
-  - { key: readability-identifier-naming.EnumConstantPrefix,       value: k         }
-  - { key: readability-identifier-naming.ConstexprVariableCase,    value: CamelCase }
-  - { key: readability-identifier-naming.ConstexprVariablePrefix,  value: k         }
-  - { key: readability-identifier-naming.GlobalConstantCase,       value: CamelCase }
-  - { key: readability-identifier-naming.GlobalConstantPrefix,     value: k         }
-  - { key: readability-identifier-naming.MemberConstantCase,       value: CamelCase }
-  - { key: readability-identifier-naming.MemberConstantPrefix,     value: k         }
-  - { key: readability-identifier-naming.StaticConstantCase,       value: CamelCase }
-  - { key: readability-identifier-naming.StaticConstantPrefix,     value: k         }
+  - { key: readability-identifier-naming.EnumConstantCase,         value: UPPER_CASE }
+  - { key: readability-identifier-naming.ConstexprVariableCase,    value: UPPER_CASE }
+  - { key: readability-identifier-naming.GlobalConstantCase,       value: UPPER_CASE }
+  - { key: readability-identifier-naming.MemberConstantCase,       value: UPPER_CASE }
+  - { key: readability-identifier-naming.StaticConstantCase,       value: UPPER_CASE }
   - { key: readability-implicit-bool-conversion.AllowIntegerConditions,  value: 1   }
   - { key: readability-implicit-bool-conversion.AllowPointerConditions,  value: 1   }

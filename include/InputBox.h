@@ -3,8 +3,6 @@
 
 #include <SFML/Graphics.hpp>
 
-namespace puza {
-
 class InputBox
 {
 public:
@@ -37,10 +35,8 @@ private:
     float        font_size_;
 
 public:
-    bool has_focus_  = false;
-    bool is_visible_ = false;
+    bool has_focus  = false;
+    bool is_visible = false;
 };
-
-} // namespace puza
 
 #endif // INPUTBOX_H

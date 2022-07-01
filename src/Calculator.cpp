@@ -3,17 +3,21 @@
 #include <cassert>
 #include <cmath>
 
-namespace puza {
-
-constexpr std::complex<double> kNil = { 0.0, 0.0 };
-constexpr std::complex<double> kOne = { 1.0, 0.0 };
-constexpr std::complex<double> kTwo = { 2.0, 0.0 };
+constexpr std::complex<double> NIL = { 0.0, 0.0 };
+constexpr std::complex<double> ONE = { 1.0, 0.0 };
+constexpr std::complex<double> TWO = { 2.0, 0.0 };
 
 #define ADD_VAR(variables)                               \
     {                                                    \
         (variables).emplace_back(Variable { PI, "pi" }); \
-        (variables).emplace_back(Variable { E, "e" });   \
-        (variables).emplace_back(Variable { I, "i" });   \
+        (variables).emplace_back(Variable { E,  "e"  }); \
+        (variables).emplace_back(Variable { I,  "i"  }); \
+    } //
+
+#define COND_RETURN(cond, ret) \
+    if (cond)                  \
+    {                          \
+        return (ret);          \
     } //
 
 std::ostream& operator<<(std::ostream& os, const CalcData& data)
@@ -29,7 +33,9 @@ std::ostream& operator<<(std::ostream& os, const CalcData& data)
     return os;
 }
 
-Variable::Variable(std::complex<double> value_, std::string name_) : value(value_), name(std::move(name_)) {}
+Variable::Variable(std::complex<double> value_, std::string name_) :
+    value(value_), name(std::move(name_))
+{}
 
 CalcData::CalcData(std::complex<double> number_, std::string word_, char op_code_, char node_type_) :
     number(number_), word(std::move(word_)), op_code(op_code_), node_type(node_type_)
@@ -48,69 +54,69 @@ void Calculator::clear()
 
 int Calculator::Calculate(Tree<CalcData>& node)
 {
-    switch (node.data.node_type)
+    switch (node.value().node_type)
     {
     case CalcData::FUNCTION:
     {
-        int err = Calculate(node.branches[0]);
-        if (err)
-            return err;
+        int err = Calculate(node[0]);
+        COND_RETURN(err, err);
 
-        std::complex<double> number = node.branches[0].data.number;
+        std::complex<double> number = node[0].value().number;
 
-        switch (node.data.op_code)
+        switch (node.value().op_code)
         {
-        case Operation::ABS:     number = abs(number);              break;
-        case Operation::ARCCOS:  number = acos(number);             break;
-        case Operation::ARCCOSH: number = acosh(number);            break;
-        case Operation::ARCCOT:  number = PI / kTwo - atan(number); break;
-        case Operation::ARCCOTH: number = atanh(kOne / number);     break;
-        case Operation::ARCSIN:  number = asin(number);             break;
-        case Operation::ARCSINH: number = asinh(number);            break;
-        case Operation::ARCTAN:  number = atan(number);             break;
-        case Operation::ARCTANH: number = atanh(number);            break;
-        case Operation::COS:     number = cos(number);              break;
-        case Operation::COSH:    number = cosh(number);             break;
-        case Operation::COT:     number = kOne / tan(number);       break;
-        case Operation::COTH:    number = kOne / tanh(number);      break;
-        case Operation::EXP:     number = exp(number);              break;
-        case Operation::LG:      number = log10(number);            break;
-        case Operation::LN:      number = log(number);              break;
-        case Operation::SIN:     number = sin(number);              break;
-        case Operation::SINH:    number = sinh(number);             break;
-        case Operation::SQRT:    number = sqrt(number);             break;
-        case Operation::TAN:     number = tan(number);              break;
-        case Operation::TANH:    number = tanh(number);             break;
+        case Operation::ABS:     number = abs(number);             break;
+        case Operation::ARCCOS:  number = acos(number);            break;
+        case Operation::ARCCOSH: number = acosh(number);           break;
+        case Operation::ARCCOT:  number = PI / TWO - atan(number); break;
+        case Operation::ARCCOTH: number = atanh(ONE / number);     break;
+        case Operation::ARCSIN:  number = asin(number);            break;
+        case Operation::ARCSINH: number = asinh(number);           break;
+        case Operation::ARCTAN:  number = atan(number);            break;
+        case Operation::ARCTANH: number = atanh(number);           break;
+        case Operation::ARG:     number = arg(number);             break;
+        case Operation::COS:     number = cos(number);             break;
+        case Operation::COSH:    number = cosh(number);            break;
+        case Operation::COT:     number = ONE / tan(number);       break;
+        case Operation::COTH:    number = ONE / tanh(number);      break;
+        case Operation::EXP:     number = exp(number);             break;
+        case Operation::LG:      number = log10(number);           break;
+        case Operation::LN:      number = log(number);             break;
+        case Operation::SIN:     number = sin(number);             break;
+        case Operation::SINH:    number = sinh(number);            break;
+        case Operation::SQRT:    number = sqrt(number);            break;
+        case Operation::TAN:     number = tan(number);             break;
+        case Operation::TANH:    number = tanh(number);            break;
         default: assert(0);
         }
 
-        node.data = CalcData { number, node.data.word, node.data.op_code, node.data.node_type };
+        node.value() = CalcData { number, node.value().word, node.value().op_code, node.value().node_type };
         break;
     }
     case CalcData::OPERATOR:
     {
-        std::complex<double> right_num { kNil };
-        std::complex<double> left_num { kNil };
-        std::complex<double> number { kNil };
+        std::complex<double> right_num { NIL };
+        std::complex<double> left_num { NIL };
+        std::complex<double> number { NIL };
 
-        if (node.branches.size() == 2)
+        if (node.branches_num() == 2)
         {
-            int err = Calculate(node.branches[1]);
-            if (err)
-                return err;
+            int err = Calculate(node[1]);
+            COND_RETURN(err, err);
 
-            left_num = node.branches[1].data.number;
+            left_num = node[1].value().number;
         }
         else
-            left_num = kNil;
+        {
+            left_num = NIL;
+        }
 
-        int err = Calculate(node.branches[0]);
-        if (err)
-            return err;
+        int err = Calculate(node[0]);
+        COND_RETURN(err, err);
 
-        right_num = node.branches[0].data.number;
+        right_num = node[0].value().number;
 
-        switch (node.data.op_code)
+        switch (node.value().op_code)
         {
         case Operation::ADD: number = left_num + right_num;     break;
         case Operation::SUB: number = left_num - right_num;     break;
@@ -120,23 +126,24 @@ int Calculator::Calculate(Tree<CalcData>& node)
         default: assert(0);
         }
 
-        node.data = CalcData { number, node.data.word, node.data.op_code, node.data.node_type };
+        node.value() = CalcData { number, node.value().word, node.value().op_code, node.value().node_type };
         break;
     }
     case CalcData::VARIABLE:
     {
         auto index = static_cast<size_t>(-1);
         for (size_t i = 0; i < variables.size(); ++i)
-            if (variables[i].name == node.data.word)
+        {
+            if (variables[i].name == node.value().word)
             {
                 index = i;
                 break;
             }
+        }
 
-        if (index == static_cast<size_t>(-1))
-            return CALC_UNIDENTIFIED_VARIABLE;
+        COND_RETURN(index == static_cast<size_t>(-1), CALC_UNIDENTIFIED_VARIABLE);
 
-        node.data = CalcData { variables[index].value, node.data.word, node.data.op_code, node.data.node_type };
+        node.value() = CalcData { variables[index].value, node.value().word, node.value().op_code, node.value().node_type };
         break;
     }
     case CalcData::NUMBER: break;
@@ -163,11 +170,10 @@ int Expression::getTree(Tree<CalcData>& tree)
 
     pos = 0;
 
-    tree.clear();
+    tree.clear_branches();
 
     int err = pass_Plus_Minus(tree);
-    if (err)
-        return err;
+    COND_RETURN(err, err);
 
     return CALC_OK;
 }
@@ -179,20 +185,18 @@ int Expression::pass_Plus_Minus(Tree<CalcData>& node)
         pos++;
 
         Tree<CalcData> right;
-        int            err = pass_Mul_Div(right);
-        if (err)
-            return err;
+        int err = pass_Mul_Div(right);
+        COND_RETURN(err, err);
 
-        node.clear();
-        node.branches.push_back(right);
+        node.clear_branches();
+        node.push_branch(right);
 
-        node.data = CalcData { kNil, op_names[Operation::SUB].word, op_names[Operation::SUB].code, CalcData::OPERATOR };
+        node.value() = CalcData { NIL, op_names[Operation::SUB].word, op_names[Operation::SUB].code, CalcData::OPERATOR };
     }
     else
     {
         int err = pass_Mul_Div(node);
-        if (err)
-            return err;
+        COND_RETURN(err, err);
     }
 
     while ((str[pos] == '+') || (str[pos] == '-'))
@@ -204,19 +208,17 @@ int Expression::pass_Plus_Minus(Tree<CalcData>& node)
         Tree<CalcData> right;
 
         int err = pass_Mul_Div(right);
-        if (err)
-            return err;
+        COND_RETURN(err, err);
 
-        node.clear();
-        node.branches.push_back(right);
-        node.branches.push_back(left);
+        node.clear_branches();
+        node.push_branch(right);
+        node.push_branch(left);
 
-        node.data = CalcData { kNil, op_names[op].word, op_names[op].code, CalcData::OPERATOR };
+        node.value() = CalcData { NIL, op_names[op].word, op_names[op].code, CalcData::OPERATOR };
     }
 
-    if ((str[pos] != '+') && (str[pos] != '-') && (str[pos] != '*') && (str[pos] != '/') && (str[pos] != '^') &&
-        (str[pos] != '(') && (str[pos] != ')') && (str[pos] != '\0'))
-        return CALC_SYNTAX_ERROR;
+    COND_RETURN((str[pos] != '+') && (str[pos] != '-') && (str[pos] != '*') && (str[pos] != '/') && (str[pos] != '^') &&
+                (str[pos] != '(') && (str[pos] != ')') && (str[pos] != '\0'), CALC_SYNTAX_ERROR);
 
     return CALC_OK;
 }
@@ -224,8 +226,7 @@ int Expression::pass_Plus_Minus(Tree<CalcData>& node)
 int Expression::pass_Mul_Div(Tree<CalcData>& node)
 {
     int err = pass_Power(node);
-    if (err)
-        return err;
+    COND_RETURN(err, err);
 
     while ((str[pos] == '*') || (str[pos] == '/'))
     {
@@ -236,14 +237,13 @@ int Expression::pass_Mul_Div(Tree<CalcData>& node)
         Tree<CalcData> right;
 
         err = pass_Power(right);
-        if (err)
-            return err;
+        COND_RETURN(err, err);
 
-        node.clear();
-        node.branches.push_back(right);
-        node.branches.push_back(left);
+        node.clear_branches();
+        node.push_branch(right);
+        node.push_branch(left);
 
-        node.data = CalcData { kNil, op_names[op].word, op_names[op].code, CalcData::OPERATOR };
+        node.value() = CalcData { NIL, op_names[op].word, op_names[op].code, CalcData::OPERATOR };
     }
 
     return CALC_OK;
@@ -252,8 +252,7 @@ int Expression::pass_Mul_Div(Tree<CalcData>& node)
 int Expression::pass_Power(Tree<CalcData>& node)
 {
     int err = pass_Brackets(node);
-    if (err)
-        return err;
+    COND_RETURN(err, err);
 
     while (str[pos] == '^')
     {
@@ -263,14 +262,13 @@ int Expression::pass_Power(Tree<CalcData>& node)
         Tree<CalcData> right;
 
         err = pass_Power(right);
-        if (err)
-            return err;
+        COND_RETURN(err, err);
 
-        node.clear();
-        node.branches.push_back(right);
-        node.branches.push_back(left);
+        node.clear_branches();
+        node.push_branch(right);
+        node.push_branch(left);
 
-        node.data = CalcData { kNil, op_names[Operation::POW].word, op_names[Operation::POW].code, CalcData::OPERATOR };
+        node.value() = CalcData { NIL, op_names[Operation::POW].word, op_names[Operation::POW].code, CalcData::OPERATOR };
     }
 
     return CALC_OK;
@@ -283,11 +281,9 @@ int Expression::pass_Brackets(Tree<CalcData>& node)
         pos++;
 
         int err = pass_Plus_Minus(node);
-        if (err)
-            return err;
+        COND_RETURN(err, err);
 
-        if (str[pos] != ')')
-            return CALC_SYNTAX_NO_CLOSE_BRACKET;
+        COND_RETURN(str[pos] != ')', CALC_SYNTAX_NO_CLOSE_BRACKET);
         pos++;
 
         return CALC_OK;
@@ -297,11 +293,8 @@ int Expression::pass_Brackets(Tree<CalcData>& node)
 
 int Expression::pass_Function(Tree<CalcData>& node)
 {
-    if (isdigit(str[pos]))
-        return pass_Number(node);
-
-    if (!isalpha(str[pos]))
-        return CALC_SYNTAX_ERROR;
+    COND_RETURN(isdigit(str[pos]), pass_Number(node));
+    COND_RETURN(!isalpha(str[pos]), CALC_SYNTAX_ERROR);
 
     std::string word;
     while (isalpha(str[pos]) || isdigit(str[pos])) { word.push_back(str[pos++]); }
@@ -309,21 +302,21 @@ int Expression::pass_Function(Tree<CalcData>& node)
     if (str[pos] == '(')
     {
         int code = findFunc(word);
-        if (code == Operation::ERR)
-            return CALC_SYNTAX_UNIDENTIFIED_FUNCTION;
+        COND_RETURN(code == Operation::ERR, CALC_SYNTAX_UNIDENTIFIED_FUNCTION);
 
         Tree<CalcData> right;
         int err = pass_Brackets(right);
-        if (err)
-            return err;
+        COND_RETURN(err, err);
 
-        node.clear();
-        node.branches.push_back(right);
+        node.clear_branches();
+        node.push_branch(right);
 
-        node.data = CalcData { kNil, op_names[code].word, op_names[code].code, CalcData::FUNCTION };
+        node.value() = CalcData { NIL, op_names[code].word, op_names[code].code, CalcData::FUNCTION };
     }
     else
-        node.data = CalcData { kNil, word, Operation::ERR, CalcData::VARIABLE };
+    {
+        node.value() = CalcData { NIL, word, Operation::ERR, CalcData::VARIABLE };
+    }
 
     return CALC_OK;
 }
@@ -337,10 +330,12 @@ int Expression::pass_Number(Tree<CalcData>& node)
     if (str[pos] == 'i')
     {
         pos++;
-        node.data = CalcData { { 0, value }, {}, Operation::ERR, CalcData::NUMBER };
+        node.value() = CalcData { { 0, value }, {}, Operation::ERR, CalcData::NUMBER };
     }
     else
-        node.data = CalcData { { value, 0 }, {}, Operation::ERR, CalcData::NUMBER };
+    {
+        node.value() = CalcData { { value, 0 }, {}, Operation::ERR, CalcData::NUMBER };
+    }
 
     return CALC_OK;
 }
@@ -349,13 +344,9 @@ char Expression::findFunc(std::string word)
 {
     Operation func_key { 0, std::move(word) };
 
-    auto* p_func_struct =
-        reinterpret_cast<struct Operation*>(bsearch(&func_key, op_names, OP_NUM, sizeof(op_names[0]), compare_OpNames));
+    auto* p_func_struct = reinterpret_cast<struct Operation*>(bsearch(&func_key, op_names, OP_NUM, sizeof(op_names[0]), compare_OpNames));
 
-    if (p_func_struct != nullptr)
-        return p_func_struct->code;
+    COND_RETURN(p_func_struct != nullptr, p_func_struct->code);
 
     return Operation::ERR;
 }
-
-} // namespace puza
