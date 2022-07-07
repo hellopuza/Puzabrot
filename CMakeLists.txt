@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 
 set(EXEC_NAME Puzabrot)
-project(${EXEC_NAME} VERSION 1.2 DESCRIPTION "Escape-time fractals viewer")
+project(${EXEC_NAME} VERSION 1.3 DESCRIPTION "Escape-time fractals viewer")
 
 set(CMAKE_CXX_CLANG_TIDY
     clang-tidy;
@@ -19,7 +19,7 @@ set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 file(COPY ${RESOURCE_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 set_target_properties(${EXEC_NAME} PROPERTIES
-    CXX_STANDARD          11
+    CXX_STANDARD          20
     CXX_STANDARD_REQUIRED ON
 )
 

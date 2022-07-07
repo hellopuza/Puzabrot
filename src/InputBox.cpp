@@ -4,16 +4,17 @@
 
 const sf::Color GREY_COLOR = sf::Color(128, 128, 128);
 const sf::Color LIGHT_GREY_COLOR = sf::Color(200, 200, 200);
-const sf::Color DARK_GREY_COLOR = sf::Color(200, 200, 200);
+const sf::Color DARK_GREY_COLOR = sf::Color(50, 50, 50);
 
-const float BOX_OUTLINE_THICKNESS = 2.0F;
-const float DEFAULT_FONT_SIZE = 20.0F;
-const float FONT_FACTOR = 0.56F;
-const float HALF = 0.5F;
-const float HORIZONTAL_FONT_FACTOR = 8.0F;
-const float QUARTER = 0.25F;
-const float VERTICAL_FONT_FACTOR = 1.3F;
-const float VERTICAL_BOX_FACTOR = 1.5F;
+constexpr float BOX_OUTLINE_THICKNESS = 2.0F;
+constexpr float DEFAULT_FONT_SIZE = 20.0F;
+constexpr float FONT_FACTOR = 0.56F;
+constexpr float HALF = 0.5F;
+constexpr float HORIZONTAL_FONT_FACTOR = 8.0F;
+constexpr float QUARTER = 0.25F;
+constexpr float VERTICAL_FONT_FACTOR = 1.3F;
+constexpr float VERTICAL_BOX_FACTOR = 1.5F;
+constexpr int INPUT_UNICODE_LIMIT = 128;
 
 InputBox::InputBox() :
     box_pos_({ 0.0F, 0.0F }), box_color_(GREY_COLOR), text_color_(sf::Color::White), font_size_(DEFAULT_FONT_SIZE)
@@ -29,7 +30,7 @@ InputBox::InputBox(sf::Vector2f box_pos, sf::Color box_color, sf::Color text_col
 
 void InputBox::draw(sf::RenderWindow& window)
 {
-    if (is_visible)
+    if (is_visible_)
     {
         sf::RectangleShape input_box;
         sf::RectangleShape box;
@@ -48,14 +49,7 @@ void InputBox::draw(sf::RenderWindow& window)
 
         input_box.setFillColor(DARK_GREY_COLOR);
         input_box.setOutlineThickness(BOX_OUTLINE_THICKNESS);
-        if (has_focus)
-        {
-            input_box.setOutlineColor(sf::Color::Yellow);
-        }
-        else
-        {
-            input_box.setOutlineColor(LIGHT_GREY_COLOR);
-        }
+        input_box.setOutlineColor(has_focus_ ? sf::Color::Yellow : LIGHT_GREY_COLOR);
 
         auto label_size       = static_cast<float>(label_.getString().getSize());
         auto output_text_size = static_cast<float>(output_text_.getString().getSize());
@@ -175,4 +169,71 @@ void InputBox::setPosition(const sf::Vector2f& pos)
 void InputBox::setSize(const sf::Vector2f& size)
 {
     box_size_ = size;
+}
+
+void InputBox::hide()
+{
+    has_focus_ = false;
+    is_visible_ = false;
+}
+
+void InputBox::show()
+{
+    has_focus_ = false;
+    is_visible_ = true;
+}
+
+bool InputBox::isVisible() const
+{
+    return is_visible_;
+}
+
+bool InputBox::handleEvent(const sf::Event& event)
+{
+    text_entered_ = false;
+
+    // Toggle input box visibility
+    if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Tilde) && !has_focus_)
+    {
+        is_visible_ = !is_visible_;
+        has_focus_ = false;
+
+        return true;
+    }
+
+    // Toggle input box focus
+    if (is_visible_ && (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
+    {
+        sf::Vector2f mouse_button(static_cast<float>(event.mouseButton.x), static_cast<float>(event.mouseButton.y));
+        has_focus_ = ((getPosition().x < mouse_button.x) && (mouse_button.x < getPosition().x + getSize().x) &&
+            (getPosition().y < mouse_button.y) && (mouse_button.y < getPosition().y + getSize().y));
+
+        return true;
+    }
+
+    // Enter expression from input box
+    if (has_focus_ && (event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Enter))
+    {
+        text_entered_ = true;
+        return true;
+    }
+
+    // Input text expression to input box
+    if (has_focus_ && (event.type == sf::Event::TextEntered) && (event.text.unicode < INPUT_UNICODE_LIMIT))
+    {
+        setInput(event.text.unicode);
+        return true;
+    }
+
+    return false;
+}
+
+bool InputBox::TextEntered() const
+{
+    return text_entered_;
+}
+
+bool InputBox::hasFocus() const
+{
+    return has_focus_;
 }

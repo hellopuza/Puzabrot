@@ -21,6 +21,13 @@ public:
 
     void setPosition(const sf::Vector2f& pos);
     void setSize(const sf::Vector2f& size);
+    void hide();
+    void show();
+    bool isVisible() const;
+
+    bool handleEvent(const sf::Event& event);
+    bool TextEntered() const;
+    bool hasFocus() const;
 
 private:
     sf::Text label_;
@@ -29,14 +36,14 @@ private:
 
     sf::Vector2f box_pos_  = { 0, 0 };
     sf::Vector2f box_size_ = { 0, 0 };
-    sf::Color    box_color_;
-    sf::Color    text_color_;
-    sf::Font     font_;
-    float        font_size_;
+    sf::Color box_color_;
+    sf::Color text_color_;
+    sf::Font font_;
+    float font_size_;
 
-public:
-    bool has_focus  = false;
-    bool is_visible = false;
+    bool has_focus_ = false;
+    bool is_visible_ = false;
+    bool text_entered_ = false;
 };
 
 #endif // INPUTBOX_H

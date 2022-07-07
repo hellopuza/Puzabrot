@@ -1,4 +1,5 @@
 #include "Puzabrot.h"
+
 #include <cstring>
 
 #define COND_RETURN(cond, ret) \
@@ -7,435 +8,342 @@
         return (ret);          \
     } //
 
-Puzabrot::Puzabrot() :
-    holder_(sf::Vector2u(DEFAULT_WIDTH, DEFAULT_HEIGHT)), shader_(sf::Vector2u(DEFAULT_WIDTH, DEFAULT_HEIGHT)),
-    window_(sf::VideoMode(holder_.winsizes.x, holder_.winsizes.y), TITLE_STRING),
-    input_boxes_ { InputBox(sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20.0F),
-                   InputBox(sf::Vector2f(10, 50), sf::Color(128, 128, 128, 128), sf::Color::White, 20.0F),
-                   InputBox(sf::Vector2f(10, 10), sf::Color(128, 128, 128, 128), sf::Color::White, 20.0F) },
-    synth_(this)
-{
-    input_boxes_.x.setLabel(sf::String("x:"));
-    input_boxes_.y.setLabel(sf::String("y:"));
-    input_boxes_.z.setLabel(sf::String("z:"));
+constexpr double LIMIT = 100.0;
+constexpr double UPPER_BORDER = 1.3;
+constexpr double ZOOMING_RATIO = 0.2;
+constexpr size_t MAX_ITERATION = 500;
+constexpr unsigned SYM_SIZE = 12;
+constexpr float FONT_SIZE = 20.0F;
+constexpr size_t SCREENSHOT_WIDTH = 7680;
 
-    input_boxes_.x.setInput(sf::String("x*x-y*y+cx"));
-    input_boxes_.y.setInput(sf::String("2*x*y+cy"));
-    input_boxes_.z.setInput(sf::String("z^2+c"));
+static const sf::String TITLE_STRING = "Puzabrot";
+static const sf::Color AXIS_COLOR = sf::Color(180, 180, 180);
+static const sf::Color GRID_COLOR = sf::Color(100, 100, 100);
+static const sf::Color TEXT_COLOR = sf::Color(180, 180, 180);
+static const sf::Color INPUT_BOX_COLOR = sf::Color(128, 128, 128, 128);
+static const sf::Vector2f INPUT_X_POS = sf::Vector2f(10.0F, 10.0F);
+static const sf::Vector2f INPUT_Y_POS = sf::Vector2f(10.0F, 50.0F);
+
+Puzabrot::Puzabrot(const sf::Vector2u & size) :
+    input_{ InputBox(INPUT_X_POS, INPUT_BOX_COLOR, sf::Color::White, FONT_SIZE),
+            InputBox(INPUT_Y_POS, INPUT_BOX_COLOR, sf::Color::White, FONT_SIZE),
+            InputBox(INPUT_X_POS, INPUT_BOX_COLOR, sf::Color::White, FONT_SIZE) },
+    window_(std::make_unique<Window>(size, &font_)),
+    engine_(std::make_unique<Engine>(size, window_.get())),
+    synth_(std::make_unique<Synth>(engine_.get()))
+{
+    engine_->params.limit = LIMIT;
+    engine_->params.itrn_max = MAX_ITERATION;
+
+    window_->setZoomingRatio(ZOOMING_RATIO);
+    window_->setBorders(-UPPER_BORDER, UPPER_BORDER, 0.5);
+
+    input_.x.setLabel(sf::String("x:"));
+    input_.y.setLabel(sf::String("y:"));
+    input_.z.setLabel(sf::String("z:"));
+
+    input_.x.setInput(sf::String("x*x-y*y+cx"));
+    input_.y.setInput(sf::String("2*x*y+cy"));
+    input_.z.setInput(sf::String("z^2+c"));
 
     font_.loadFromFile("assets/consola.ttf");
 }
 
 void Puzabrot::run()
 {
-    window_.setVerticalSyncEnabled(true);
-
-    int action_mode = POINT_TRACING;
+    window_->setVerticalSyncEnabled(true);
 
     makeShader();
-    DrawSet();
+    engine_->render();
 
-    bool showing_menu   = false;
-    bool showing_trace  = false;
+    bool showing_grid = false;
+    bool showing_menu = false;
+    bool showing_trace = false;
     bool julia_dragging = false;
-    bool left_pressed   = false;
-    bool change_iter    = false;
-    bool change_limit   = false;
+    bool right_pressed = false;
+    bool change_iter = false;
+    bool change_limit = false;
 
     point_t orbit(0.0, 0.0);
     point_t c_point(0.0, 0.0);
 
-    while (window_.isOpen())
+    while (window_->isOpen())
     {
+        bool was_screenshot = false;
+
         sf::Event event;
-        Frame     zooming_frame;
-        bool      was_screenshot = false;
-        while (window_.pollEvent(event))
+        while (window_->pollEvent(event))
         {
-            // Close window
-            if ((event.type == sf::Event::Closed) ||
-                ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Escape)))
+            switch (engine_->options.input_mode)
             {
-                window_.close();
-                return;
+            case Z_INPUT:
+            {
+                input_.z.handleEvent(event);
+                break;
+            }
+            case XY_INPUT:
+            {
+                input_.x.handleEvent(event);
+                input_.y.handleEvent(event);
+                break;
+            }
             }
 
-            // Toggle fullscreen
-            if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::F11))
+            // Enter expression from input box
+            if (input_.x.TextEntered() || input_.y.TextEntered() || input_.z.TextEntered())
             {
-                toggleFullScreen();
-                DrawSet();
-            }
+                int err = makeShader();
 
-            // Resize window
-            else if (event.type == sf::Event::Resized)
-            {
-                sf::FloatRect visible_area(0.0F, 0.0F, static_cast<float>(event.size.width),
-                                           static_cast<float>(event.size.height));
-                window_.setView(sf::View(visible_area));
-                updateWinSizes(window_.getSize().x, window_.getSize().y);
-                DrawSet();
+                if (!err)
+                {
+                    engine_->render();
+                    engine_->options.draw_mode = MAIN;
+                }
+
+                switch (engine_->options.input_mode)
+                {
+                case Z_INPUT:
+                {
+                    if (err)
+                    {
+                        input_.z.setOutput(sf::String(calc_errstr[err + 1]));
+                    }
+                    else
+                    {
+                        input_.z.setOutput(sf::String());
+                    }
+                    break;
+                }
+                case XY_INPUT:
+                {
+                    if (input_.x.TextEntered())
+                    {
+                        if (err)
+                        {
+                            const sf::Vector2f input_y_pos(input_.y.getPosition().x, input_.y.getPosition().y + 0.5F * input_.x.getSize().y);
+
+                            input_.x.setOutput(sf::String(calc_errstr[err + 1]));
+                            input_.y.setPosition(input_y_pos);
+                        }
+                        else
+                        {
+                            input_.x.setOutput(sf::String());
+                            input_.y.setPosition(INPUT_Y_POS);
+                        }
+                    }
+                    else if (err)
+                    {
+                        input_.y.setOutput(sf::String(calc_errstr[err + 1]));
+                    }
+                    else
+                    {
+                        input_.y.setOutput(sf::String());
+                    }
+                    break;
+                }
+                }
             }
 
             // Reset set drawing
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) && !textEntering())
             {
-                holder_.reset();
-
-                options_.draw_mode = MAIN;
-                DrawSet();
+                engine_->options.draw_mode = MAIN;
+                engine_->params.limit = LIMIT;
+                engine_->params.itrn_max = MAX_ITERATION;
+                window_->setBorders(-UPPER_BORDER, UPPER_BORDER, 0.5);
+                engine_->render();
             }
 
             // Take a screenshot
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Space) && (!was_screenshot) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Space) && !was_screenshot && !textEntering())
             {
                 savePicture();
                 was_screenshot = true;
             }
 
             // Toggle audio dampening
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::D) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::D) && !textEntering())
             {
-                synth_.sustain_ = !synth_.sustain_;
+                synth_->sustain = !synth_->sustain;
             }
 
             // Toggle sound coloring
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::C) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::C) && !textEntering())
             {
-                options_.coloring = !options_.coloring;
-                DrawSet();
+                engine_->options.coloring = !engine_->options.coloring;
+                engine_->render();
             }
 
             // Toggle help menu showing
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::H) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::H) && !textEntering())
             {
                 showing_menu = !showing_menu;
-                if (showing_menu)
-                {
-                    input_boxes_.x.is_visible = false;
-                    input_boxes_.y.is_visible = false;
-                    input_boxes_.z.is_visible = false;
-                }
+            }
+
+            // Toggle grid showing
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::G) && !textEntering())
+            {
+                showing_grid = !showing_grid;
+            }
+
+            // Toggle sound mode
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::S) && !textEntering())
+            {
+                engine_->options.sound_mode = !engine_->options.sound_mode;
             }
 
             // Toggle input mode
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Tab) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Tab))
             {
-                switch (options_.input_mode)
+                switch (engine_->options.input_mode)
                 {
-                case ComplexShader::Z_INPUT:
+                case Z_INPUT:
                 {
-                    input_boxes_.x.has_focus  = false;
-                    input_boxes_.x.is_visible = input_boxes_.z.is_visible;
-
-                    input_boxes_.y.has_focus  = false;
-                    input_boxes_.y.is_visible = input_boxes_.z.is_visible;
-
-                    input_boxes_.z.has_focus  = false;
-                    input_boxes_.z.is_visible = false;
-
-                    options_.input_mode = ComplexShader::XY_INPUT;
-                    break;
-                }
-                case ComplexShader::XY_INPUT:
-                {
-                    input_boxes_.z.has_focus  = false;
-                    input_boxes_.z.is_visible = input_boxes_.x.is_visible;
-
-                    input_boxes_.x.has_focus  = false;
-                    input_boxes_.x.is_visible = false;
-
-                    input_boxes_.y.has_focus  = false;
-                    input_boxes_.y.is_visible = false;
-
-                    options_.input_mode = ComplexShader::Z_INPUT;
-                    break;
-                }
-                }
-            }
-
-            // Toggle input box visibility
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Tilde) && (!InputBoxesHasFocus()))
-            {
-                switch (options_.input_mode)
-                {
-                case ComplexShader::Z_INPUT:
-                {
-                    input_boxes_.z.is_visible = !input_boxes_.z.is_visible;
-                    if (!input_boxes_.z.is_visible)
+                    if (input_.z.isVisible())
                     {
-                        input_boxes_.z.has_focus = false;
+                        input_.x.show();
+                        input_.y.show();
                     }
+                    input_.z.hide();
+
+                    engine_->options.input_mode = XY_INPUT;
                     break;
                 }
-                case ComplexShader::XY_INPUT:
+                case XY_INPUT:
                 {
-                    input_boxes_.x.is_visible = !input_boxes_.x.is_visible;
-                    input_boxes_.y.is_visible = !input_boxes_.y.is_visible;
-
-                    if (!input_boxes_.x.is_visible)
+                    if (input_.x.isVisible())
                     {
-                        input_boxes_.x.has_focus = false;
-                        input_boxes_.y.has_focus = false;
+                        input_.z.show();
                     }
+                    input_.x.hide();
+                    input_.y.hide();
+
+                    engine_->options.input_mode = Z_INPUT;
                     break;
                 }
-                }
-            }
-
-            // Toggle input box focus
-            else if (InputBoxesIsVisible() && (event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
-            {
-                sf::Vector2f mouse_button(static_cast<float>(event.mouseButton.x), static_cast<float>(event.mouseButton.y));
-                switch (options_.input_mode)
-                {
-                case ComplexShader::Z_INPUT:
-                {
-                    input_boxes_.z.has_focus =
-                        ((input_boxes_.z.getPosition().x < mouse_button.x) &&
-                         (mouse_button.x < input_boxes_.z.getPosition().x + input_boxes_.z.getSize().x) &&
-                         (input_boxes_.z.getPosition().y < mouse_button.y) &&
-                         (mouse_button.y < input_boxes_.z.getPosition().y + input_boxes_.z.getSize().y));
-                    break;
-                }
-                case ComplexShader::XY_INPUT:
-                {
-                    input_boxes_.x.has_focus =
-                        ((input_boxes_.x.getPosition().x < mouse_button.x) &&
-                         (mouse_button.x < input_boxes_.x.getPosition().x + input_boxes_.x.getSize().x) &&
-                         (input_boxes_.x.getPosition().y < mouse_button.y) &&
-                         (mouse_button.y < input_boxes_.x.getPosition().y + input_boxes_.x.getSize().y));
-
-                    input_boxes_.y.has_focus =
-                        ((input_boxes_.y.getPosition().x < mouse_button.x) &&
-                         (mouse_button.x < input_boxes_.y.getPosition().x + input_boxes_.y.getSize().x) &&
-                         (input_boxes_.y.getPosition().y < mouse_button.y) &&
-                         (mouse_button.y < input_boxes_.y.getPosition().y + input_boxes_.y.getSize().y));
-                    break;
-                }
-                }
-            }
-
-            // Input text expression to input box
-            else if (InputBoxesHasFocus() && (event.type == sf::Event::TextEntered) && (event.text.unicode < 128))
-            {
-                switch (options_.input_mode)
-                {
-                case ComplexShader::Z_INPUT:
-                {
-                    input_boxes_.z.setInput(event.text.unicode);
-                    break;
-                }
-                case ComplexShader::XY_INPUT:
-                {
-                    if (input_boxes_.x.has_focus)
-                    {
-                        input_boxes_.x.setInput(event.text.unicode);
-                    }
-                    else
-                    {
-                        input_boxes_.y.setInput(event.text.unicode);
-                    }
-                    break;
-                }
-                }
-            }
-
-            // Enter expression from input box
-            else if (InputBoxesHasFocus() && (event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Enter))
-            {
-                int err = makeShader();
-
-                if (!err)
-                {
-                    DrawSet();
-                    options_.draw_mode = MAIN;
                 }
 
-                switch (options_.input_mode)
-                {
-                case ComplexShader::Z_INPUT:
-                {
-                    if (err)
-                    {
-                        input_boxes_.z.setOutput(sf::String(calc_errstr[err + 1]));
-                    }
-                    else
-                    {
-                        input_boxes_.z.setOutput(sf::String());
-                    }
-                    break;
-                }
-                case ComplexShader::XY_INPUT:
-                {
-                    if (input_boxes_.x.has_focus)
-                    {
-                        if (err)
-                        {
-                            input_boxes_.x.setOutput(sf::String(calc_errstr[err + 1]));
-                            input_boxes_.y.setPosition(
-                                sf::Vector2f(input_boxes_.y.getPosition().x, input_boxes_.y.getPosition().y + 0.5F * input_boxes_.x.getSize().y));
-                        }
-                        else
-                        {
-                            input_boxes_.x.setOutput(sf::String());
-                            input_boxes_.y.setPosition(sf::Vector2f(10.0F, 50.0F));
-                        }
-                    }
-                    else if (err)
-                    {
-                        input_boxes_.y.setOutput(sf::String(calc_errstr[err + 1]));
-                    }
-                    else
-                    {
-                        input_boxes_.y.setOutput(sf::String());
-                    }
-                    break;
-                }
-                }
+                makeShader();
             }
 
             // Julia set drawing
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::J) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::J) && !textEntering())
             {
-                if (options_.draw_mode != JULIA)
+                if (engine_->options.draw_mode != JULIA)
                 {
                     while (sf::Keyboard::isKeyPressed(sf::Keyboard::J))
                     {
-                        holder_.julia_point = holder_.Screen2Plane(sf::Mouse::getPosition(window_));
+                        engine_->params.julia_point = window_->Screen2Base(sf::Mouse::getPosition(*window_));
 
-                        options_.draw_mode = JULIA;
-                        DrawSet();
-                        options_.draw_mode = MAIN;
+                        engine_->options.draw_mode = JULIA;
+                        engine_->render();
+                        engine_->options.draw_mode = MAIN;
 
-                        window_.draw(shader_.sprite);
-                        window_.display();
+                        window_->draw(engine_->getOutput());
+                        window_->display();
 
                         julia_dragging = true;
                     }
                 }
                 else
                 {
-                    DrawSet();
+                    engine_->render();
                     julia_dragging = false;
                 }
             }
-            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::J) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::J) && !textEntering())
             {
-                options_.draw_mode = !julia_dragging ? MAIN : JULIA;
+                engine_->options.draw_mode = !julia_dragging ? MAIN : JULIA;
 
-                DrawSet();
+                engine_->render();
             }
 
             // Change max iterations
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::I) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::I) && !textEntering())
             {
                 change_iter = true;
             }
-            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::I) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::I) && !textEntering())
             {
                 change_iter = false;
             }
             else if ((event.type == sf::Event::MouseWheelMoved) && change_iter)
             {
-                holder_.itrn_max += static_cast<size_t>(event.mouseWheel.delta * 50);
-                DrawSet();
+                engine_->params.itrn_max += static_cast<size_t>(event.mouseWheel.delta * 50);
+                engine_->render();
             }
 
             // Change limit
-            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::L) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::L) && !textEntering())
             {
                 change_limit = true;
             }
-            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::L) && (!InputBoxesHasFocus()))
+            else if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::L) && !textEntering())
             {
                 change_limit = false;
             }
             else if ((event.type == sf::Event::MouseWheelMoved) && change_limit)
             {
-                holder_.limit *= pow(2.0, static_cast<float>(event.mouseWheel.delta));
-                DrawSet();
-            }
-
-            // Toggle action modes
-            else if ((event.type == sf::Event::KeyPressed) && (!InputBoxesHasFocus()))
-            {
-                switch (event.key.code)
-                {
-                case sf::Keyboard::Z: action_mode = ZOOMING; break;
-                case sf::Keyboard::P: action_mode = POINT_TRACING; break;
-                case sf::Keyboard::S: action_mode = SOUNDING; break;
-                default: break;
-                }
-            }
-
-            // Zooming
-            else if (event.type == sf::Event::MouseWheelMoved)
-            {
-                holder_.zoom(static_cast<float>(event.mouseWheel.delta), holder_.Screen2Plane(sf::Mouse::getPosition(window_)));
-                DrawSet();
-            }
-            else if ((action_mode == ZOOMING) && (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right)))
-            {
-                if (GetZoomingFrame(zooming_frame))
-                {
-                    holder_.changeBorders(zooming_frame);
-                    DrawSet();
-                }
+                engine_->params.limit *= pow(2.0, static_cast<float>(event.mouseWheel.delta));
+                engine_->render();
             }
 
             // Point tracing and sounding
-            else if (((action_mode == POINT_TRACING) || (action_mode == SOUNDING)) && (event.type == sf::Event::MouseButtonPressed) &&
-                     (event.mouseButton.button == sf::Mouse::Left))
+            else if ((event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Right))
             {
-                input_boxes_.x.is_visible = false;
-                input_boxes_.x.has_focus  = false;
-
-                input_boxes_.y.is_visible = false;
-                input_boxes_.y.has_focus  = false;
-
-                input_boxes_.z.is_visible = false;
-                input_boxes_.z.has_focus  = false;
+                input_.x.hide();
+                input_.y.hide();
+                input_.z.hide();
 
                 showing_trace = true;
-                left_pressed  = true;
+                right_pressed  = true;
 
-                if (action_mode == SOUNDING)
+                if (engine_->options.sound_mode)
                 {
-                    synth_.SetPoint(holder_.Screen2Plane(sf::Mouse::getPosition(window_)));
-                    synth_.audio_pause_ = false;
-                    synth_.play();
+                    synth_->audio_pause = false;
+                    synth_->setPoint(window_->Screen2Base(sf::Mouse::getPosition(*window_)));
+                    synth_->play();
                 }
                 else
                 {
-                    synth_.pause();
+                    synth_->pause();
                 }
             }
-            else if ((event.type == sf::Event::MouseButtonReleased) && (event.mouseButton.button == sf::Mouse::Left))
+            else if ((event.type == sf::Event::MouseButtonReleased) && (event.mouseButton.button == sf::Mouse::Right))
             {
-                left_pressed = false;
+                right_pressed = false;
             }
-            else if (((action_mode == POINT_TRACING) || (action_mode == SOUNDING)) && (sf::Mouse::isButtonPressed(sf::Mouse::Right)))
+            else if ((event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Middle))
             {
-                showing_trace       = false;
-                synth_.audio_pause_ = true;
-                synth_.pause();
+                showing_trace = false;
+                synth_->audio_pause = true;
+                synth_->pause();
+            }
+
+            else if (window_->handleEvent(event))
+            {
+                engine_->render();
             }
         }
 
-        window_.clear();
-        window_.draw(shader_.sprite);
+        window_->clear();
+        window_->draw(engine_->getOutput());
 
-        input_boxes_.x.draw(window_);
-        input_boxes_.y.draw(window_);
-        input_boxes_.z.draw(window_);
-
-        if (left_pressed)
+        if (showing_grid)
         {
-            c_point = holder_.Screen2Plane(sf::Mouse::getPosition(window_));
+            window_->draw(*window_);
+        }
+
+        input_.x.draw(*window_);
+        input_.y.draw(*window_);
+        input_.z.draw(*window_);
+
+        if (right_pressed)
+        {
+            c_point = window_->Screen2Base(sf::Mouse::getPosition(*window_));
             orbit   = c_point;
 
-            synth_.SetPoint(c_point);
+            synth_->setPoint(c_point);
         }
 
         if (showing_trace)
@@ -448,217 +356,37 @@ void Puzabrot::run()
             drawHelpMenu();
         }
 
-        window_.display();
+        window_->display();
     }
 
-    synth_.stop();
+    synth_->stop();
 }
 
-void Puzabrot::updateWinSizes(size_t new_width, size_t new_height)
-{
-    holder_.updateWinSizes(new_width, new_height);
-    shader_.updateWinSizes(new_width, new_height);
-}
-
-void Puzabrot::toggleFullScreen()
-{
-    if ((holder_.winsizes.x == sf::VideoMode::getDesktopMode().width) &&
-        (holder_.winsizes.y == sf::VideoMode::getDesktopMode().height))
-    {
-        window_.create(sf::VideoMode(DEFAULT_WIDTH, DEFAULT_HEIGHT), TITLE_STRING);
-        updateWinSizes(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-    }
-    else
-    {
-        window_.create(sf::VideoMode::getDesktopMode(), TITLE_STRING, sf::Style::Fullscreen);
-        updateWinSizes(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height);
-    }
-}
-
-bool Puzabrot::InputBoxesHasFocus()
-{
-    return (input_boxes_.x.has_focus) || (input_boxes_.y.has_focus) || (input_boxes_.z.has_focus);
-}
-
-bool Puzabrot::InputBoxesIsVisible()
-{
-    return (input_boxes_.x.is_visible) || (input_boxes_.y.is_visible) || (input_boxes_.z.is_visible);
-}
-
-void Puzabrot::DrawSet()
-{
-    shader_.draw(holder_, options_.draw_mode, options_.coloring);
-}
-
-int Puzabrot::GetZoomingFrame(Frame& frame)
-{
-    unsigned int w = holder_.winsizes.x;
-    unsigned int h = holder_.winsizes.y;
-
-    sf::Vector2i start(-1, -1);
-    sf::Vector2i end(-1, -1);
-
-    sf::RectangleShape rectangle;
-    rectangle.setOutlineThickness(1);
-    rectangle.setFillColor(sf::Color::Transparent);
-
-    while (true)
-    {
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right))
-        {
-            start = sf::Mouse::getPosition(window_);
-            rectangle.setPosition(sf::Vector2f(start));
-
-            while (sf::Mouse::isButtonPressed(sf::Mouse::Left) || sf::Mouse::isButtonPressed(sf::Mouse::Right))
-            {
-                end = sf::Mouse::getPosition(window_) + sf::Vector2i(1, 1);
-
-                if ((abs(end.x - start.x) > 8) && (abs(end.y - start.y) > 8))
-                {
-                    double sx = start.x;
-                    double sy = start.y;
-                    double ex = end.x;
-                    double ey = end.y;
-
-                    if (((end.y > start.y) && (end.x > start.x)) || ((end.y < start.y) && (end.x < start.x)))
-                    {
-                        end.x = static_cast<int>((w * h * (ey - sy) + w * w * ex + h * h * sx) / (w * w + h * h));
-                        end.y = static_cast<int>((w * h * (ex - sx) + w * w * sy + h * h * ey) / (w * w + h * h));
-                    }
-                    else
-                    {
-                        end.x = static_cast<int>((w * h * (sy - ey) + w * w * ex + h * h * sx) / (w * w + h * h));
-                        end.y = static_cast<int>((w * h * (sx - ex) + w * w * sy + h * h * ey) / (w * w + h * h));
-                    }
-
-                    if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
-                    {
-                        rectangle.setOutlineColor(sf::Color::Blue);
-                        frame.zoom = static_cast<double>(w) * h / abs(end.x - start.x) / abs(end.y - start.y);
-                    }
-                    else if (sf::Mouse::isButtonPressed(sf::Mouse::Right))
-                    {
-                        rectangle.setOutlineColor(sf::Color::Red);
-                        frame.zoom = static_cast<double>(abs(end.x - start.x)) * abs(end.y - start.y) / w / h;
-                    }
-
-                    rectangle.setSize(sf::Vector2f(end - start));
-
-                    window_.draw(shader_.sprite);
-                    window_.draw(rectangle);
-                    window_.display();
-                }
-                else
-                {
-                    end.x = 0;
-                }
-            }
-        }
-
-        window_.draw(shader_.sprite);
-
-        if (end.x != -1)
-        {
-            break;
-        }
-        return 0;
-    }
-
-    if (start.x > end.x)
-    {
-        frame.x2 = static_cast<unsigned int>(start.x);
-        frame.x1 = static_cast<unsigned int>(end.x);
-    }
-    else
-    {
-        frame.x1 = static_cast<unsigned int>(start.x);
-        frame.x2 = static_cast<unsigned int>(end.x);
-    }
-
-    if (start.y > end.y)
-    {
-        frame.y2 = static_cast<unsigned int>(start.y);
-        frame.y1 = static_cast<unsigned int>(end.y);
-    }
-    else
-    {
-        frame.y1 = static_cast<unsigned int>(start.y);
-        frame.y2 = static_cast<unsigned int>(end.y);
-    }
-
-    return 1;
-}
-
-void Puzabrot::initCalculator(Calculator& calc, point_t z, point_t c) const
-{
-    switch (options_.input_mode)
-    {
-    case ComplexShader::Z_INPUT:
-    {
-        calc.variables.push_back({ { c.x, c.y }, "c" });
-        calc.variables.push_back({ { z.x, z.y }, "z" });
-        break;
-    }
-    case ComplexShader::XY_INPUT:
-    {
-        calc.variables.push_back({ { c.x, 0.0 }, "cx" });
-        calc.variables.push_back({ { c.y, 0.0 }, "cy" });
-
-        calc.variables.push_back({ { z.x, 0.0 }, "x" });
-        calc.variables.push_back({ { z.y, 0.0 }, "y" });
-        break;
-    }
-    }
-}
-
-void Puzabrot::Mapping(Calculator& calc, ComplexShader::ExprTrees& expr_trees, point_t& mapped_point) const
-{
-    switch (options_.input_mode)
-    {
-    case ComplexShader::Z_INPUT:
-    {
-        calc.Calculate(expr_trees.z);
-        calc.variables[calc.variables.size() - 1] = { expr_trees.z.value().number, "z" };
-
-        mapped_point = point_t(real(expr_trees.z.value().number), imag(expr_trees.z.value().number));
-        break;
-    }
-    case ComplexShader::XY_INPUT:
-    {
-        calc.Calculate(expr_trees.x);
-        calc.Calculate(expr_trees.y);
-
-        calc.variables[calc.variables.size() - 2] = { { real(expr_trees.x.value().number), 0.0 }, "x" };
-        calc.variables[calc.variables.size() - 1] = { { real(expr_trees.y.value().number), 0.0 }, "y" };
-
-        mapped_point = point_t(real(expr_trees.x.value().number), real(expr_trees.y.value().number));
-        break;
-    }
-    }
-}
-
-point_t Puzabrot::PointTrace(point_t point, point_t c_point)
+Puzabrot::point_t Puzabrot::PointTrace(point_t point, point_t c_point)
 {
     Calculator calc;
-    initCalculator(calc, point, (options_.draw_mode == MAIN) ? c_point : holder_.julia_point);
+    engine_->initCalculator(calc, point, (engine_->options.draw_mode == MAIN) ? c_point : engine_->params.julia_point);
 
     point_t point1 = point;
     point_t point2;
 
-    for (size_t i = 0; i < holder_.itrn_max; ++i)
+    for (size_t i = 0; i < engine_->params.itrn_max; ++i)
     {
-        Mapping(calc, expr_trees_, point2);
+        engine_->Mapping(calc, engine_->expr_trees, point2);
 
-        if (sqrt(pow(point2.x, 2.0) + pow(point2.y, 2.0)) > holder_.limit)
+        if (sqrt(pow(point2.x, 2.0) + pow(point2.y, 2.0)) > engine_->params.limit)
         {
             break;
         }
 
-        sf::Vertex line[] = { sf::Vertex(sf::Vector2f(holder_.Plane2Screen(point1)), sf::Color::White),
-                              sf::Vertex(sf::Vector2f(holder_.Plane2Screen(point2)), sf::Color::Black) };
+        sf::Vertex line[] = {
+            sf::Vertex(sf::Vector2f(window_->Base2Screen(point1)), sf::Color::White),
+            sf::Vertex(sf::Vector2f(window_->Base2Screen(point2)), sf::Color::Black)
+        };
+
         point1 = point2;
 
-        window_.draw(line, 2, sf::Lines);
+        static_cast<sf::RenderTarget*>(window_.get())->draw(line, 2, sf::Lines);
     }
 
     return point1;
@@ -669,38 +397,37 @@ void Puzabrot::savePicture()
     static int  shot_num = 0;
     std::string filename = "screenshot(" + std::to_string(shot_num++) + ")" + ".png";
 
-    window_.draw(shader_.sprite);
+    window_->draw(engine_->getOutput());
 
     sf::RectangleShape rectangle;
     rectangle.setPosition(0.0F, 0.0F);
-    rectangle.setSize(sf::Vector2f(holder_.winsizes));
+    rectangle.setSize(sf::Vector2f(window_->getSize()));
     rectangle.setFillColor(sf::Color(10, 10, 10, 150));
 
-    window_.draw(rectangle);
-    window_.display();
+    window_->draw(rectangle);
+    window_->display();
 
-    sf::Vector2u  screenshot_sizes(SCREENSHOT_WIDTH, static_cast<unsigned int>(static_cast<float>(SCREENSHOT_WIDTH) /
-                                                                              static_cast<float>(holder_.winsizes.x) *
-                                                                              static_cast<float>(holder_.winsizes.y)));
-    ComplexHolder holder = holder_;
-    holder.winsizes      = screenshot_sizes;
+    sf::Vector2u screenshot_sizes(SCREENSHOT_WIDTH, static_cast<unsigned int>(static_cast<float>(SCREENSHOT_WIDTH) /
+        static_cast<float>(window_->getSize().x) * static_cast<float>(window_->getSize().y)));
 
-    ComplexShader shader(screenshot_sizes);
-    shader.make(expr_trees_, options_.input_mode);
-    shader.draw(holder, options_.draw_mode, options_.coloring);
+    Engine engine(screenshot_sizes, window_.get());
+    engine.options = engine_->options;
+    engine.expr_trees = engine_->expr_trees;
+    engine.params = engine_->params;
+    engine.makeShader();
+    engine.render();
 
-    sf::Texture screen = shader.render_texture.getTexture();
-    screen.copyToImage().saveToFile(filename);
+    engine.getOutput().getTexture()->copyToImage().saveToFile(filename);
 
-    window_.draw(shader_.sprite);
-    window_.display();
+    window_->draw(engine_->getOutput());
+    window_->display();
 }
 
 void Puzabrot::drawHelpMenu()
 {
-    sf::RectangleShape dim_rect(sf::Vector2f(holder_.winsizes));
+    sf::RectangleShape dim_rect(sf::Vector2f(window_->getSize()));
     dim_rect.setFillColor(sf::Color(0, 0, 0, 128));
-    window_.draw(dim_rect);
+    window_->draw(dim_rect);
 
     sf::Text help_menu;
     help_menu.setFont(font_);
@@ -712,9 +439,8 @@ void Puzabrot::drawHelpMenu()
 
     sprintf(str,
         "    H - Toggle help menu viewing\n"
-        "    Z - Choose zooming mode       (draw a rectangle by left and right mouse button to zoom in-out)\n"
-        "    P - Choose point tracing mode (press left mouse button to trace point)\n"
-        "    S - Choose sounding mode      (press left mouse button to trace point and hear sound)\n"
+        "    G - Toggle grid viewing\n"
+        "    S - Toggle sound mode        (press left mouse button to trace point and hear sound)\n"
         "  F11 - Toggle Fullscreen\n"
         "  Esc - Exit program\n"
         "Space - Take a screenshot\n"
@@ -728,97 +454,650 @@ void Puzabrot::drawHelpMenu()
         "    L - Hold down, scroll mouse wheel to increase or decrease limit\n"
         "\n"
         "\n"
-        "        Current max iteration: %lu, current limit: %f\n"
-        "        Borders: upper: %.5lf, bottom: %.5lf, left: %.5lf, right: %.5lf\n",
-        holder_.itrn_max, holder_.limit, holder_.borders.im_top, holder_.borders.im_bottom, holder_.borders.re_left, holder_.borders.re_right
+        "        Current max iteration: %lu, current limit: %f\n",
+        engine_->params.itrn_max, engine_->params.limit
     );
 
     help_menu.setString(str);
-    window_.draw(help_menu);
+    window_->draw(help_menu);
 }
 
 int Puzabrot::makeShader()
 {
-    switch (options_.input_mode)
+    switch (engine_->options.input_mode)
     {
-    case ComplexShader::Z_INPUT:
+    case Z_INPUT:
     {
-        Expression expr_z(input_boxes_.z.getInput());
+        Expression expr_z(input_.z.getInput());
 
-        int err = expr_z.getTree(expr_trees_.z);
+        int err = expr_z.getTree(engine_->expr_trees.z);
         COND_RETURN(err, err);
         break;
     }
-    case ComplexShader::XY_INPUT:
+    case XY_INPUT:
     {
-        Expression expr_x(input_boxes_.x.getInput());
-        Expression expr_y(input_boxes_.y.getInput());
+        Expression expr_x(input_.x.getInput());
+        Expression expr_y(input_.y.getInput());
 
-        int err = expr_x.getTree(expr_trees_.x);
+        int err = expr_x.getTree(engine_->expr_trees.x);
         COND_RETURN(err, err);
 
-        err = expr_y.getTree(expr_trees_.y);
+        err = expr_y.getTree(engine_->expr_trees.y);
         COND_RETURN(err, err);
     }
     }
-    synth_.copyTrees(expr_trees_);
+    synth_->setExpressions(engine_->expr_trees);
 
-    COND_RETURN(shader_.make(expr_trees_, options_.input_mode), CALC_WRONG_VARIABLE);
+    COND_RETURN(engine_->makeShader(), CALC_WRONG_VARIABLE);
 
     return 0;
 }
 
-Puzabrot::Synth::Synth(Puzabrot* app) :
-    audio_reset_(true), audio_pause_(false), sustain_(true), volume_(8000.0), app_(app)
+bool Puzabrot::textEntering() const
 {
-    initialize(2, SAMPLE_RATE);
+    return input_.x.hasFocus() || input_.y.hasFocus() || input_.z.hasFocus();
+}
+
+Puzabrot::Window::Window(const sf::Vector2u& size, const sf::Font* font) : Engine2D(size, TITLE_STRING), font_(font) {}
+
+void Puzabrot::Window::draw(const sf::Drawable& drawable, const sf::RenderStates& states)
+{
+    static_cast<sf::RenderTarget*>(this)->draw(drawable, states);
+}
+
+void Puzabrot::Window::draw(sf::RenderTarget& target, sf::RenderStates states) const
+{
+    drawGrid(target, states, *font_, GRID_COLOR, TEXT_COLOR, SYM_SIZE);
+    drawAxes(target, states, AXIS_COLOR);
+}
+
+Puzabrot::Engine::Engine(const sf::Vector2u& image_size, const Window* window_) : ShaderEngine(image_size), window(window_) {}
+
+void Puzabrot::Engine::render()
+{
+    setImageSize(window->getSize());
+
+    shader_.setUniform("borders.left", static_cast<float>(window->getBorders().left));
+    shader_.setUniform("borders.right", static_cast<float>(window->getBorders().right));
+    shader_.setUniform("borders.bottom", static_cast<float>(window->getBorders().bottom));
+    shader_.setUniform("borders.top", static_cast<float>(window->getBorders().top));
+
+    shader_.setUniform("winsizes", sf::Glsl::Ivec2(sf::Vector2i(window->getSize())));
+
+    shader_.setUniform("itrn_max", static_cast<int>(params.itrn_max));
+    shader_.setUniform("limit", static_cast<float>(params.limit));
+
+    shader_.setUniform("drawing_mode", options.draw_mode);
+    shader_.setUniform("coloring", options.coloring);
+
+    shader_.setUniform("julia_point", sf::Glsl::Vec2(sf::Vector2f(params.julia_point)));
+
+    render_texture_.draw(sprite_, &shader_);
+}
+
+int Puzabrot::Engine::makeShader()
+{
+    const char* str_initialization = writeInitialization();
+
+    std::string str_calculation = writeCalculation();
+    COND_RETURN(str_calculation.empty(), -1);
+
+    std::string str_checking = writeChecking();
+
+    std::string str_shader =
+        "#version 130\n"
+        "\n"
+        "const float NIL = 1e-9;\n"
+        "const float PI  = atan(1.0) * 4.0;\n"
+        "const float E   = exp(1.0);\n"
+        "const vec2  I   = vec2(0.0, 1.0);\n"
+        "const vec2  ONE = vec2(1.0, 0.0);\n"
+        "\n"
+        "struct Borders\n"
+        "{\n"
+        "   float left;\n"
+        "   float right;\n"
+        "   float bottom;\n"
+        "   float top;\n"
+        "};\n"
+        "\n"
+        "uniform Borders borders;\n"
+        "uniform ivec2   winsizes;\n"
+        "uniform int     itrn_max;\n"
+        "uniform float   limit;\n"
+        "uniform int     drawing_mode;\n"
+        "uniform bool    coloring;\n"
+        "uniform vec2   julia_point;\n"
+        "\n"
+        "vec2 conj(vec2 a)\n"
+        "{\n"
+        "    return vec2(a.x, -a.y);\n"
+        "}\n"
+        "\n"
+        "float norm(vec2 a)\n"
+        "{\n"
+        "    return a.x * a.x + a.y * a.y;\n"
+        "}\n"
+        "\n"
+        "float arg(vec2 a)\n"
+        "{\n"
+        "    return atan(a.y, a.x);\n"
+        "}\n"
+        "\n"
+        "vec2 cabs(vec2 a)\n"
+        "{\n"
+        "    return vec2(sqrt(a.x * a.x + a.y * a.y), 0.0);\n"
+        "}\n"
+        "\n"
+        "vec2 carg(vec2 a)\n"
+        "{\n"
+        "    return vec2(arg(a), 0.0);\n"
+        "}\n"
+        "\n"
+        "vec2 cadd(vec2 a, vec2 b)\n"
+        "{\n"
+        "    return vec2(a.x + b.x, a.y + b.y);\n"
+        "}\n"
+        "\n"
+        "vec2 csub(vec2 a, vec2 b)\n"
+        "{\n"
+        "    return vec2(a.x - b.x, a.y - b.y);\n"
+        "}\n"
+        "\n"
+        "vec2 cmul(vec2 a, vec2 b)\n"
+        "{\n"
+        "    return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);\n"
+        "}\n"
+        "\n"
+        "vec2 cdiv(vec2 a, vec2 b)\n"
+        "{\n"
+        "    vec2 top = cmul(a, conj(b));\n"
+        "    float bottom = norm(b);\n"
+        "    return vec2(top.x / bottom, top.y / bottom);\n"
+        "}\n"
+        "\n"
+        "vec2 cln(vec2 a)\n"
+        "{\n"
+        "    if ((a.x < 0) && (abs(a.y) <= NIL))\n"
+        "        return vec2(log(a.x * a.x + a.y * a.y) / 2, PI);\n"
+        "    else\n"
+        "        return vec2(log(a.x * a.x + a.y * a.y) / 2, arg(a));\n"
+        "}\n"
+        "\n"
+        "vec2 clg(vec2 a)\n"
+        "{\n"
+        "    vec2 ln = cln(a);\n"
+        "    return vec2(ln.x / log(10.0), ln.y / log(10.0));\n"
+        "}\n"
+        "\n"
+        "vec2 cexp(vec2 a)\n"
+        "{\n"
+        "    float e = exp(a.x);\n"
+        "    return vec2(e * cos(a.y), e * sin(a.y));\n"
+        "}\n"
+        "\n"
+        "vec2 cpow(vec2 a, vec2 b)\n"
+        "{\n"
+        "    return cexp(cmul(b, cln(a)));\n"
+        "}\n"
+        "\n"
+        "vec2 csqrt(vec2 a)\n"
+        "{\n"
+        "    return cpow(a, vec2(0.5, 0.0));\n"
+        "}\n"
+        "\n"
+        "vec2 csin(vec2 a)\n"
+        "{\n"
+        "    return vec2(sin(a.x) * cosh(a.y), cos(a.x) * sinh(a.y));\n"
+        "}\n"
+        "\n"
+        "vec2 ccos(vec2 a)\n"
+        "{\n"
+        "    return vec2(cos(a.x) * cosh(a.y), -sin(a.x) * sinh(a.y));\n"
+        "}\n"
+        "\n"
+        "vec2 ctan(vec2 a)\n"
+        "{\n"
+        "    vec2 a_2 = vec2(a.x * 2.0, a.y * 2.0);\n"
+        "    float bottom = cos(a_2.x) + cosh(a_2.y);\n"
+        "    return vec2(sin(a_2.x) / bottom, sinh(a_2.y) / bottom);\n"
+        "}\n"
+        "\n"
+        "vec2 ccot(vec2 a)\n"
+        "{\n"
+        "    vec2 a_2 = vec2(a.x * 2.0, a.y * 2.0);\n"
+        "    float bottom = cos(a_2.x) - cosh(a_2.y);\n"
+        "    return vec2(-sin(a_2.x) / bottom, sinh(a_2.y) / bottom);\n"
+        "}\n"
+        "\n"
+        "vec2 carcsin(vec2 a)\n"
+        "{\n"
+        "    return cmul(vec2(0.0, -1.0), cln(cadd(cmul(I, a), csqrt(csub(ONE, cmul(a, a))))));\n"
+        "}\n"
+        "\n"
+        "vec2 carccos(vec2 a)\n"
+        "{\n"
+        "    return cmul(vec2(0.0, -1.0), cln(cadd(a, csqrt(csub(cmul(a, a), ONE)))));\n"
+        "}\n"
+        "\n"
+        "vec2 carctan(vec2 a)\n"
+        "{\n"
+        "    return cmul(vec2(0.0, 0.5), csub(cln(cadd(I, a)), cln(csub(I, a))));\n"
+        "}\n"
+        "\n"
+        "vec2 carccot(vec2 a)\n"
+        "{\n"
+        "    return csub(vec2(PI / 2, 0.0), cmul(vec2(0.0, 0.5), csub(cln(cadd(I, a)), cln(csub(I, a)))));\n"
+        "}\n"
+        "\n"
+        "vec2 csinh(vec2 a)\n"
+        "{\n"
+        "    return vec2(sinh(a.x) * cos(a.y), cosh(a.x) * sin(a.y));\n"
+        "}\n"
+        "\n"
+        "vec2 ccosh(vec2 a)\n"
+        "{\n"
+        "    return vec2(cosh(a.x) * cos(a.y), sinh(a.x) * sin(a.y));\n"
+        "}\n"
+        "\n"
+        "vec2 ctanh(vec2 a)\n"
+        "{\n"
+        "    vec2 a_2 = vec2(a.x * 2.0, a.y * 2.0);\n"
+        "    float bottom = cosh(a_2.x) + cos(a_2.y);\n"
+        "    return vec2(sinh(a_2.x) / bottom, sin(a_2.y) / bottom);\n"
+        "}\n"
+        "\n"
+        "vec2 ccoth(vec2 a)\n"
+        "{\n"
+        "    vec2 a_2 = vec2(a.x * 2.0, a.y * 2.0);\n"
+        "    float bottom = cos(a_2.y) - cosh(a_2.x);\n"
+        "    return vec2(-sinh(a_2.x) / bottom, sin(a_2.y) / bottom);\n"
+        "}\n"
+        "\n"
+        "vec2 carcsinh(vec2 a)\n"
+        "{\n"
+        "    return cln(cadd(a, csqrt(cadd(cmul(a, a), ONE))));\n"
+        "}\n"
+        "\n"
+        "vec2 carccosh(vec2 a)\n"
+        "{\n"
+        "    return cln(cadd(a, csqrt(csub(cmul(a, a), ONE))));\n"
+        "}\n"
+        "\n"
+        "vec2 carctanh(vec2 a)\n"
+        "{\n"
+        "    return cmul(vec2(0.5, 0.0), csub(cln(cadd(ONE, a)), cln(csub(ONE, a))));\n"
+        "}\n"
+        "\n"
+        "vec2 carccoth(vec2 a)\n"
+        "{\n"
+        "    return cmul(vec2(0.5, 0.0), csub(cln(cadd(ONE, a)), cln(csub(ONE, a))));\n"
+        "}\n"
+        "\n"
+        "vec3 getColor(int itrn, vec3 sumz)\n"
+        "{\n"
+        "    if (itrn < itrn_max)\n"
+        "    {\n"
+        "        itrn = itrn * 4 % 1530;\n"
+        "        if (itrn < 256)  return vec3(255, itrn, 0)        / 255 * (1.0 - float(coloring) * 0.85);\n"
+        "        if (itrn < 511)  return vec3(510 - itrn, 255, 0)  / 255 * (1.0 - float(coloring) * 0.85);\n"
+        "        if (itrn < 766)  return vec3(0, 255, itrn - 510)  / 255 * (1.0 - float(coloring) * 0.85);\n"
+        "        if (itrn < 1021) return vec3(0, 1020 - itrn, 255) / 255 * (1.0 - float(coloring) * 0.85);\n"
+        "        if (itrn < 1276) return vec3(itrn - 1020, 0, 255) / 255 * (1.0 - float(coloring) * 0.85);\n"
+        "        if (itrn < 1530) return vec3(255, 0, 1529 - itrn) / 255 * (1.0 - float(coloring) * 0.85);\n"
+        "    }\n"
+        "    if (coloring) return sin(abs(abs(sumz) / itrn_max * 5.0)) * 0.45 + 0.5;\n"
+        "    return vec3(0.0, 0.0, 0.0);\n"
+        "}\n"
+        "\n"
+        "void main()\n"
+        "{\n"
+        "    float re0 = borders.left + (borders.right - borders.left) * gl_FragCoord.x / winsizes.x;\n"
+        "    float im0 = borders.top - (borders.top - borders.bottom) * gl_FragCoord.y / winsizes.y;\n"
+        "\n"
+            + std::string(str_initialization) + 
+        "\n"
+        "    vec3 sumz = vec3(0.0, 0.0, 0.0);\n"
+        "    int itrn  = 0;\n"
+        "    for (itrn = 0; itrn < itrn_max; ++itrn)\n"
+        "    {\n"
+            + str_calculation + 
+        "        \n"
+            + str_checking +
+        "    }\n"
+        "\n"
+        "    vec3 col = getColor(itrn, sumz);\n"
+        "    gl_FragColor = vec4(col, 1.0);\n"
+        "}";
+
+    shader_.loadFromMemory(str_shader, sf::Shader::Fragment);
+
+    return 0;
+}
+
+void Puzabrot::Engine::initCalculator(Calculator& calc, point_t z, point_t c) const
+{
+    switch (options.input_mode)
+    {
+    case Z_INPUT:
+    {
+        calc.variables.push_back({ { c.x, c.y }, "c" });
+        calc.variables.push_back({ { z.x, z.y }, "z" });
+        break;
+    }
+    case XY_INPUT:
+    {
+        calc.variables.push_back({ { c.x, 0.0 }, "cx" });
+        calc.variables.push_back({ { c.y, 0.0 }, "cy" });
+
+        calc.variables.push_back({ { z.x, 0.0 }, "x" });
+        calc.variables.push_back({ { z.y, 0.0 }, "y" });
+        break;
+    }
+    }
+}
+
+void Puzabrot::Engine::Mapping(Calculator& calc, ExprTrees& expr_trees, point_t& mapped_point) const
+{
+    switch (options.input_mode)
+    {
+    case Z_INPUT:
+    {
+        calc.Calculate(expr_trees.z);
+        calc.variables[calc.variables.size() - 1] = { expr_trees.z.value().number, "z" };
+
+        mapped_point = point_t(real(expr_trees.z.value().number), imag(expr_trees.z.value().number));
+        break;
+    }
+    case XY_INPUT:
+    {
+        calc.Calculate(expr_trees.x);
+        calc.Calculate(expr_trees.y);
+
+        calc.variables[calc.variables.size() - 2] = { { real(expr_trees.x.value().number), 0.0 }, "x" };
+        calc.variables[calc.variables.size() - 1] = { { real(expr_trees.y.value().number), 0.0 }, "y" };
+
+        mapped_point = point_t(real(expr_trees.x.value().number), real(expr_trees.y.value().number));
+        break;
+    }
+    }
+}
+
+const char* Puzabrot::Engine::writeInitialization() const
+{
+    switch (options.input_mode)
+    {
+    case Z_INPUT:
+    {
+        return
+            "vec2 z = vec2(re0, im0);\n"
+            "vec2 pz = z;\n"
+            "vec2 c = vec2(0.0, 0.0);\n"
+            "if (drawing_mode == 0)\n"
+            "    c = vec2(re0, im0);\n"
+            "else if (drawing_mode == 1)\n"
+            "    c = vec2(julia_point.x, julia_point.y);";
+    }
+    case XY_INPUT:
+    {
+        return
+            "float x = re0;\n"
+            "float y = im0;\n"
+            "vec2 pz = vec2(x, y);\n"
+            "float cx = 0.0;\n"
+            "float cy = 0.0;\n"
+            "if (drawing_mode == 0)\n"
+            "{\n"
+            "    cx = re0;\n"
+            "    cy = im0;\n"
+            "}\n"
+            "else if (drawing_mode == 1)\n"
+            "{\n"
+            "    cx = julia_point.x;\n"
+            "    cy = julia_point.y;\n"
+            "}";
+    }
+    }
+
+    return nullptr;
+}
+
+std::string Puzabrot::Engine::writeCalculation() const
+{
+    switch (options.input_mode)
+    {
+    case Z_INPUT:
+    {
+        std::string str_calculation =
+            "vec2 ppz = pz;\n"
+            "pz = z;\n";
+
+        str_calculation += "z = ";
+        int err = Tree2GLSL(expr_trees.z, &str_calculation);
+        if (err)
+        {
+            return std::string();
+        }
+
+        str_calculation += ";";
+
+        return str_calculation;
+    }
+    case XY_INPUT:
+    {
+        std::string str_calculation =
+            "vec2 ppz = pz;\n"
+            "pz = vec2(x, y);\n";
+
+        str_calculation += "vec2 x1 = ";
+        int err = Tree2GLSL(expr_trees.x, &str_calculation);
+        if (err)
+        {
+            return std::string();
+        }
+
+        str_calculation += ";\nvec2 y1 = ";
+        err = Tree2GLSL(expr_trees.y, &str_calculation);
+        if (err)
+        {
+            return std::string();
+        }
+
+        str_calculation += ";\nx = x1.x;\ny = y1.x;";
+
+        return str_calculation;
+    }
+    }
+
+    return std::string();
+}
+
+std::string Puzabrot::Engine::writeChecking() const
+{
+    std::string str_checking;
+
+    switch (options.input_mode)
+    {
+    case Z_INPUT:
+        str_checking = "if (cabs(z).x > limit) break;\n";
+        break;
+    case XY_INPUT:
+        str_checking = "if (cabs(vec2(x, y)).x > limit) break;\nvec2 z = vec2(x, y);\n";
+        break;
+    }
+
+    str_checking +=
+        "sumz.x += dot(z - pz, pz - ppz);\n"
+        "sumz.y += dot(z - pz,  z - pz);\n"
+        "sumz.z += dot(z - ppz, z - ppz);";
+
+    return str_checking;
+}
+
+int Puzabrot::Engine::Tree2GLSL(const Tree<CalcData>& node, std::string* str) const
+{
+    switch (node.value().node_type)
+    {
+    case CalcData::FUNCTION:
+    {
+        *str += "c" + node.value().word + "(";
+
+        int err = Tree2GLSL(node[0], str);
+        COND_RETURN(err, err);
+
+        *str += ")";
+        break;
+    }
+    case CalcData::OPERATOR:
+    {
+        switch (node.value().op_code)
+        {
+        case Operation::ADD:
+            *str += "cadd(";
+            break;
+        case Operation::SUB:
+            *str += "csub(";
+            break;
+        case Operation::MUL:
+            *str += "cmul(";
+            break;
+        case Operation::DIV:
+            *str += "cdiv(";
+            break;
+        case Operation::POW:
+            *str += "cpow(";
+            break;
+        default:
+            break;
+        }
+
+        if (node.branches_num() < 2)
+        {
+            *str += "vec2(0.0, 0.0), ";
+        }
+        else
+        {
+            int err = Tree2GLSL(node[1], str);
+            COND_RETURN(err, err);
+
+            *str += ", ";
+        }
+
+        int err = Tree2GLSL(node[0], str);
+        COND_RETURN(err, err);
+
+        *str += ")";
+        break;
+    }
+    case CalcData::VARIABLE:
+    {
+        switch (options.input_mode)
+        {
+        case Z_INPUT:
+        {
+            COND_RETURN((node.value().word != "z") && (node.value().word != "c") && (node.value().word != "pi") &&
+                (node.value().word != "e") && (node.value().word != "i"), -1);
+
+            break;
+        }
+        case XY_INPUT:
+        {
+            COND_RETURN((node.value().word != "x") && (node.value().word != "y") && (node.value().word != "cx") &&
+                (node.value().word != "cy") && (node.value().word != "pi") && (node.value().word != "e") &&
+                (node.value().word != "i"), -1);
+
+            break;
+        }
+        }
+
+        if (node.value().word == "i")
+        {
+            *str += "I";
+        }
+        else
+        {
+            switch (options.input_mode)
+            {
+            case Z_INPUT:
+                *str += node.value().word;
+                break;
+            case XY_INPUT:
+                *str += "vec2(" + node.value().word + ", 0.0)";
+                break;
+            }
+        }
+        break;
+    }
+    case CalcData::NUMBER:
+    {
+        switch (options.input_mode)
+        {
+        case Z_INPUT:
+            *str += "vec2(" + std::to_string(real(node.value().number)) + ", " + std::to_string(imag(node.value().number)) + ")";
+            break;
+        case XY_INPUT:
+            *str += "vec2(" + std::to_string(real(node.value().number)) + ", 0.0)";
+            break;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+Puzabrot::Synth::Synth(const Engine* engine) : audio_reset(true), audio_pause(false), sustain(true), engine_(engine)
+{
+    initialize(2, SYNTH_SAMPLE_RATE);
     setLoop(true);
 }
 
-void Puzabrot::Synth::SetPoint(point_t point)
+void Puzabrot::Synth::setPoint(point_t point)
 {
     new_point_ = point;
 
-    audio_reset_ = true;
-    audio_pause_ = false;
+    audio_reset = true;
+    audio_pause = false;
 }
 
-void Puzabrot::Synth::copyTrees(ComplexShader::ExprTrees& expr_trees)
+void Puzabrot::Synth::setExpressions(const Engine::ExprTrees& expr_trees)
 {
     expr_trees_ = expr_trees;
 }
 
 bool Puzabrot::Synth::onGetData(Chunk& data)
 {
-    data.samples     = m_samples_;
-    data.sampleCount = AUDIO_BUFF_SIZE;
-    memset(m_samples_, 0, AUDIO_BUFF_SIZE * sizeof(int16_t));
+    data.samples = m_samples_;
+    data.sampleCount = SYNTH_AUDIO_BUFF_SIZE;
+    memset(m_samples_, 0, SYNTH_AUDIO_BUFF_SIZE * sizeof(int16_t));
 
-    if (audio_reset_)
+    if (audio_reset)
     {
         m_audio_time_ = 0;
 
-        point_      = new_point_;
+        point_ = new_point_;
         prev_point_ = new_point_;
-        mean_       = new_point_;
+        mean_ = new_point_;
 
-        mag   = 0.0;
-        pmag  = 0.0;
-        phase = 0.0;
+        mag_ = 0.0;
+        pmag_ = 0.0;
+        phase_ = 0.0;
 
         volume_ = 8000.0;
 
-        audio_reset_ = false;
+        audio_reset = false;
     }
 
-    COND_RETURN(audio_pause_, true);
+    COND_RETURN(audio_pause, true);
 
-    c_point_ = (app_->options_.draw_mode == MAIN) ? new_point_ : app_->holder_.julia_point;
+    c_point_ = (engine_->options.draw_mode == MAIN) ? new_point_ : engine_->params.julia_point;
 
     Calculator calc;
-    const int steps = SAMPLE_RATE / MAX_FREQ;
+    const int steps = SYNTH_SAMPLE_RATE / SYNTH_MAX_FREQ;
 
-    for (size_t i = 0; i < AUDIO_BUFF_SIZE; i += 2)
+    for (size_t i = 0; i < SYNTH_AUDIO_BUFF_SIZE; i += 2)
     {
         const int j = m_audio_time_ % steps;
         if (j == 0)
@@ -826,20 +1105,20 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
             prev_point_ = point_;
 
             calc.clear();
-            app_->initCalculator(calc, point_, c_point_);
-            app_->Mapping(calc, expr_trees_, point_);
+            engine_->initCalculator(calc, point_, c_point_);
+            engine_->Mapping(calc, expr_trees_, point_);
 
-            if (sqrt(pow(point_.x, 2.0) + pow(point_.y, 2.0)) > app_->holder_.limit)
+            if (sqrt(pow(point_.x, 2.0) + pow(point_.y, 2.0)) > engine_->params.limit)
             {
-                audio_pause_ = true;
+                audio_pause = true;
                 return true;
             }
 
-            d_  = point_      - mean_;
+            d_  = point_ - mean_;
             dp_ = prev_point_ - mean_;
 
-            pmag = sqrt(1e-12 + dp_.x * dp_.x + dp_.y * dp_.y);
-            mag  = sqrt(1e-12 + d_.x * d_.x + d_.y * d_.y);
+            pmag_ = sqrt(1e-12 + dp_.x * dp_.x + dp_.y * dp_.y);
+            mag_  = sqrt(1e-12 + d_.x * d_.x + d_.y * d_.y);
 
             mean_ = mean_ * 0.99 + point_ * 0.01;
 
@@ -855,7 +1134,7 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
                 dp_ *= 2.0 / m;
             }
 
-            if (!sustain_)
+            if (!sustain)
             {
                 volume_ *= 0.9992;
             }
@@ -863,17 +1142,17 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
 
         double t = 0.5 - 0.5 * cos(double(j) / double(steps) * real(PI));
 
-        double wy   = t * point_.y + (1.0 - t) * prev_point_.y;
-        double wmag = t * mag      + (1.0 - t) * pmag;
+        double wy = t * point_.y + (1.0 - t) * prev_point_.y;
+        double wmag = t * mag_ + (1.0 - t) * pmag_;
 
-        phase += wy / real(PI) / steps;
-        double s = std::sin(phase) * wmag;
+        phase_ += wy / real(PI) / steps;
+        double s = std::sin(phase_) * wmag;
 
-        m_samples_[i]     = static_cast<int16_t>(std::min(std::max(s * volume_, -32000.0), 32000.0));
+        m_samples_[i] = static_cast<int16_t>(std::min(std::max(s * volume_, -32000.0), 32000.0));
         m_samples_[i + 1] = static_cast<int16_t>(std::min(std::max(s * volume_, -32000.0), 32000.0));
 
         m_audio_time_ += 1;
     }
 
-    return !audio_reset_;
+    return !audio_reset;
 }
