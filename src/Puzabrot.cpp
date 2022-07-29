@@ -322,6 +322,7 @@ void Puzabrot::run()
 
             else if (window_->handleEvent(event))
             {
+                engine_->setImageSize(window_->getSize());
                 engine_->render();
             }
         }
@@ -515,14 +516,12 @@ Puzabrot::Engine::Engine(const sf::Vector2u& image_size, const Window* window_) 
 
 void Puzabrot::Engine::render()
 {
-    setImageSize(window->getSize());
-
     shader_.setUniform("borders.left", static_cast<float>(window->getBorders().left));
     shader_.setUniform("borders.right", static_cast<float>(window->getBorders().right));
     shader_.setUniform("borders.bottom", static_cast<float>(window->getBorders().bottom));
     shader_.setUniform("borders.top", static_cast<float>(window->getBorders().top));
 
-    shader_.setUniform("winsizes", sf::Glsl::Ivec2(sf::Vector2i(window->getSize())));
+    shader_.setUniform("winsizes", sf::Glsl::Ivec2(sf::Vector2i(render_texture_.getSize())));
 
     shader_.setUniform("itrn_max", static_cast<int>(params.itrn_max));
     shader_.setUniform("limit", static_cast<float>(params.limit));
