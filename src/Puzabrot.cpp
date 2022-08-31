@@ -335,9 +335,9 @@ void Puzabrot::run()
             window_->draw(*window_);
         }
 
-        input_.x.draw(*window_);
-        input_.y.draw(*window_);
-        input_.z.draw(*window_);
+        window_->draw(input_.x);
+        window_->draw(input_.y);
+        window_->draw(input_.z);
 
         if (right_pressed)
         {

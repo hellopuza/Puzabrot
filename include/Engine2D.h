@@ -2,15 +2,14 @@
 #define ENGINE2D_H
 
 #include "Base2D.h"
+#include "Eventable.h"
 
-#include <SFML/Graphics.hpp>
-
-class Engine2D : public sf::RenderWindow, public Base2D
+class Engine2D : public sf::RenderWindow, public Base2D, public Eventable
 {
 public:
     Engine2D(const sf::Vector2u& size, const sf::String& title, sf::Uint32 style = sf::Style::Default);
 
-    bool handleEvent(const sf::Event& event);
+    bool handleEvent(const sf::Event& event) override;
     void setZoomingRatio(double zooming_ratio);
 
     void drawPlane(sf::RenderTarget& target, sf::RenderStates states, const sf::Color& plane_color) const;

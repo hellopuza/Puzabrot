@@ -111,7 +111,7 @@ constexpr size_t SYNTH_AUDIO_BUFF_SIZE = 4096;
 constexpr size_t SYNTH_SAMPLE_RATE = 48000;
 constexpr size_t SYNTH_MAX_FREQ = 4000;
 
-class Puzabrot::Synth final : public sf::SoundStream
+class Puzabrot::Synth : public sf::SoundStream
 {
 public:
     Synth(const Engine* engine);

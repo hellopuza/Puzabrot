@@ -1,15 +1,15 @@
 #ifndef INPUTBOX_H
 #define INPUTBOX_H
 
-#include <SFML/Graphics.hpp>
+#include "Eventable.h"
 
-class InputBox
+class InputBox : public sf::Drawable, public Eventable
 {
 public:
     InputBox();
     InputBox(sf::Vector2f box_pos, sf::Color box_color, sf::Color text_color, float font_size);
 
-    void draw(sf::RenderWindow& window);
+    void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
     void setInput(const sf::String& text);
     void setLabel(const sf::String& text);
@@ -25,17 +25,17 @@ public:
     void show();
     bool isVisible() const;
 
-    bool handleEvent(const sf::Event& event);
+    bool handleEvent(const sf::Event& event) override;
     bool TextEntered() const;
     bool hasFocus() const;
 
 private:
-    sf::Text label_;
-    sf::Text input_text_;
-    sf::Text output_text_;
+    mutable sf::Text label_;
+    mutable sf::Text input_text_;
+    mutable sf::Text output_text_;
 
-    sf::Vector2f box_pos_  = { 0, 0 };
-    sf::Vector2f box_size_ = { 0, 0 };
+    mutable sf::Vector2f box_size_;
+    sf::Vector2f box_pos_;
     sf::Color box_color_;
     sf::Color text_color_;
     sf::Font font_;

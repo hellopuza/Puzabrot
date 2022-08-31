@@ -28,7 +28,7 @@ InputBox::InputBox(sf::Vector2f box_pos, sf::Color box_color, sf::Color text_col
     font_.loadFromFile("assets/consola.ttf");
 }
 
-void InputBox::draw(sf::RenderWindow& window)
+void InputBox::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
     if (is_visible_)
     {
@@ -84,8 +84,8 @@ void InputBox::draw(sf::RenderWindow& window)
                                                QUARTER * font_size_, box_pos_.y + QUARTER * input_box.getSize().y));
         }
 
-        window.draw(box);
-        window.draw(input_box);
+        target.draw(box, states);
+        target.draw(input_box, states);
 
         if (not label_.getString().isEmpty())
         {
@@ -95,7 +95,7 @@ void InputBox::draw(sf::RenderWindow& window)
 
             label_.setCharacterSize(static_cast<unsigned int>(font_size_));
             label_.setFillColor(text_color_);
-            window.draw(label_);
+            target.draw(label_, states);
         }
 
         if (not output_text_.getString().isEmpty())
@@ -105,7 +105,7 @@ void InputBox::draw(sf::RenderWindow& window)
 
             output_text_.setCharacterSize(static_cast<unsigned int>(font_size_));
             output_text_.setFillColor(text_color_);
-            window.draw(output_text_);
+            target.draw(output_text_, states);
         }
 
         if (not input_text_.getString().isEmpty())
@@ -114,7 +114,7 @@ void InputBox::draw(sf::RenderWindow& window)
             input_text_.setPosition(input_box.getPosition());
             input_text_.setCharacterSize(static_cast<unsigned int>(font_size_));
             input_text_.setFillColor(sf::Color::White);
-            window.draw(input_text_);
+            target.draw(input_text_, states);
         }
     }
 }
