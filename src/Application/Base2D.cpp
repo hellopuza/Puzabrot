@@ -1,21 +1,16 @@
-#include "Base2D.h"
+#include "Application/Base2D.h"
 
 Base2D::Borders::Borders(double left_, double right_, double bottom_, double top_) :
     left(left_), right(right_), bottom(bottom_), top(top_)
 {}
 
-Base2D::Base2D(const sf::Vector2u& size) : size_(size) {}
+Base2D::Base2D(const vec2i& size) : size_(size) {}
 
-void Base2D::setSizeInPixels(const sf::Vector2u& size)
+void Base2D::setBaseSize(const vec2i& size)
 {
     size_ = size;
 
     borders_.right = borders_.left + (borders_.top - borders_.bottom) * size_.x / size_.y;
-}
-
-sf::Vector2u Base2D::getSizeInPixels() const
-{
-    return size_;
 }
 
 void Base2D::setBorders(double bottom_, double top_, double right_left_ratio)
@@ -32,7 +27,7 @@ Base2D::Borders Base2D::getBorders() const
     return borders_;
 }
 
-Base2D::point_t Base2D::Screen2Base(sf::Vector2i pixel) const
+vec2d Base2D::Screen2Base(const vec2i& pixel) const
 {
     return {
         borders_.left + (borders_.right - borders_.left) * pixel.x / size_.x,
@@ -40,7 +35,7 @@ Base2D::point_t Base2D::Screen2Base(sf::Vector2i pixel) const
     };
 }
 
-sf::Vector2i Base2D::Base2Screen(point_t point) const
+vec2i Base2D::Base2Screen(const vec2d& point) const
 {
     return {
         static_cast<int>((point.x - borders_.left) / (borders_.right - borders_.left) * size_.x),

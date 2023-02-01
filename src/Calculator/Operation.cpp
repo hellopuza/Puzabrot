@@ -1,6 +1,6 @@
 #include "Calculator/Operation.h"
 
-Operation::Operation(char code_, std::string word_) : code(code_), word(std::move(word_)) {}
+Operation::Operation(uint8_t code_, std::string word_) : code(code_), word(std::move(word_)) {}
 
 int compare_OpNames(const void* p1, const void* p2)
 {

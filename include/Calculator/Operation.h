@@ -1,11 +1,11 @@
-#ifndef CALCULATOR_OPERATIONS_H_INCLUDED
-#define CALCULATOR_OPERATIONS_H_INCLUDED
+#ifndef CALCULATOR_OPERATION_H
+#define CALCULATOR_OPERATION_H
 
 #include <string>
 
 struct Operation
 {
-    char code = 0;
+    uint8_t code = 0;
     std::string word = 0;
 
     enum OperationsCodes
@@ -40,7 +40,7 @@ struct Operation
         TANH    = 0x1B,
     };
 
-    Operation(char code_, std::string word_);
+    Operation(uint8_t code_, std::string word_);
 };
 
 static Operation op_names[] = {
@@ -78,4 +78,4 @@ const size_t OP_NUM = sizeof(op_names) / sizeof(op_names[0]);
 
 int compare_OpNames(const void* p1, const void* p2);
 
-#endif // CALCULATOR_OPERATIONS_H_INCLUDED
+#endif // CALCULATOR_OPERATION_H

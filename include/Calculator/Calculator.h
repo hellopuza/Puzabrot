@@ -17,10 +17,6 @@ enum CalculatorErrors
     CALC_SYNTAX_ERROR,
     CALC_SYNTAX_NO_CLOSE_BRACKET,
     CALC_SYNTAX_UNIDENTIFIED_FUNCTION,
-    CALC_TREE_FUNC_WRONG_ARGUMENT,
-    CALC_TREE_NUM_WRONG_ARGUMENT,
-    CALC_TREE_OPER_WRONG_ARGUMENTS,
-    CALC_TREE_VAR_WRONG_ARGUMENT,
     CALC_UNIDENTIFIED_VARIABLE,
     CALC_WRONG_VARIABLE,
 };
@@ -31,11 +27,7 @@ char const* const calc_errstr[] = {
     "Syntax error",
     "Close bracket \')\' required here",
     "Unidentified function",
-    "Function node must have one children on the right branch",
-    "Number node must not have any children",
-    "Operator node must have two children",
-    "Variable node must not have any children",
-    "I do not solve equations",
+    "Unidentified variable",
     "Wrong variable detected",
 };
 
@@ -50,15 +42,15 @@ struct CalcData final
     };
 
     CalcData() = default;
-    CalcData(std::complex<double> number_, std::string word_, char op_code_, char node_type_);
+    CalcData(std::complex<double> number_, std::string word_, uint8_t op_code_, uint8_t node_type_);
 
     friend std::ostream& operator<<(std::ostream& os, const CalcData& data);
 
     std::complex<double> number { 0.0, 0.0 };
 
     std::string word;
-    char        op_code   = 0;
-    char        node_type = 0;
+    uint8_t op_code = 0;
+    uint8_t node_type = 0;
 };
 
 struct Variable final
@@ -87,7 +79,7 @@ private:
     int pass_Function(Tree<CalcData>& node);
     int pass_Number(Tree<CalcData>& node);
 
-    static char findFunc(std::string word);
+    static uint8_t findFunc(std::string word);
 
     size_t pos = 0;
 };

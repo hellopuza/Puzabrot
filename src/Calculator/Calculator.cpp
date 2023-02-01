@@ -37,7 +37,7 @@ Variable::Variable(std::complex<double> value_, std::string name_) :
     value(value_), name(std::move(name_))
 {}
 
-CalcData::CalcData(std::complex<double> number_, std::string word_, char op_code_, char node_type_) :
+CalcData::CalcData(std::complex<double> number_, std::string word_, uint8_t op_code_, uint8_t node_type_) :
     number(number_), word(std::move(word_)), op_code(op_code_), node_type(node_type_)
 {}
 
@@ -340,7 +340,7 @@ int Expression::pass_Number(Tree<CalcData>& node)
     return CALC_OK;
 }
 
-char Expression::findFunc(std::string word)
+uint8_t Expression::findFunc(std::string word)
 {
     Operation func_key { 0, std::move(word) };
 

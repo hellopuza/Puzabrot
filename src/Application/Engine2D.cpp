@@ -1,16 +1,18 @@
-#include "Engine2D.h"
+#include "Application/Engine2D.h"
+#include "Utils.h"
 
 #include <algorithm>
 #include <cmath>
 #include <sstream>
 
-Engine2D::Engine2D(const sf::Vector2u& size, const sf::String& title, sf::Uint32 style) :
-    sf::RenderWindow(sf::VideoMode(size.x, size.y), title, style), Base2D(size), default_size_(size), title_(title), style_(style)
+Engine2D::Engine2D(const vec2i& size, const char* title) :
+    sf::RenderWindow(sf::VideoMode(size.x, size.y), title, sf::Style::Default), Base2D(size),
+    default_size_(size), title_(title), style_(sf::Style::Default)
 {}
 
 bool Engine2D::handleEvent(const sf::Event& event)
 {
-    static sf::Vector2i mouse_pos;
+    static vec2i mouse_pos;
     static bool dragging = false;
 
     // Close window
@@ -32,7 +34,7 @@ bool Engine2D::handleEvent(const sf::Event& event)
     {
         sf::FloatRect visible_area(0.0F, 0.0F, static_cast<float>(event.size.width), static_cast<float>(event.size.height));
         setView(sf::View(visible_area));
-        updateSize(sf::Vector2u(getSize().x, getSize().y));
+        updateSize(vec(getSize()));
 
         return true;
     }
@@ -40,19 +42,19 @@ bool Engine2D::handleEvent(const sf::Event& event)
     // Zooming
     if (event.type == sf::Event::MouseWheelMoved)
     {
-        WheelZooming(static_cast<double>(event.mouseWheel.delta), Screen2Base(sf::Mouse::getPosition(*this)));
+        WheelZooming(static_cast<double>(event.mouseWheel.delta), Screen2Base(vec(sf::Mouse::getPosition(*this))));
         return true;
     }
 
     // Moving
     if ((event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left))
     {
-        mouse_pos = sf::Vector2i(event.mouseButton.x, event.mouseButton.y);
+        mouse_pos = vec2i(event.mouseButton.x, event.mouseButton.y);
         dragging = true;
     }
     else if ((event.type == sf::Event::MouseMoved) && sf::Mouse::isButtonPressed(sf::Mouse::Left) && dragging)
     {
-        sf::Vector2i new_pos(event.mouseMove.x, event.mouseMove.y);
+        vec2i new_pos(event.mouseMove.x, event.mouseMove.y);
         MouseMoving(new_pos - mouse_pos);
         mouse_pos = new_pos;
 
@@ -71,44 +73,29 @@ void Engine2D::setZoomingRatio(double zooming_ratio)
     zooming_ratio_ = zooming_ratio;
 }
 
-void Engine2D::drawPlane(sf::RenderTarget& target, sf::RenderStates states, const sf::Color& plane_color) const
+void Engine2D::drawBackground(const sf::Color& plane_color)
 {
     sf::RectangleShape rectangle;
     rectangle.setSize(sf::Vector2f(getSize()));
     rectangle.setFillColor(plane_color);
     rectangle.setPosition(0.0F, 0.0F);
-    target.draw(rectangle, states);
+    draw(rectangle);
 }
 
-void Engine2D::drawAxes(sf::RenderTarget& target, sf::RenderStates states, const sf::Color& axis_color) const
+void Engine2D::drawGrid(const sf::Font& font, int font_size)
 {
-    sf::Vertex horizontal[] = {
-        sf::Vertex(sf::Vector2f(Base2Screen(point_t(borders_.left,  0.0))), axis_color),
-        sf::Vertex(sf::Vector2f(Base2Screen(point_t(borders_.right, 0.0))), axis_color)
-    };
+    sf::Color color = sf::Color::White;
 
-    sf::Vertex vertical[] = {
-        sf::Vertex(sf::Vector2f(Base2Screen(point_t(0.0, borders_.bottom))), axis_color),
-        sf::Vertex(sf::Vector2f(Base2Screen(point_t(0.0, borders_.top))), axis_color)
-    };
-
-    target.draw(horizontal, 2, sf::Lines, states);
-    target.draw(vertical, 2, sf::Lines, states);
-}
-
-void Engine2D::drawGrid(sf::RenderTarget& target, sf::RenderStates states, const sf::Font& font,
-    const sf::Color& grid_color, const sf::Color& text_color, unsigned symbol_size) const
-{
-    auto ratio = getRatio();
+    vec2d ratio = getRatio();
     sf::VertexArray grid(sf::Lines);
 
     std::vector<sf::Text> labels;
 
-    double ratio_div = ratio.first / ratio.second;
-    double x = borders_.bottom - std::fmod(borders_.bottom, ratio_div) + ratio_div * static_cast<double>(borders_.bottom > 0.0);
+    double ratio_div = ratio.x / ratio.y;
 
     const double min_label_pos = ratio_div * 0.01;
-    while (x < borders_.top)
+    double x = 0.0;
+    auto makeLabel = [&](const vec2d& label_pos, const vec2d& v1, const vec2d& v2)
     {
         std::stringstream number_text;
         if (std::abs(x) > min_label_pos)
@@ -116,45 +103,39 @@ void Engine2D::drawGrid(sf::RenderTarget& target, sf::RenderStates states, const
             number_text << x;
         }
 
-        labels.emplace_back(sf::Text(number_text.str(), font, symbol_size));
-        labels.back().setFillColor(text_color);
-        labels.back().setPosition(sf::Vector2f(getLabelPos(point_t(0.0, x), symbol_size)));
+        labels.emplace_back(sf::Text(number_text.str(), font, font_size));
+        labels.back().setFillColor(color);
+        labels.back().setOutlineThickness(0.8F);
+        labels.back().setPosition(vec(getLabelPos(label_pos, vec2d(labels.back().getLocalBounds().width, labels.back().getLocalBounds().height))));
 
-        grid.append(sf::Vertex(sf::Vector2f(Base2Screen(point_t(borders_.left, x))), grid_color));
-        grid.append(sf::Vertex(sf::Vector2f(Base2Screen(point_t(borders_.right, x))), grid_color));
+        grid.append(sf::Vertex(vec(Base2Screen(v1)), color));
+        grid.append(sf::Vertex(vec(Base2Screen(v2)), color));
         x += ratio_div;
+    };
+
+    x = borders_.bottom - std::fmod(borders_.bottom, ratio_div) + ratio_div * static_cast<double>(borders_.bottom > 0.0);
+    while (x < borders_.top)
+    {
+        makeLabel(vec2d(0.0, x), vec2d(borders_.left, x), vec2d(borders_.right, x));
     }
 
     x = borders_.left - std::fmod(borders_.left, ratio_div) + ratio_div * static_cast<double>(borders_.left > 0.0);
-
     while (x < borders_.right)
     {
-        std::stringstream number_text;
-        if (std::abs(x) > min_label_pos)
-        {
-            number_text << x;
-        }
-
-        labels.emplace_back(sf::Text(number_text.str(), font, symbol_size));
-        labels.back().setFillColor(text_color);
-        labels.back().setPosition(sf::Vector2f(getLabelPos(point_t(x, 0.0), symbol_size)));
-
-        grid.append(sf::Vertex(sf::Vector2f(Base2Screen(point_t(x, borders_.bottom))), grid_color));
-        grid.append(sf::Vertex(sf::Vector2f(Base2Screen(point_t(x, borders_.top))), grid_color));
-        x += ratio_div;
+        makeLabel(vec2d(x, 0.0), vec2d(x, borders_.bottom), vec2d(x, borders_.top));
     }
 
-    target.draw(grid, states);
+    draw(grid);
 
     for (const auto& label : labels)
     {
-        target.draw(label, states);
+        draw(label);
     }
 }
 
-void Engine2D::updateSize(const sf::Vector2u& size)
+void Engine2D::updateSize(const vec2i& size)
 {
-    setSizeInPixels(size);
+    setBaseSize(size);
 }
 
 void Engine2D::toggleFullScreen()
@@ -169,11 +150,11 @@ void Engine2D::toggleFullScreen()
     {
         style_ |= static_cast<sf::Uint32>(sf::Style::Fullscreen);
         create(sf::VideoMode::getDesktopMode(), title_, style_);
-        updateSize(sf::Vector2u(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height));
+        updateSize(vec2i(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height));
     }
 }
 
-void Engine2D::WheelZooming(double wheel_delta, point_t point)
+void Engine2D::WheelZooming(double wheel_delta, const vec2d& point)
 {
     double width = borders_.right - borders_.left;
     double height = borders_.top - borders_.bottom;
@@ -191,7 +172,7 @@ void Engine2D::WheelZooming(double wheel_delta, point_t point)
     borders_ = new_frame;
 }
 
-void Engine2D::MouseMoving(const sf::Vector2i& movement)
+void Engine2D::MouseMoving(const vec2i& movement)
 {
     double width = borders_.right - borders_.left;
     double height = borders_.top - borders_.bottom;
@@ -206,29 +187,24 @@ void Engine2D::MouseMoving(const sf::Vector2i& movement)
     borders_ = new_frame;
 }
 
-Base2D::point_t Engine2D::getLabelPos(point_t point, unsigned symbol_size) const
+vec2d Engine2D::getLabelPos(const vec2d& point, const vec2d& text_size) const
 {
-    point_t new_point(Base2Screen(point));
-    new_point = point_t(
-        std::clamp(new_point.x, 0.0, static_cast<double>(getSize().x - symbol_size * 4)),
-        std::clamp(new_point.y, 0.0, static_cast<double>(getSize().y - symbol_size * 2))
-    );
-    return new_point;
+    return clamp(Base2Screen(point), vec2i(), size_ - text_size * vec2d(1.0, 1.5));
 }
 
-std::pair<double, double> Engine2D::getRatio() const
+vec2d Engine2D::getRatio() const
 {
     const double initial_ratio = 10.0;
-    static std::pair<double, double> ratio(initial_ratio, initial_ratio);
+    static vec2d ratio(initial_ratio, initial_ratio);
 
-    double ratio_div = ratio.first / ratio.second;
+    double ratio_div = ratio.x / ratio.y;
 
     auto size = getSize();
     double screen_square = ratio_div * ratio_div * static_cast<double>(size.x * size.y) /
         ((borders_.right - borders_.left) * (borders_.top - borders_.bottom));
 
-    const double max_square = 14400.0;
-    const double min_square = 2025.0;
+    const double max_square = 50000.0;
+    const double min_square = 8000.0;
 
     constexpr double TWO = 2.0;
     constexpr double FIVE = 5.0;
@@ -236,31 +212,31 @@ std::pair<double, double> Engine2D::getRatio() const
 
     if (screen_square > max_square)
     {
-        switch (static_cast<int>(ratio.second))
+        switch (static_cast<int>(ratio.y))
         {
         case static_cast<int>(TWO):
-            ratio = std::pair<double, double>(ratio.first, FIVE);
+            ratio = vec2d(ratio.x, FIVE);
             break;
         case static_cast<int>(FIVE):
-            ratio = std::pair<double, double>(ratio.first, TEN);
+            ratio = vec2d(ratio.x, TEN);
             break;
         case static_cast<int>(TEN):
-            ratio = std::pair<double, double>(ratio.first / TEN, TWO);
+            ratio = vec2d(ratio.x / TEN, TWO);
             break;
         }
     }
     else if (screen_square < min_square)
     {
-        switch (static_cast<int>(ratio.second))
+        switch (static_cast<int>(ratio.y))
         {
         case static_cast<int>(TWO):
-            ratio = std::pair<double, double>(ratio.first * TEN, TEN);
+            ratio = vec2d(ratio.x * TEN, TEN);
             break;
         case static_cast<int>(FIVE):
-            ratio = std::pair<double, double>(ratio.first, TWO);
+            ratio = vec2d(ratio.x, TWO);
             break;
         case static_cast<int>(TEN):
-            ratio = std::pair<double, double>(ratio.first, FIVE);
+            ratio = vec2d(ratio.x, FIVE);
             break;
         }
     }
