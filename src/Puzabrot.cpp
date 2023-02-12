@@ -24,21 +24,23 @@ static const char* FONT_LOCATION = "assets/consola.ttf";
 static const vec2i WINDOW_SIZE = { 640, 480 };
 static const vec2d INPUT_BUTTON_POS = { 10.0, 10.0 };
 static const vec2d INPUT_BOX_POS = { 10.0, 35.0 };
-static const vec2d COLOR_BUTTON_POS = { 10.0, 125.0 };
+static const vec2d RENDER_BUTTON_POS = { 10.0, 125.0 };
 static const vec2d GRID_BUTTON_POS = { 10.0, 150.0 };
 static const vec2d SOUND_BUTTON_POS = { 10.0, 175.0 };
 static const vec2d ITERATION_BUTTON_POS = { 10.0, 200.0 };
 static const vec2d PARAMETER_BUTTON_POS = { 10.0, 225.0 };
+static const vec2d COLOR_BUTTON_POS = { 10.0, 250.0 };
 
 #define INPUT_BUTTON static_cast<SwitchButton*>(ui_.getVidget("input_button"))
 #define INPUT_X static_cast<InputBox*>(ui_.getVidget("input_x"))
 #define INPUT_Y static_cast<InputBox*>(ui_.getVidget("input_y"))
 #define INPUT_Z static_cast<InputBox*>(ui_.getVidget("input_z"))
-#define COLOR_BUTTON static_cast<SwitchButton*>(ui_.getVidget("color_button"))
+#define RENDER_BUTTON static_cast<SwitchButton*>(ui_.getVidget("render_button"))
 #define GRID_BUTTON static_cast<Button*>(ui_.getVidget("grid_button"))
 #define SOUND_BUTTON static_cast<Button*>(ui_.getVidget("sound_button"))
 #define ITERATION_BUTTON static_cast<Button*>(ui_.getVidget("iteration_button"))
 #define PARAMETER_BUTTON static_cast<Button*>(ui_.getVidget("parameter_button"))
+#define COLOR_BUTTON static_cast<SwitchButton*>(ui_.getVidget("color_button"))
 
 #define SET_INPUT_Y_POS INPUT_Y->setPosition(INPUT_X->getPosition() + vec2d(0.0, INPUT_X->getSize().y + 3.0))
 
@@ -79,11 +81,11 @@ Puzabrot::Puzabrot() :
     SET_INPUT_Y_POS;
     SET_INPUT_VISIBIITY;
 
-    ui_.addVidget("color_button", new SwitchButton(getFont(), UI_FONT_SIZE, COLOR_BUTTON_POS));
-    COLOR_BUTTON->addText("DEFAULT");
-    COLOR_BUTTON->addText("TRACER");
-    COLOR_BUTTON->addText("DOMAIN");
-    COLOR_BUTTON->addText("KALI");
+    ui_.addVidget("render_button", new SwitchButton(getFont(), UI_FONT_SIZE, RENDER_BUTTON_POS));
+    RENDER_BUTTON->addText("DEFAULT");
+    RENDER_BUTTON->addText("TRACER");
+    RENDER_BUTTON->addText("DOMAIN");
+    RENDER_BUTTON->addText("KALI");
 
     ui_.addVidget("grid_button", new Button(getFont(), UI_FONT_SIZE, GRID_BUTTON_POS));
     GRID_BUTTON->setText("GRID");
@@ -93,6 +95,10 @@ Puzabrot::Puzabrot() :
 
     ui_.addVidget("iteration_button", new Button(getFont(), UI_FONT_SIZE, ITERATION_BUTTON_POS));
     ui_.addVidget("parameter_button", new Button(getFont(), UI_FONT_SIZE, PARAMETER_BUTTON_POS));
+
+    ui_.addVidget("color_button", new SwitchButton(getFont(), UI_FONT_SIZE, COLOR_BUTTON_POS));
+    COLOR_BUTTON->addText("COLOR 0");
+    COLOR_BUTTON->addText("COLOR 1");
 }
 
 void Puzabrot::prerun()
@@ -113,21 +119,21 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
         // Enter expression from input box
         if (INPUT_X->TextEntered() || INPUT_Y->TextEntered() || INPUT_Z->TextEntered())
         {
-            int err = makeShader();
+            AST::Error err = makeShader();
 
-            if (!err)
+            if (err == AST::Error::OK)
             {
                 render();
-                options_.draw_mode = MAIN;
+                options_.fractal_mode = MAIN;
             }
 
             switch (options_.input_mode)
             {
             case Z_INPUT:
             {
-                if (err)
+                if (err != AST::Error::OK)
                 {
-                    INPUT_Z->setOutput(sf::String(calc_errstr[err + 1]));
+                    INPUT_Z->setOutput(sf::String(ASTStringError(err)));
                 }
                 else
                 {
@@ -139,9 +145,9 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
             {
                 if (INPUT_X->TextEntered())
                 {
-                    if (err)
+                    if (err != AST::Error::OK)
                     {
-                        INPUT_X->setOutput(sf::String(calc_errstr[err + 1]));
+                        INPUT_X->setOutput(sf::String(ASTStringError(err)));
                         SET_INPUT_Y_POS;
                     }
                     else
@@ -150,9 +156,9 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
                         SET_INPUT_Y_POS;
                     }
                 }
-                else if (err)
+                else if (err != AST::Error::OK)
                 {
-                    INPUT_Y->setOutput(sf::String(calc_errstr[err + 1]));
+                    INPUT_Y->setOutput(sf::String(ASTStringError(err)));
                 }
                 else
                 {
@@ -172,10 +178,10 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
             render();
         }
 
-        // Toggle color mode
-        if (options_.coloring_mode != COLOR_BUTTON->value())
+        // Toggle render mode
+        if (options_.rendering_mode != RENDER_BUTTON->value())
         {
-            options_.coloring_mode = COLOR_BUTTON->value();
+            options_.rendering_mode = RENDER_BUTTON->value();
             makeShader();
             render();
         }
@@ -194,6 +200,14 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
         {
             synth_->pause();
         }
+
+        // Toggle color mode
+        if (options_.color_mode != COLOR_BUTTON->value())
+        {
+            options_.color_mode = COLOR_BUTTON->value();
+            makeShader();
+            render();
+        }
     }
 
     // Toggle UI showing
@@ -205,7 +219,7 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
     // Reset set drawing
     else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R) && !TEXT_ENTERING)
     {
-        options_.draw_mode = MAIN;
+        options_.fractal_mode = MAIN;
         params_.limit = LIMIT;
         params_.frequency = FREQUENCY;
         params_.itrn_max = MAX_ITERATION;
@@ -224,10 +238,10 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
     // Julia set drawing
     else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Tab) && !TEXT_ENTERING)
     {
-        if (options_.draw_mode != JULIA)
+        if (options_.fractal_mode != JULIA)
         {
             options_.julia_dragging = true;
-            options_.draw_mode = JULIA;
+            options_.fractal_mode = JULIA;
             makeShader();
         }
         else
@@ -238,7 +252,7 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
             }
             else
             {
-                options_.draw_mode = MAIN;
+                options_.fractal_mode = MAIN;
                 makeShader();
                 render();
             }
@@ -257,7 +271,7 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
     // Change parameter
     else if ((event.type == sf::Event::MouseWheelMoved) && (PARAMETER_BUTTON->pressed()))
     {
-        switch (options_.coloring_mode)
+        switch (options_.rendering_mode)
         {
         case DEFAULT:
         case TRACER:
@@ -344,24 +358,27 @@ void Puzabrot::activity()
 
     ITERATION_BUTTON->setText(std::format("ITERATION {}", params_.itrn_max));
 
-    switch (options_.coloring_mode)
+    switch (options_.rendering_mode)
     {
     case DEFAULT:
     case TRACER:
     {
         PARAMETER_BUTTON->show();
         PARAMETER_BUTTON->setText(std::format("LIMIT {:.3g}", params_.limit));
+        COLOR_BUTTON->hide();
         break;
     }
     case COMPLEX_DOMAIN:
     {
         PARAMETER_BUTTON->hide();
+        COLOR_BUTTON->hide();
         break;
     }
     case KALI:
     {
         PARAMETER_BUTTON->show();
         PARAMETER_BUTTON->setText(std::format("FREQUENCY {:.3g}", params_.frequency));
+        COLOR_BUTTON->hide();
         break;
     }
     }
@@ -378,15 +395,13 @@ void Puzabrot::postrun()
 
 vec2d Puzabrot::PointTrace(const vec2d& point, const vec2d& c_point)
 {
-    Calculator calc;
-    initCalculator(calc, point, (options_.draw_mode == MAIN) ? c_point : params_.julia_point);
-
+    vec2d c = (options_.fractal_mode == MAIN) ? c_point : params_.julia_point;
     vec2d point1 = point;
     vec2d point2;
 
     for (size_t i = 0; i < params_.itrn_max; ++i)
     {
-        Mapping(calc, expr_trees_, point2);
+        point2 = Mapping(expr_trees_, c, point1);
 
         if (sqrt(pow(point2.x, 2.0) + pow(point2.y, 2.0)) > params_.limit)
         {
@@ -406,50 +421,20 @@ vec2d Puzabrot::PointTrace(const vec2d& point, const vec2d& c_point)
     return point1;
 }
 
-void Puzabrot::initCalculator(Calculator& calc, const vec2d& z, const vec2d& c) const
+vec2d Puzabrot::Mapping(ExprTrees& expr_trees, const vec2d& c, vec2d& z) const
 {
     switch (options_.input_mode)
     {
     case Z_INPUT:
     {
-        calc.variables.push_back({ { c.x, c.y }, "c" });
-        calc.variables.push_back({ { z.x, z.y }, "z" });
-        break;
+        auto result = expr_trees.z({ {"c", {c.x, c.y}}, {"z", {z.x, z.y}} });
+        return vec2d(real(result), imag(result));
     }
     case XY_INPUT:
     {
-        calc.variables.push_back({ { c.x, 0.0 }, "cx" });
-        calc.variables.push_back({ { c.y, 0.0 }, "cy" });
-
-        calc.variables.push_back({ { z.x, 0.0 }, "x" });
-        calc.variables.push_back({ { z.y, 0.0 }, "y" });
-        break;
-    }
-    }
-}
-
-void Puzabrot::Mapping(Calculator& calc, ExprTrees& expr_trees, vec2d& mapped_point) const
-{
-    switch (options_.input_mode)
-    {
-    case Z_INPUT:
-    {
-        calc.Calculate(expr_trees.z);
-        calc.variables[calc.variables.size() - 1] = { expr_trees.z.value().number, "z" };
-
-        mapped_point = vec2d(real(expr_trees.z.value().number), imag(expr_trees.z.value().number));
-        break;
-    }
-    case XY_INPUT:
-    {
-        calc.Calculate(expr_trees.x);
-        calc.Calculate(expr_trees.y);
-
-        calc.variables[calc.variables.size() - 2] = { { real(expr_trees.x.value().number), 0.0 }, "x" };
-        calc.variables[calc.variables.size() - 1] = { { real(expr_trees.y.value().number), 0.0 }, "y" };
-
-        mapped_point = vec2d(real(expr_trees.x.value().number), real(expr_trees.y.value().number));
-        break;
+        auto result_x = expr_trees.x({ {"cx", c.x}, {"cy", c.y}, {"x", z.x}, {"y", z.y} });
+        auto result_y = expr_trees.y({ {"cx", c.x}, {"cy", c.y}, {"x", z.x}, {"y", z.y} });
+        return vec2d(result_x, result_y);
     }
     }
 }
@@ -483,35 +468,32 @@ void Puzabrot::savePicture()
     display();
 }
 
-int Puzabrot::makeShader()
+AST::Error Puzabrot::makeShader()
 {
+    AST::Error err = AST::Error::OK;
     switch (options_.input_mode)
     {
     case Z_INPUT:
     {
-        Expression expr_z(INPUT_Z->getInput());
-
-        int err = expr_z.getTree(expr_trees_.z);
-        COND_RETURN(err, err);
+        expr_trees_.z = ASTz(INPUT_Z->getInput(), reinterpret_cast<ASTz::Error*>(&err));
+        COND_RETURN(err != AST::Error::OK, err);
         break;
     }
     case XY_INPUT:
     {
-        Expression expr_x(INPUT_X->getInput());
-        Expression expr_y(INPUT_Y->getInput());
+        expr_trees_.x = ASTx(INPUT_X->getInput(), reinterpret_cast<ASTx::Error*>(&err));
+        COND_RETURN(err != AST::Error::OK, err);
 
-        int err = expr_x.getTree(expr_trees_.x);
-        COND_RETURN(err, err);
-
-        err = expr_y.getTree(expr_trees_.y);
-        COND_RETURN(err, err);
+        expr_trees_.y = ASTx(INPUT_Y->getInput(), reinterpret_cast<ASTx::Error*>(&err));
+        COND_RETURN(err != AST::Error::OK, err);
+        break;
     }
     }
     synth_->setExpressions(expr_trees_);
 
-    COND_RETURN(writeShader(), CALC_WRONG_VARIABLE);
+    COND_RETURN(writeShader(), AST::Error::UNIDENTIFIED_VARIABLE);
 
-    return 0;
+    return err;
 }
 
 void Puzabrot::render()
@@ -738,7 +720,7 @@ std::string Puzabrot::writeFunctions() const
 std::string Puzabrot::writeColorFunction() const
 {
     std::string str;
-    switch (options_.coloring_mode)
+    switch (options_.rendering_mode)
     {
     case DEFAULT:
     case TRACER:
@@ -752,7 +734,7 @@ std::string Puzabrot::writeColorFunction() const
             "}\n"
             "\n";
 
-        str += (options_.coloring_mode == DEFAULT) ?
+        str += (options_.rendering_mode == DEFAULT) ?
             "vec3 getColor(int itrn)\n" :
             "vec3 getColor(int itrn, vec3 sum)\n";
 
@@ -764,7 +746,7 @@ std::string Puzabrot::writeColorFunction() const
             "    return vec3(pf(x - 3.0F), pf(x - 5.0F), pf(x - 7.0F));\n"
             "}\n";
 
-        str += (options_.coloring_mode == DEFAULT) ?
+        str += (options_.rendering_mode == DEFAULT) ?
             "return vec3(0.0, 0.0, 0.0);\n"
             "}\n" :
             "return sin(abs(sum / itrn_max * 5.0)) * 0.45 + 0.5;\n"
@@ -812,11 +794,11 @@ std::string Puzabrot::writeInitialization() const
         str +=
             "vec2 z = vec2(re0, im0);\n";
 
-        str += (options_.draw_mode == MAIN) ?
+        str += (options_.fractal_mode == MAIN) ?
             "vec2 c = vec2(re0, im0);\n" :
             "vec2 c = vec2(julia_point.x, julia_point.y);";
 
-        str += (options_.coloring_mode == TRACER) ?
+        str += (options_.rendering_mode == TRACER) ?
             "vec2 pz = z;\n" :
             "";
         break;
@@ -827,13 +809,13 @@ std::string Puzabrot::writeInitialization() const
             "float x = re0;\n"
             "float y = im0;\n";
 
-        str += (options_.draw_mode == MAIN) ?
+        str += (options_.fractal_mode == MAIN) ?
             "float cx = re0;\n"
             "float cy = im0;\n" :
             "float cx = julia_point.x;\n"
             "float cy = julia_point.y;\n";
 
-        str += (options_.coloring_mode == TRACER) ?
+        str += (options_.rendering_mode == TRACER) ?
             "vec2 pz = vec2(x, y);\n" :
             "";
 
@@ -844,7 +826,7 @@ std::string Puzabrot::writeInitialization() const
     str +=
         "vec3 sum = vec3(0.0, 0.0, 0.0);\n";
 
-    str += (options_.coloring_mode == KALI) ?
+    str += (options_.rendering_mode == KALI) ?
         "float weight = 1.0;\n" :
         "";
 
@@ -858,7 +840,7 @@ std::string Puzabrot::writeCalculation() const
     {
     case Z_INPUT:
     {
-        str += (options_.coloring_mode == TRACER) ?
+        str += (options_.rendering_mode == TRACER) ?
             "vec2 ppz = pz;\n"
             "pz = z;\n" :
             "";
@@ -874,7 +856,7 @@ std::string Puzabrot::writeCalculation() const
     }
     case XY_INPUT:
     {
-        str += (options_.coloring_mode == TRACER) ?
+        str += (options_.rendering_mode == TRACER) ?
             "vec2 ppz = pz;\n"
             "pz = vec2(x, y);\n" :
             "";
@@ -901,7 +883,7 @@ std::string Puzabrot::writeCalculation() const
 std::string Puzabrot::writeChecking() const
 {
     std::string str;
-    switch (options_.coloring_mode)
+    switch (options_.rendering_mode)
     {
     case DEFAULT:
     case TRACER:
@@ -913,7 +895,7 @@ std::string Puzabrot::writeChecking() const
         str +=
             "if (cabs(z).x > limit) break;\n";
 
-        str += (options_.coloring_mode == TRACER) ?
+        str += (options_.rendering_mode == TRACER) ?
             "sum.x += dot(z - pz,  pz - ppz);\n"
             "sum.y += dot(z - pz,  z - pz);\n"
             "sum.z += dot(z - ppz, z - ppz);\n" :
@@ -931,7 +913,7 @@ std::string Puzabrot::writeChecking() const
             "if (r > 1.0) z /= r;\n"
             "weight *= frequency;\n"
             "sum += vec3(z.x * z.x, z.y * z.y, abs(z.x * z.y)) * weight;\n" :
-            "float r = x * x + y *y;\n"
+            "float r = x * x + y * y;\n"
             "if (r > 1.0) { x /= r; y /= r; }\n"
             "weight *= frequency;\n"
             "sum += vec3(x * x, y * y, abs(x * y)) * weight;\n";
@@ -966,7 +948,7 @@ std::string Puzabrot::writeMain() const
             + str_checking +
         "}\n";
 
-    switch (options_.coloring_mode)
+    switch (options_.rendering_mode)
     {
     case DEFAULT:
     {
@@ -1002,41 +984,25 @@ std::string Puzabrot::writeMain() const
     return str;
 }
 
-int Puzabrot::Tree2GLSL(const Tree<CalcData>& node, std::string* str) const
+using ASTNodez = ast::ASTNode<std::complex<double>>;
+using OperationNodez = ast::OperationNode<std::complex<double>>;
+using FunctionNodez = ast::FunctionNode<std::complex<double>>;
+using VariableNodez = ast::VariableNode<std::complex<double>>;
+using NumberNodez = ast::NumberNode<std::complex<double>>;
+
+int Puzabrot::Tree2GLSL(const ASTz& node, std::string* str) const
 {
-    switch (node.value().node_type)
+    switch (node.value().get()->NodeType())
     {
-    case CalcData::FUNCTION:
+    case ASTNodez::Type::OPERATION:
     {
-        *str += "c" + node.value().word + "(";
-
-        int err = Tree2GLSL(node[0], str);
-        COND_RETURN(err, err);
-
-        *str += ")";
-        break;
-    }
-    case CalcData::OPERATOR:
-    {
-        switch (node.value().op_code)
+        switch (static_cast<OperationNodez*>(node.value().get())->type)
         {
-        case Operation::ADD:
-            *str += "cadd(";
-            break;
-        case Operation::SUB:
-            *str += "csub(";
-            break;
-        case Operation::MUL:
-            *str += "cmul(";
-            break;
-        case Operation::DIV:
-            *str += "cdiv(";
-            break;
-        case Operation::POW:
-            *str += "cpow(";
-            break;
-        default:
-            break;
+        case OperationNodez::Type::ADD: *str += "cadd("; break;
+        case OperationNodez::Type::SUB: *str += "csub("; break;
+        case OperationNodez::Type::MUL: *str += "cmul("; break;
+        case OperationNodez::Type::DIV: *str += "cdiv("; break;
+        case OperationNodez::Type::POW: *str += "cpow("; break;
         }
 
         if (node.branches_num() < 2)
@@ -1045,75 +1011,126 @@ int Puzabrot::Tree2GLSL(const Tree<CalcData>& node, std::string* str) const
         }
         else
         {
-            int err = Tree2GLSL(node[1], str);
+            int err = Tree2GLSL(*static_cast<const ASTz*>(&(node[0])), str);
             COND_RETURN(err, err);
 
             *str += ", ";
         }
 
-        int err = Tree2GLSL(node[0], str);
+        int err = Tree2GLSL(*static_cast<const ASTz*>(&(node[1])), str);
         COND_RETURN(err, err);
 
         *str += ")";
         break;
     }
-    case CalcData::VARIABLE:
+    case ASTNodez::Type::FUNCTION:
     {
-        switch (options_.input_mode)
-        {
-        case Z_INPUT:
-        {
-            COND_RETURN((node.value().word != "z") && (node.value().word != "c") && (node.value().word != "pi") &&
-                (node.value().word != "e") && (node.value().word != "i"), -1);
+        *str += "c" + std::string(ASTz::FunctionName(static_cast<FunctionNodez*>(node.value().get())->type)) + "(";
 
-            break;
-        }
-        case XY_INPUT:
-        {
-            COND_RETURN((node.value().word != "x") && (node.value().word != "y") && (node.value().word != "cx") &&
-                (node.value().word != "cy") && (node.value().word != "pi") && (node.value().word != "e") &&
-                (node.value().word != "i"), -1);
+        int err = Tree2GLSL(*static_cast<const ASTz*>(&(node[1])), str);
+        COND_RETURN(err, err);
 
-            break;
-        }
-        }
-
-        if (node.value().word == "i")
-        {
-            *str += "I";
-        }
-        else
-        {
-            switch (options_.input_mode)
-            {
-            case Z_INPUT:
-                *str += node.value().word;
-                break;
-            case XY_INPUT:
-                *str += "vec2(" + node.value().word + ", 0.0)";
-                break;
-            }
-        }
+        *str += ")";
         break;
     }
-    case CalcData::NUMBER:
+    case ASTNodez::Type::VARIABLE:
     {
-        switch (options_.input_mode)
-        {
-        case Z_INPUT:
-            *str += "vec2(" + std::to_string(real(node.value().number)) + ", " + std::to_string(imag(node.value().number)) + ")";
-            break;
-        case XY_INPUT:
-            *str += "vec2(" + std::to_string(real(node.value().number)) + ", 0.0)";
-            break;
-        }
+        auto name = static_cast<VariableNodez*>(node.value().get())->name;
+        COND_RETURN((name != "z") && (name != "c"), -1);
+
+        *str += name;
         break;
     }
-    default:
+    case ASTNodez::Type::NUMBER:
+    {
+        auto number = static_cast<NumberNodez*>(node.value().get())->number;
+        *str += "vec2(" + std::to_string(real(number)) + ", " + std::to_string(imag(number)) + ")";
         break;
+    }
     }
 
     return 0;
+}
+
+using ASTNodex = ast::ASTNode<double>;
+using OperationNodex = ast::OperationNode<double>;
+using FunctionNodex = ast::FunctionNode<double>;
+using VariableNodex = ast::VariableNode<double>;
+using NumberNodex = ast::NumberNode<double>;
+
+int Puzabrot::Tree2GLSL(const ASTx& node, std::string* str) const
+{
+    switch (node.value().get()->NodeType())
+    {
+    case ASTNodex::Type::OPERATION:
+    {
+        switch (static_cast<OperationNodex*>(node.value().get())->type)
+        {
+        case OperationNodex::Type::ADD: *str += "cadd("; break;
+        case OperationNodex::Type::SUB: *str += "csub("; break;
+        case OperationNodex::Type::MUL: *str += "cmul("; break;
+        case OperationNodex::Type::DIV: *str += "cdiv("; break;
+        case OperationNodex::Type::POW: *str += "cpow("; break;
+        }
+
+        if (node.branches_num() < 2)
+        {
+            *str += "vec2(0.0, 0.0), ";
+        }
+        else
+        {
+            int err = Tree2GLSL(*static_cast<const ASTx*>(&(node[0])), str);
+            COND_RETURN(err, err);
+
+            *str += ", ";
+        }
+
+        int err = Tree2GLSL(*static_cast<const ASTx*>(&(node[1])), str);
+        COND_RETURN(err, err);
+
+        *str += ")";
+        break;
+    }
+    case ASTNodex::Type::FUNCTION:
+    {
+        *str += "c" + std::string(ASTx::FunctionName(static_cast<FunctionNodex*>(node.value().get())->type)) + "(";
+
+        int err = Tree2GLSL(*static_cast<const ASTx*>(&(node[1])), str);
+        COND_RETURN(err, err);
+
+        *str += ")";
+        break;
+    }
+    case ASTNodex::Type::VARIABLE:
+    {
+        auto name = static_cast<VariableNodex*>(node.value().get())->name;
+        COND_RETURN((name != "x") && (name != "y") && (name != "cx") && (name != "cy"), -1);
+
+        *str += "vec2(" + name + ", 0.0)";
+        break;
+    }
+    case ASTNodex::Type::NUMBER:
+    {
+        auto number = static_cast<NumberNodex*>(node.value().get())->number;
+        *str += "vec2(" + std::to_string(number) + ", 0.0)";
+        break;
+    }
+    }
+
+    return 0;
+}
+
+const char* Puzabrot::ASTStringError(const AST::Error& err)
+{
+    switch (err)
+    {
+    case AST::Error::SYNTAX_ERROR: return "syntax error";
+    case AST::Error::NO_CLOSE_BRACKET: return "no close bracket";
+    case AST::Error::UNIDENTIFIED_OPERATION: return "unidentified operation";
+    case AST::Error::UNIDENTIFIED_FUNCTION: return "unidentified function";
+    case AST::Error::UNIDENTIFIED_VARIABLE: return "unidentified variable";
+    }
+    return "";
 }
 
 Puzabrot::Synth::Synth(const Puzabrot* application) : audio_reset(true), audio_pause(false), application_(application)
@@ -1160,9 +1177,8 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
 
     COND_RETURN(audio_pause, true);
 
-    c_point_ = (application_->options_.draw_mode == MAIN) ? new_point_ : application_->params_.julia_point;
+    c_point_ = (application_->options_.fractal_mode == MAIN) ? new_point_ : application_->params_.julia_point;
 
-    Calculator calc;
     const int steps = SYNTH_SAMPLE_RATE / SYNTH_MAX_FREQ;
 
     for (size_t i = 0; i < SYNTH_AUDIO_BUFF_SIZE; i += 2)
@@ -1171,10 +1187,7 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
         if (j == 0)
         {
             prev_point_ = point_;
-
-            calc.clear();
-            application_->initCalculator(calc, point_, c_point_);
-            application_->Mapping(calc, expr_trees_, point_);
+            point_ = application_->Mapping(expr_trees_, c_point_, point_);
 
             if (sqrt(pow(point_.x, 2.0) + pow(point_.y, 2.0)) > application_->params_.limit)
             {

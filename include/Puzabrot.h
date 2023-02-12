@@ -1,12 +1,16 @@
 #ifndef PUZABROT_H
 #define PUZABROT_H
 
-#include "Calculator/Calculator.h"
 #include "Application/ShaderApplication.h"
+#include "AST.h"
 #include "UI/UI.h"
 
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
+
+using AST = ast::AST<>;
+using ASTz = ast::AST<std::complex<double>>;
+using ASTx = ast::AST<double>;
 
 class Puzabrot final : public ShaderApplication
 {
@@ -14,7 +18,7 @@ public:
     Puzabrot();
 
 private:
-    enum DrawingModes
+    enum FractalModes
     {
         MAIN,
         JULIA,
@@ -26,7 +30,7 @@ private:
         XY_INPUT,
     };
 
-    enum ColorModes
+    enum RenderModes
     {
         DEFAULT,
         TRACER,
@@ -38,9 +42,10 @@ private:
 
     struct Options final
     {
-        int draw_mode = MAIN;
+        int fractal_mode = MAIN;
         int input_mode = Z_INPUT;
-        int coloring_mode = DEFAULT;
+        int rendering_mode = DEFAULT;
+        int color_mode = 0;
         bool sound_mode = false;
         bool showing_grid = false;
         bool showing_trace = false;
@@ -61,9 +66,9 @@ private:
 
     struct ExprTrees
     {
-        Tree<CalcData> x;
-        Tree<CalcData> y;
-        Tree<CalcData> z;
+        ASTx x;
+        ASTx y;
+        ASTz z;
     } expr_trees_;
 
     class Synth;
@@ -75,10 +80,9 @@ private:
     void postrun() override;
 
     vec2d PointTrace(const vec2d& point, const vec2d& c_point);
-    void initCalculator(Calculator& calc, const vec2d& z, const vec2d& c) const;
-    void Mapping(Calculator& calc, ExprTrees& expr_trees, vec2d& mapped_point) const;
+    vec2d Mapping(ExprTrees& expr_trees, const vec2d& c, vec2d& z) const;
     void savePicture();
-    int makeShader();
+    AST::Error makeShader();
     void render();
     int writeShader();
     std::string writeFunctions() const;
@@ -87,7 +91,9 @@ private:
     std::string writeCalculation() const;
     std::string writeChecking() const;
     std::string writeMain() const;
-    int Tree2GLSL(const Tree<CalcData>& node, std::string* str) const;
+    int Tree2GLSL(const ASTz& node, std::string* str) const;
+    int Tree2GLSL(const ASTx& node, std::string* str) const;
+    const char* ASTStringError(const AST::Error& err);
 };
 
 constexpr size_t SYNTH_AUDIO_BUFF_SIZE = 4096;

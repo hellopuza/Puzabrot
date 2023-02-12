@@ -1,7 +1,49 @@
-#ifndef TREE_TREE_IMPL_H
-#define TREE_TREE_IMPL_H
+#ifndef TREE_H
+#define TREE_H
 
-#include "Tree/Tree.h"
+#include <fstream>
+#include <vector>
+
+template<typename T>
+class Tree
+{
+public:
+    Tree() = default;
+    explicit Tree(const T& value);
+    explicit Tree(T&& value);
+    Tree(const Tree& obj);
+    Tree(Tree&& obj) noexcept;
+    virtual ~Tree() = default;
+
+    Tree& operator=(const Tree& obj);
+    Tree& operator=(Tree&& obj) noexcept;
+    Tree& operator[](size_t branch_ind);
+    const Tree& operator[](size_t branch_ind) const;
+
+    bool operator==(const Tree& obj) const;
+    bool operator!=(const Tree& obj) const;
+
+    size_t size() const;
+    size_t branches_num() const;
+    void clear_branches();
+
+    void push_branch(const Tree& tree);
+    void emplace_branch(Tree&& tree);
+    void push_branch(const T& value);
+    void emplace_branch(T&& value);
+    void pop_branch();
+
+    T& value();
+    const T& value() const;
+
+    int dot_dump(const char* dump_name) const;
+
+protected:
+    void dot_dump(std::ofstream& dump_file) const;
+
+    T value_;
+    std::vector<Tree<T>> branches_;
+};
 
 template<typename T>
 Tree<T>::Tree(const T& value) : value_(value) {}
@@ -41,6 +83,36 @@ template<typename T>
 const Tree<T>& Tree<T>::operator[](size_t branch_ind) const
 {
     return branches_[branch_ind];
+}
+
+template<typename T>
+bool Tree<T>::operator==(const Tree& obj) const
+{
+    if (value_ != obj.value_)
+    {
+        return false;
+    }
+
+    if (branches_num() != obj.branches_num())
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < branches_num(); i++)
+    {
+        if (branches_[i] != obj.branches_[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+template<typename T>
+bool Tree<T>::operator!=(const Tree& obj) const
+{
+    return !(*this == obj);
 }
 
 template<typename T>
@@ -120,14 +192,14 @@ int Tree<T>::dot_dump(const char* dump_name) const
     }
 
     dump_file << "digraph G{\n"
-                 " rankdir = HR;\n"
-                 " node[shape=box];\n";
+        " rankdir = HR;\n"
+        " node[shape=box];\n";
 
     dot_dump(dump_file);
 
     dump_file << "\tlabelloc=\"t\";"
-                 "\tlabel=\""
-              << dump_name << "\"; }\n";
+        "\tlabel=\""
+        << dump_name << "\"; }\n";
 
     dump_file.close();
 
@@ -140,7 +212,7 @@ template<typename T>
 void Tree<T>::dot_dump(std::ofstream& dump_file) const
 {
     dump_file << "\t\"" << this << "\"[shape = box, style = filled, color = black, fillcolor = lightskyblue, label = \""
-              << value_ << "\"]\n";
+        << value_ << "\"]\n";
 
     for (const auto& node : branches_)
     {
@@ -153,4 +225,4 @@ void Tree<T>::dot_dump(std::ofstream& dump_file) const
     }
 }
 
-#endif // TREE_TREE_IMPL_H
+#endif // TREE_H

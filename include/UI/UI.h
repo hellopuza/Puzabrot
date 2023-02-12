@@ -15,6 +15,7 @@ public:
     bool handleEvent(const sf::Event& event) override;
 
     void addVidget(const std::string& name, Vidget* vidget);
+    const Vidget* getVidget(const std::string& name) const;
     Vidget* getVidget(const std::string& name);
 
 private:

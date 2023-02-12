@@ -32,9 +32,14 @@ void UI::addVidget(const std::string& name, Vidget* vidget)
     vidgets_[name]->show();
 }
 
+const Vidget* UI::getVidget(const std::string& name) const
+{
+    return vidgets_.at(name).get();
+}
+
 Vidget* UI::getVidget(const std::string& name)
 {
-    return vidgets_[name].get();
+    return vidgets_.at(name).get();
 }
 
 void UI::update() {}

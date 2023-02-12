@@ -106,10 +106,6 @@ int Calculator::Calculate(Tree<CalcData>& node)
 
             left_num = node[1].value().number;
         }
-        else
-        {
-            left_num = NIL;
-        }
 
         int err = Calculate(node[0]);
         COND_RETURN(err, err);
