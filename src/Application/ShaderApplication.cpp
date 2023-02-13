@@ -6,7 +6,7 @@ ShaderApplication::ShaderApplication(const vec2i& win_size, const char* font_loc
     setRenderImageSize(win_size);
 }
 
-void ShaderApplication::setRenderImageSize(const vec2i& size)
+void ShaderApplication::setRenderImageSize(const vec2u& size)
 {
     render_texture_.create(size.x, size.y);
     sprite_ = sf::Sprite(render_texture_.getTexture());

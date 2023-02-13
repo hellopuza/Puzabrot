@@ -1027,7 +1027,7 @@ int Puzabrot::Tree2GLSL(const ASTz& node, std::string* str) const
     {
         *str += "c" + std::string(ASTz::FunctionName(static_cast<FunctionNodez*>(node.value().get())->type)) + "(";
 
-        int err = Tree2GLSL(*static_cast<const ASTz*>(&(node[1])), str);
+        int err = Tree2GLSL(*static_cast<const ASTz*>(&(node[0])), str);
         COND_RETURN(err, err);
 
         *str += ")";
@@ -1095,7 +1095,7 @@ int Puzabrot::Tree2GLSL(const ASTx& node, std::string* str) const
     {
         *str += "c" + std::string(ASTx::FunctionName(static_cast<FunctionNodex*>(node.value().get())->type)) + "(";
 
-        int err = Tree2GLSL(*static_cast<const ASTx*>(&(node[1])), str);
+        int err = Tree2GLSL(*static_cast<const ASTx*>(&(node[0])), str);
         COND_RETURN(err, err);
 
         *str += ")";

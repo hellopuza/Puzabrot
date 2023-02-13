@@ -3,7 +3,7 @@
 
 constexpr double OFFSET_FACTOR = 1.15;
 
-#define FMUL(a, b) static_cast<float>(a) * static_cast<float>(b)
+#define FMUL(a, b) (static_cast<float>(a) * static_cast<float>(b))
 #define EXPAND(a) ((a) + (offset_))
 
 Label::Label(const sf::Font& font, double font_size, const vec2d& position) :

@@ -11,7 +11,7 @@ constexpr int INPUT_UNICODE_MIN = 32;
 constexpr double OFFSET_FACTOR = 1.15;
 constexpr double MIN_FACTOR = 4.0;
 
-#define FMUL(a, b) static_cast<float>(a) * static_cast<float>(b)
+#define FMUL(a, b) (static_cast<float>(a) * static_cast<float>(b))
 #define EXPAND(a) ((a) + (offset_))
 
 InputBox::InputBox(const sf::Font& font, double font_size, const vec2d& position) :

@@ -2,7 +2,7 @@
 #define UTILS_H
 
 #include "vec2.h"
-#include <SFML\Graphics.hpp>
+#include <SFML/Graphics.hpp>
 
 template <typename TYPE>
 vec2d vec(sf::Vector2<TYPE> v)

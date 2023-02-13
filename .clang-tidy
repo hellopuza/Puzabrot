@@ -8,6 +8,7 @@ Checks: >
   performance-*,
   portability-*,
   readability-*,
+  -bugprone-narrowing-conversions,
   -bugprone-signed-char-misuse,
   -google-runtime-references,
   -misc-no-recursion,
@@ -16,8 +17,7 @@ Checks: >
   -readability-magic-numbers,
   -readability-named-parameter,
   -readability-redundant-declaration,
-  -readability-function-cognitive-complexity,
-  -bugprone-narrowing-conversions
+  -readability-function-cognitive-complexity
 
 WarningsAsErrors: "*"
 

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 
 set(EXEC_NAME Puzabrot)
-project(${EXEC_NAME} VERSION 1.3 DESCRIPTION "Escape-time fractals viewer")
+project(${EXEC_NAME} VERSION 1.4 DESCRIPTION "Escape-time fractals viewer")
 
 set(CMAKE_CXX_CLANG_TIDY
     clang-tidy;
