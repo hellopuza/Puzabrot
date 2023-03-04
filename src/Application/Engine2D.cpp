@@ -5,7 +5,7 @@
 #include <cmath>
 #include <sstream>
 
-Engine2D::Engine2D(const vec2i& size, const char* title) :
+Engine2D::Engine2D(const vec2u& size, const char* title) :
     sf::RenderWindow(sf::VideoMode(size.x, size.y), title, sf::Style::Default), Base2D(size),
     default_size_(size), title_(title), style_(sf::Style::Default)
 {}
@@ -42,7 +42,7 @@ bool Engine2D::handleEvent(const sf::Event& event)
     // Zooming
     if (event.type == sf::Event::MouseWheelMoved)
     {
-        WheelZooming(static_cast<double>(event.mouseWheel.delta), Screen2Base(vec(sf::Mouse::getPosition(*this))));
+        WheelZooming(static_cast<float>(event.mouseWheel.delta), Screen2Base(vec(sf::Mouse::getPosition(*this))));
         return true;
     }
 
@@ -68,7 +68,7 @@ bool Engine2D::handleEvent(const sf::Event& event)
     return false;
 }
 
-void Engine2D::setZoomingRatio(double zooming_ratio)
+void Engine2D::setZoomingRatio(float zooming_ratio)
 {
     zooming_ratio_ = zooming_ratio;
 }
@@ -82,20 +82,20 @@ void Engine2D::drawBackground(const sf::Color& plane_color)
     draw(rectangle);
 }
 
-void Engine2D::drawGrid(const sf::Font& font, int font_size)
+void Engine2D::drawGrid(const sf::Font& font, unsigned font_size)
 {
     sf::Color color = sf::Color::White;
 
-    vec2d ratio = getRatio();
+    vec2f ratio = getRatio();
     sf::VertexArray grid(sf::Lines);
 
     std::vector<sf::Text> labels;
 
-    double ratio_div = ratio.x / ratio.y;
+    float ratio_div = ratio.x / ratio.y;
 
-    const double min_label_pos = ratio_div * 0.01;
-    double x = 0.0;
-    auto makeLabel = [&](const vec2d& label_pos, const vec2d& v1, const vec2d& v2)
+    const float min_label_pos = ratio_div * 0.01F;
+    float x = 0.0F;
+    auto makeLabel = [&](const vec2f& label_pos, const vec2f& v1, const vec2f& v2)
     {
         std::stringstream number_text;
         if (std::abs(x) > min_label_pos)
@@ -106,23 +106,23 @@ void Engine2D::drawGrid(const sf::Font& font, int font_size)
         labels.emplace_back(sf::Text(number_text.str(), font, font_size));
         labels.back().setFillColor(color);
         labels.back().setOutlineThickness(0.8F);
-        labels.back().setPosition(vec(getLabelPos(label_pos, vec2d(labels.back().getLocalBounds().width, labels.back().getLocalBounds().height))));
+        labels.back().setPosition(vec(getLabelPos(label_pos, vec2f(labels.back().getLocalBounds().width, labels.back().getLocalBounds().height))));
 
         grid.append(sf::Vertex(vec(Base2Screen(v1)), color));
         grid.append(sf::Vertex(vec(Base2Screen(v2)), color));
         x += ratio_div;
     };
 
-    x = borders_.bottom - std::fmod(borders_.bottom, ratio_div) + ratio_div * static_cast<double>(borders_.bottom > 0.0);
+    x = borders_.bottom - std::fmod(borders_.bottom, ratio_div) + ratio_div * static_cast<float>(borders_.bottom > 0.0F);
     while (x < borders_.top)
     {
-        makeLabel(vec2d(0.0, x), vec2d(borders_.left, x), vec2d(borders_.right, x));
+        makeLabel(vec2f(0.0F, x), vec2f(borders_.left, x), vec2f(borders_.right, x));
     }
 
-    x = borders_.left - std::fmod(borders_.left, ratio_div) + ratio_div * static_cast<double>(borders_.left > 0.0);
+    x = borders_.left - std::fmod(borders_.left, ratio_div) + ratio_div * static_cast<float>(borders_.left > 0.0F);
     while (x < borders_.right)
     {
-        makeLabel(vec2d(x, 0.0), vec2d(x, borders_.bottom), vec2d(x, borders_.top));
+        makeLabel(vec2f(x, 0.0F), vec2f(x, borders_.bottom), vec2f(x, borders_.top));
     }
 
     draw(grid);
@@ -133,7 +133,7 @@ void Engine2D::drawGrid(const sf::Font& font, int font_size)
     }
 }
 
-void Engine2D::updateSize(const vec2i& size)
+void Engine2D::updateSize(const vec2u& size)
 {
     setBaseSize(size);
 }
@@ -150,17 +150,17 @@ void Engine2D::toggleFullScreen()
     {
         style_ |= static_cast<sf::Uint32>(sf::Style::Fullscreen);
         create(sf::VideoMode::getDesktopMode(), title_, style_);
-        updateSize(vec2i(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height));
+        updateSize(vec2u(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height));
     }
 }
 
-void Engine2D::WheelZooming(double wheel_delta, const vec2d& point)
+void Engine2D::WheelZooming(float wheel_delta, const vec2f& point)
 {
-    double width = borders_.right - borders_.left;
-    double height = borders_.top - borders_.bottom;
+    float width = borders_.right - borders_.left;
+    float height = borders_.top - borders_.bottom;
 
-    double x_ratio = (point.x - borders_.left) / width;
-    double y_ratio = (point.y - borders_.bottom) / height;
+    float x_ratio = (point.x - borders_.left) / width;
+    float y_ratio = (point.y - borders_.bottom) / height;
 
     Borders new_frame = {
         borders_.left + x_ratio * zooming_ratio_ * width * wheel_delta,
@@ -174,54 +174,55 @@ void Engine2D::WheelZooming(double wheel_delta, const vec2d& point)
 
 void Engine2D::MouseMoving(const vec2i& movement)
 {
-    double width = borders_.right - borders_.left;
-    double height = borders_.top - borders_.bottom;
+    float width = borders_.right - borders_.left;
+    float height = borders_.top - borders_.bottom;
+    vec2f delta = vec2f(movement) / vec(getSize());
 
     Borders new_frame = {
-        borders_.left - width * movement.x / getSize().x,
-        borders_.right - width * movement.x / getSize().x,
-        borders_.bottom + height * movement.y / getSize().y,
-        borders_.top + height * movement.y / getSize().y,
+        borders_.left - width * delta.x,
+        borders_.right - width * delta.x,
+        borders_.bottom + height * delta.y,
+        borders_.top + height * delta.y,
     };
 
     borders_ = new_frame;
 }
 
-vec2d Engine2D::getLabelPos(const vec2d& point, const vec2d& text_size) const
+vec2f Engine2D::getLabelPos(const vec2f& point, const vec2f& text_size) const
 {
-    return clamp(Base2Screen(point), vec2i(), size_ - text_size * vec2d(1.0, 1.5));
+    return clamp(Base2Screen(point), vec2i(), vec2i(size_ - text_size * vec2f(1.0F, 1.5F)));
 }
 
-vec2d Engine2D::getRatio() const
+vec2f Engine2D::getRatio() const
 {
-    const double initial_ratio = 10.0;
-    static vec2d ratio(initial_ratio, initial_ratio);
+    const float initial_ratio = 10.0F;
+    static vec2f ratio(initial_ratio, initial_ratio);
 
-    double ratio_div = ratio.x / ratio.y;
+    float ratio_div = ratio.x / ratio.y;
 
     auto size = getSize();
-    double screen_square = ratio_div * ratio_div * static_cast<double>(size.x * size.y) /
+    float screen_square = ratio_div * ratio_div * static_cast<float>(size.x * size.y) /
         ((borders_.right - borders_.left) * (borders_.top - borders_.bottom));
 
-    const double max_square = 50000.0;
-    const double min_square = 8000.0;
+    const float max_square = 50000.0F;
+    const float min_square = 8000.0F;
 
-    constexpr double TWO = 2.0;
-    constexpr double FIVE = 5.0;
-    constexpr double TEN = 10.0;
+    constexpr float TWO = 2.0F;
+    constexpr float FIVE = 5.0F;
+    constexpr float TEN = 10.0F;
 
     if (screen_square > max_square)
     {
         switch (static_cast<int>(ratio.y))
         {
         case static_cast<int>(TWO):
-            ratio = vec2d(ratio.x, FIVE);
+            ratio = vec2f(ratio.x, FIVE);
             break;
         case static_cast<int>(FIVE):
-            ratio = vec2d(ratio.x, TEN);
+            ratio = vec2f(ratio.x, TEN);
             break;
         case static_cast<int>(TEN):
-            ratio = vec2d(ratio.x / TEN, TWO);
+            ratio = vec2f(ratio.x / TEN, TWO);
             break;
         }
     }
@@ -230,13 +231,13 @@ vec2d Engine2D::getRatio() const
         switch (static_cast<int>(ratio.y))
         {
         case static_cast<int>(TWO):
-            ratio = vec2d(ratio.x * TEN, TEN);
+            ratio = vec2f(ratio.x * TEN, TEN);
             break;
         case static_cast<int>(FIVE):
-            ratio = vec2d(ratio.x, TWO);
+            ratio = vec2f(ratio.x, TWO);
             break;
         case static_cast<int>(TEN):
-            ratio = vec2d(ratio.x, FIVE);
+            ratio = vec2f(ratio.x, FIVE);
             break;
         }
     }

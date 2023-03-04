@@ -6,7 +6,7 @@
 class Application : public Engine2D
 {
 public:
-    Application(const vec2i& win_size, const char* font_location, double font_size, const char* win_title = "");
+    Application(const vec2u& win_size, const char* font_location, float font_size, const char* win_title = "");
 
     void run();
 
@@ -15,13 +15,13 @@ public:
     virtual void activity() = 0;
     virtual void postrun() = 0;
 
-    void drawGrid(const sf::Font& font, int font_size) = delete;
+    void drawGrid(const sf::Font& font, unsigned font_size) = delete;
     void drawGrid();
     const sf::Font& getFont() const;
 
 private:
     sf::Font font_;
-    int font_size_;
+    unsigned font_size_;
 };
 
 #endif // APPLICATION_APPLICATION_H

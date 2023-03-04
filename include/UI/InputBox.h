@@ -6,7 +6,7 @@
 class InputBox : public Vidget
 {
 public:
-    InputBox(const sf::Font& font, double font_size, const vec2d& position);
+    InputBox(const sf::Font& font, float font_size, const vec2f& position);
 
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
     bool handleEvent(const sf::Event& event) override;
@@ -34,7 +34,7 @@ private:
     sf::Text output_text_;
 
     sf::RectangleShape input_box_;
-    int offset_;
+    float offset_;
 
     bool has_focus_ = false;
     bool text_entered_ = false;

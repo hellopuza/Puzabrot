@@ -1,6 +1,6 @@
 #include "Application/ShaderApplication.h"
 
-ShaderApplication::ShaderApplication(const vec2i& win_size, const char* font_location, double font_size, const char* win_title) :
+ShaderApplication::ShaderApplication(const vec2u& win_size, const char* font_location, float font_size, const char* win_title) :
     Application(win_size, font_location, font_size, win_title)
 {
     setRenderImageSize(win_size);

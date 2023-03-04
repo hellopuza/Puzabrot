@@ -1,6 +1,6 @@
 #include "UI/UI.h"
 
-UI::UI() : Vidget(vec2d()) {}
+UI::UI() : Vidget(vec2f()) {}
 
 void UI::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {

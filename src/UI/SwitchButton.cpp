@@ -1,18 +1,18 @@
 #include "UI/SwitchButton.h"
 #include "Utils.h"
 
-constexpr double OFFSET_FACTOR = 1.15;
+constexpr float OFFSET_FACTOR = 1.15F;
 
 #define FMUL(a, b) (static_cast<float>(a) * static_cast<float>(b))
-#define EXPAND(a) ((a) + (2.0 * offset_))
+#define EXPAND(a) ((a) + (2.0F * offset_))
 
-SwitchButton::SwitchButton(const sf::Font& font, double font_size, const vec2d& position) :
+SwitchButton::SwitchButton(const sf::Font& font, float font_size, const vec2f& position) :
     Vidget(position), font_size_(FMUL(DIP2Pixels(font_size), OFFSET_FACTOR))
 {
     offset_ = FMUL(OFFSET_FACTOR, font_size_) - font_size_;
 
     text_.setFont(font);
-    text_.setCharacterSize(DIP2Pixels(font_size));
+    text_.setCharacterSize(static_cast<unsigned>(DIP2Pixels(font_size)));
     text_.setFillColor({ 255, 255, 255, 255 });
     box_.setFillColor({ 128, 128, 128, 128 });
     update();

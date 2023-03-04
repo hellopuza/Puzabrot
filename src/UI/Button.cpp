@@ -1,26 +1,26 @@
 #include "UI/Button.h"
 #include "Utils.h"
 
-constexpr double OFFSET_FACTOR = 1.15;
+constexpr float OFFSET_FACTOR = 1.15F;
 
 #define FMUL(a, b) (static_cast<float>(a) * static_cast<float>(b))
-#define EXPAND(a) ((a) + (2.0 * offset_))
+#define EXPAND(a) ((a) + (2.0F * offset_))
 
-Button::Button(const sf::Font& font, double font_size, const vec2d& position) :
+Button::Button(const sf::Font& font, float font_size, const vec2f& position) :
     Vidget(position), font_size_(FMUL(DIP2Pixels(font_size), OFFSET_FACTOR))
 {
     offset_ = FMUL(OFFSET_FACTOR, font_size_) - font_size_;
 
     text_.setFont(font);
-    text_.setCharacterSize(DIP2Pixels(font_size));
+    text_.setCharacterSize(static_cast<unsigned>(DIP2Pixels(font_size)));
     update();
     setColors();
 }
 
-Button::Button(const vec2d& position, const vec2d& size) :
+Button::Button(const vec2f& position, const vec2f& size) :
     Vidget(position), offset_(0)
 {
-    box_.setSize(vec(vec2d(DIP2Pixels(size.x), DIP2Pixels(size.y))));
+    box_.setSize(vec(vec2f(DIP2Pixels(size.x), DIP2Pixels(size.y))));
 }
 
 void Button::draw(sf::RenderTarget& target, sf::RenderStates states) const
@@ -61,19 +61,19 @@ void Button::setText(const std::string& text)
     update();
 }
 
-void Button::setFont(const sf::Font& font, double font_size)
+void Button::setFont(const sf::Font& font, float font_size)
 {
     font_size_ = FMUL(DIP2Pixels(font_size), OFFSET_FACTOR);
     offset_ = FMUL(OFFSET_FACTOR, font_size_) - font_size_;
 
     text_.setFont(font);
-    text_.setCharacterSize(DIP2Pixels(font_size));
+    text_.setCharacterSize(static_cast<unsigned>(DIP2Pixels(font_size)));
     update();
 }
 
-void Button::setSize(const vec2d& size)
+void Button::setSize(const vec2f& size)
 {
-    box_.setSize(vec(vec2d(DIP2Pixels(size.x), DIP2Pixels(size.y))));
+    box_.setSize(vec(vec2f(DIP2Pixels(size.x), DIP2Pixels(size.y))));
 }
 
 void Button::setButtonColors(const sf::Color& off_color, const sf::Color& on_color)

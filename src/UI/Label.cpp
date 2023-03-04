@@ -1,18 +1,10 @@
 #include "UI/Label.h"
 #include "Utils.h"
 
-constexpr double OFFSET_FACTOR = 1.15;
-
-#define FMUL(a, b) (static_cast<float>(a) * static_cast<float>(b))
-#define EXPAND(a) ((a) + (offset_))
-
-Label::Label(const sf::Font& font, double font_size, const vec2d& position) :
-    Vidget(position), font_size_(DIP2Pixels(font_size), FMUL(DIP2Pixels(font_size), OFFSET_FACTOR))
+Label::Label(const sf::Font& font, float font_size, const vec2f& position) : Vidget(position)
 {
-    offset_ = FMUL(OFFSET_FACTOR, font_size_.y) - font_size_.y;
-
     text_.setFont(font);
-    text_.setCharacterSize(DIP2Pixels(font_size));
+    text_.setCharacterSize(static_cast<unsigned>(DIP2Pixels(font_size)));
 
     text_.setFillColor(sf::Color::White);
     text_.setOutlineThickness(1.0);
@@ -31,7 +23,7 @@ void Label::draw(sf::RenderTarget& target, sf::RenderStates states) const
     }
 }
 
-bool Label::handleEvent(const sf::Event& event)
+bool Label::handleEvent(const sf::Event&)
 {
     return false;
 }

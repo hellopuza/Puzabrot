@@ -9,8 +9,8 @@
 #include <SFML/Graphics.hpp>
 
 using AST = ast::AST<>;
-using ASTz = ast::AST<std::complex<double>>;
-using ASTx = ast::AST<double>;
+using ASTz = ast::AST<std::complex<float>>;
+using ASTx = ast::AST<float>;
 
 class Puzabrot final : public ShaderApplication
 {
@@ -42,10 +42,10 @@ private:
 
     struct Options final
     {
-        int fractal_mode = MAIN;
-        int input_mode = Z_INPUT;
-        int rendering_mode = DEFAULT;
-        int color_mode = 0;
+        size_t fractal_mode = MAIN;
+        size_t input_mode = Z_INPUT;
+        size_t rendering_mode = DEFAULT;
+        size_t color_mode = 0;
         bool sound_mode = false;
         bool showing_grid = false;
         bool showing_trace = false;
@@ -56,12 +56,12 @@ private:
 
     struct Parameters
     {
-        double limit;
-        double frequency;
+        float limit;
+        float frequency;
         size_t itrn_max;
-        vec2d julia_point;
-        vec2d orbit;
-        vec2d c_point;
+        vec2f julia_point;
+        vec2f orbit;
+        vec2f c_point;
     } params_;
 
     struct ExprTrees
@@ -79,8 +79,8 @@ private:
     void activity() override;
     void postrun() override;
 
-    vec2d PointTrace(const vec2d& point, const vec2d& c_point);
-    vec2d Mapping(ExprTrees& expr_trees, const vec2d& c, vec2d& z) const;
+    vec2f PointTrace(const vec2f& point, const vec2f& c_point);
+    vec2f Mapping(ExprTrees& expr_trees, const vec2f& c, vec2f& z) const;
     void savePicture();
     AST::Error makeShader();
     void render();
@@ -108,7 +108,7 @@ public:
     virtual void onSeek(sf::Time) override {}
     virtual bool onGetData(Chunk& data) override;
 
-    void setPoint(const vec2d& point);
+    void setPoint(const vec2f& point);
     void setExpressions(const ExprTrees& expr_trees);
 
     bool audio_reset;
@@ -118,22 +118,22 @@ private:
     const Puzabrot* application_;
     ExprTrees expr_trees_;
 
-    vec2d point_;
-    vec2d c_point_;
-    vec2d new_point_;
-    vec2d prev_point_;
+    vec2f point_;
+    vec2f c_point_;
+    vec2f new_point_;
+    vec2f prev_point_;
 
     int16_t m_samples_[SYNTH_AUDIO_BUFF_SIZE] = {};
     int32_t m_audio_time_ = 0;
 
-    vec2d d_;
-    vec2d dp_;
-    vec2d mean_;
+    vec2f d_;
+    vec2f dp_;
+    vec2f mean_;
 
-    double mag_ = 0.0;
-    double pmag_ = 0.0;
-    double phase_ = 0.0;
-    double volume_ = 8000.0;
+    float mag_ = 0.0F;
+    float pmag_ = 0.0F;
+    float phase_ = 0.0F;
+    float volume_ = 8000.0F;
 };
 
 #endif // PUZABROT_H

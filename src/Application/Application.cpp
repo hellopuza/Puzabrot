@@ -1,8 +1,8 @@
 #include "Application/Application.h"
 #include "Utils.h"
 
-Application::Application(const vec2i& win_size, const char* font_location, double font_size, const char* win_title) :
-    Engine2D(win_size, win_title), font_size_(DIP2Pixels(font_size))
+Application::Application(const vec2u& win_size, const char* font_location, float font_size, const char* win_title) :
+    Engine2D(win_size, win_title), font_size_(static_cast<unsigned>(DIP2Pixels(font_size)))
 {
     font_.loadFromFile(font_location);
 }

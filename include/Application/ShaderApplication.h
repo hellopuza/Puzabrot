@@ -6,7 +6,7 @@
 class ShaderApplication : public Application
 {
 public:
-    ShaderApplication(const vec2i& win_size, const char* font_location, double font_size, const char* win_title = "");
+    ShaderApplication(const vec2u& win_size, const char* font_location, float font_size, const char* win_title = "");
 
     void setRenderImageSize(const vec2u& size);
     sf::Sprite getRenderOutput() const;

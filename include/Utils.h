@@ -5,28 +5,40 @@
 #include <SFML/Graphics.hpp>
 
 template <typename TYPE>
-vec2d vec(sf::Vector2<TYPE> v)
+vec2f vec(sf::Vector2<TYPE> v)
 {
-    return vec2d(v.x, v.y);
+    return vec2f(static_cast<float>(v.x), static_cast<float>(v.y));
 }
 
 template <typename TYPE>
 sf::Vector2f vec(vec2<TYPE> v)
 {
-    return sf::Vector2f(v.x, v.y);
+    return sf::Vector2f(static_cast<float>(v.x), static_cast<float>(v.y));
 }
 
 #ifdef _WIN32
 #include <Windows.h>
 
-static double DIP2Pixels(double dip)
+inline float DIP2Pixels(float dip)
 {
-    return GetDpiForSystem() / 96.0 * dip;
+    return GetDpiForSystem() / 96.0F * dip;
 }
 
-static double Pixels2DIP(double pixels)
+inline float Pixels2DIP(float pixels)
 {
-    return 96.0 / GetDpiForSystem() * pixels;
+    return 96.0F / GetDpiForSystem() * pixels;
+}
+
+#else
+
+inline float DIP2Pixels(float dip)
+{
+    return 115.0F / 96.0F * dip;
+}
+
+inline float Pixels2DIP(float pixels)
+{
+    return 96.0F / 115.0F * pixels;
 }
 
 #endif // _WIN32

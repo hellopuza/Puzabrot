@@ -1,24 +1,24 @@
 #include "UI/Vidget.h"
 #include "Utils.h"
 
-Vidget::Vidget(const vec2d& position)
+Vidget::Vidget(const vec2f& position)
 {
-    box_.setPosition(vec(vec2d(DIP2Pixels(position.x), DIP2Pixels(position.y))));
+    box_.setPosition(vec(vec2f(DIP2Pixels(position.x), DIP2Pixels(position.y))));
 }
 
-vec2d Vidget::getPosition() const
+vec2f Vidget::getPosition() const
 {
-    return vec2d(Pixels2DIP(box_.getPosition().x), Pixels2DIP(box_.getPosition().y));
+    return vec2f(Pixels2DIP(box_.getPosition().x), Pixels2DIP(box_.getPosition().y));
 }
 
-vec2d Vidget::getSize() const
+vec2f Vidget::getSize() const
 {
-    return vec2d(Pixels2DIP(box_.getSize().x), Pixels2DIP(box_.getSize().y));
+    return vec2f(Pixels2DIP(box_.getSize().x), Pixels2DIP(box_.getSize().y));
 }
 
-void Vidget::setPosition(const vec2d& position)
+void Vidget::setPosition(const vec2f& position)
 {
-    box_.setPosition(vec(vec2d(DIP2Pixels(position.x), DIP2Pixels(position.y))));
+    box_.setPosition(vec(vec2f(DIP2Pixels(position.x), DIP2Pixels(position.y))));
     update();
 }
 

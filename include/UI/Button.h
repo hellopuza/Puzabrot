@@ -6,15 +6,15 @@
 class Button : public Vidget
 {
 public:
-    Button(const sf::Font& font, double font_size, const vec2d& position);
-    Button(const vec2d& position, const vec2d& size);
+    Button(const sf::Font& font, float font_size, const vec2f& position);
+    Button(const vec2f& position, const vec2f& size);
 
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
     bool handleEvent(const sf::Event& event) override;
 
     void setText(const std::string& text);
-    void setFont(const sf::Font& font, double font_size);
-    void setSize(const vec2d& size);
+    void setFont(const sf::Font& font, float font_size);
+    void setSize(const vec2f& size);
     void setButtonColors(const sf::Color& off_color, const sf::Color& on_color);
     void setTextColors(const sf::Color& off_color, const sf::Color& on_color);
 
@@ -25,8 +25,8 @@ private:
     void setColors();
 
     sf::Text text_;
-    double font_size_;
-    int offset_;
+    float font_size_;
+    float offset_;
 
     sf::Color button_off_color_ = { 128, 128, 128, 128 };
     sf::Color button_on_color_ = { 200, 200, 200, 255 };

@@ -7,26 +7,26 @@
 class Engine2D : public sf::RenderWindow, public Base2D, public Eventable
 {
 public:
-    Engine2D(const vec2i& size, const char* title = "");
+    Engine2D(const vec2u& size, const char* title = "");
 
     bool handleEvent(const sf::Event& event) override;
-    void setZoomingRatio(double zooming_ratio);
+    void setZoomingRatio(float zooming_ratio);
 
     void drawBackground(const sf::Color& background_color);
-    void drawGrid(const sf::Font& font, int font_size);
+    void drawGrid(const sf::Font& font, unsigned font_size);
 
 private:
-    void updateSize(const vec2i& size);
+    void updateSize(const vec2u& size);
     void toggleFullScreen();
-    void WheelZooming(double wheel_delta, const vec2d& point);
+    void WheelZooming(float wheel_delta, const vec2f& point);
     void MouseMoving(const vec2i& movement);
-    vec2d getLabelPos(const vec2d& point, const vec2d& text_size) const;
-    vec2d getRatio() const;
+    vec2f getLabelPos(const vec2f& point, const vec2f& text_size) const;
+    vec2f getRatio() const;
 
     vec2u default_size_;
     const char* title_;
     sf::Uint32 style_;
-    double zooming_ratio_ = 1.0;
+    float zooming_ratio_ = 1.0F;
 };
 
 #endif // APPLICATION_ENGINE2D_H

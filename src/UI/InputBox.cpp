@@ -8,13 +8,13 @@ const sf::Color DARK_GREY_COLOR = { 50, 50, 50, 255 };
 
 constexpr int INPUT_UNICODE_MAX = 127;
 constexpr int INPUT_UNICODE_MIN = 32;
-constexpr double OFFSET_FACTOR = 1.15;
-constexpr double MIN_FACTOR = 4.0;
+constexpr float OFFSET_FACTOR = 1.15F;
+constexpr float MIN_FACTOR = 4.0F;
 
 #define FMUL(a, b) (static_cast<float>(a) * static_cast<float>(b))
 #define EXPAND(a) ((a) + (offset_))
 
-InputBox::InputBox(const sf::Font& font, double font_size, const vec2d& position) :
+InputBox::InputBox(const sf::Font& font, float font_size, const vec2f& position) :
     Vidget(position), font_size_(DIP2Pixels(font_size), FMUL(DIP2Pixels(font_size), OFFSET_FACTOR))
 {
     offset_ = FMUL(OFFSET_FACTOR, font_size_.y) - font_size_.y;
@@ -25,9 +25,9 @@ InputBox::InputBox(const sf::Font& font, double font_size, const vec2d& position
     input_text_.setFont(font);
     output_text_.setFont(font);
 
-    label_text_.setCharacterSize(DIP2Pixels(font_size));
-    input_text_.setCharacterSize(DIP2Pixels(font_size));
-    output_text_.setCharacterSize(DIP2Pixels(font_size));
+    label_text_.setCharacterSize(static_cast<unsigned>(DIP2Pixels(font_size)));
+    input_text_.setCharacterSize(static_cast<unsigned>(DIP2Pixels(font_size)));
+    output_text_.setCharacterSize(static_cast<unsigned>(DIP2Pixels(font_size)));
 
     label_text_.setFillColor(WHITE_COLOR);
     output_text_.setFillColor(WHITE_COLOR);

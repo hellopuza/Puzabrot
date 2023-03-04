@@ -14,4 +14,4 @@ Inspired by CodeParade (https://github.com/HackerPoet/FractalSoundExplorer)
 
 **How to use**
 
-- Press `H` to open help menu.
+- Press `Left Ctrl` to open help menu.

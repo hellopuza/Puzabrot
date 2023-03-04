@@ -8,28 +8,28 @@ class Base2D
 public:
     struct Borders final
     {
-        double left = -1.0;
-        double right = 1.0;
-        double bottom = -1.0;
-        double top = 1.0;
+        float left = -1.0F;
+        float right = 1.0F;
+        float bottom = -1.0F;
+        float top = 1.0F;
 
         Borders() = default;
-        Borders(double left_, double right_, double bottom_, double top_);
+        Borders(float left_, float right_, float bottom_, float top_);
     };
 
-    Base2D(const vec2i& size = {});
+    Base2D(const vec2u& size = {});
     virtual ~Base2D() = default;
 
-    void setBaseSize(const vec2i& size);
-    void setBorders(double bottom_, double top_, double right_left_ratio = 1.0);
+    void setBaseSize(const vec2u& size);
+    void setBorders(float bottom_, float top_, float right_left_ratio = 1.0F);
     Borders getBorders() const;
 
-    vec2d Screen2Base(const vec2i& pixel) const;
-    vec2i Base2Screen(const vec2d& point) const;
+    vec2f Screen2Base(const vec2i& pixel) const;
+    vec2i Base2Screen(const vec2f& point) const;
 
 protected:
     Borders borders_;
-    vec2i size_;
+    vec2u size_;
 };
 
 #endif // APPLICATION_BASE2D_H

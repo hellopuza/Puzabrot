@@ -6,7 +6,7 @@
 class SwitchButton : public Vidget
 {
 public:
-    SwitchButton(const sf::Font& font, double font_size, const vec2d& position);
+    SwitchButton(const sf::Font& font, float font_size, const vec2f& position);
 
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
     bool handleEvent(const sf::Event& event) override;
@@ -22,7 +22,7 @@ private:
 
     sf::Text text_;
     float font_size_;
-    int offset_;
+    float offset_;
 
     std::vector<std::string> texts_;
     size_t value_ = 0;

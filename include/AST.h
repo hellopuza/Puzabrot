@@ -246,6 +246,7 @@ T OperationNode<T>::calc(AST<T>* node, const Variables<T>& vars)
     case OperationNode<T>::Type::MUL: number = left_num * right_num;          break;
     case OperationNode<T>::Type::DIV: number = left_num / right_num;          break;
     case OperationNode<T>::Type::POW: number = std::pow(left_num, right_num); break;
+    default: break;
     }
 
     return number;
@@ -283,6 +284,7 @@ void OperationNode<T>::diff(AST<T>* node, const std::string& var_name)
             case OperationNode<T>::Type::MUL: *node = Ld * R + Rd * L;                        break;
             case OperationNode<T>::Type::DIV: *node = (Ld * R - Rd * L) / pow(R, T(2));       break;
             case OperationNode<T>::Type::POW: *node = pow(L, R) * (Rd * log(L) + R * L / Ld); break;
+            default: break;
         }
         break;
     }
@@ -466,6 +468,7 @@ void OperationNode<T>::simplify(AST<T>* node)
         }
         break;
     }
+    default: break;
     }
 }
 
@@ -483,7 +486,7 @@ T FunctionNode<T>::calc(AST<T>* node, const Variables<T>& vars)
 {
     T number = CALC(LBRANCH(node));
 
-    static const T PI_2 = static_cast<T>(std::atan(1.0) * 2.0);
+    static const T PI_2 = static_cast<T>(std::atan(1.0F) * 2.0F);
 
     switch (this->type)
     {
@@ -509,6 +512,7 @@ T FunctionNode<T>::calc(AST<T>* node, const Variables<T>& vars)
     case FunctionNode<T>::Type::SQRT:    number = std::sqrt(number);           break;
     case FunctionNode<T>::Type::TAN:     number = std::tan(number);            break;
     case FunctionNode<T>::Type::TANH:    number = std::tanh(number);           break;
+    default: break;
     }
 
     return number;
@@ -545,11 +549,12 @@ void FunctionNode<T>::diff(AST<T>* node, const std::string& var_name)
     case FunctionNode<T>::Type::SQRT:    *node = Ld / (T(2) * sqrt(L));           break;
     case FunctionNode<T>::Type::TAN:     *node = Ld / pow(cos(L), T(2));          break;
     case FunctionNode<T>::Type::TANH:    *node = Ld / pow(cosh(L), T(2));         break;
+    default: break;
     }
 }
 
 template<typename T>
-void FunctionNode<T>::simplify(AST<T>* node) {}
+void FunctionNode<T>::simplify(AST<T>*) {}
 
 template<typename T>
 VariableNode<T>::VariableNode(const std::string& var_name) : name(var_name) {}
@@ -561,7 +566,7 @@ ASTNode<T>::Type VariableNode<T>::NodeType() const
 }
 
 template<typename T>
-T VariableNode<T>::calc(AST<T>* node, const Variables<T>& vars)
+T VariableNode<T>::calc(AST<T>*, const Variables<T>& vars)
 {
     return vars.contains(this->name) ? vars.at(this->name) : T{};
 }
@@ -573,7 +578,7 @@ void VariableNode<T>::diff(AST<T>* node, const std::string& var_name)
 }
 
 template<typename T>
-void VariableNode<T>::simplify(AST<T>* node) {}
+void VariableNode<T>::simplify(AST<T>*) {}
 
 template<typename T>
 NumberNode<T>::NumberNode(const T& number_value) : number(number_value) {}
@@ -585,19 +590,19 @@ ASTNode<T>::Type NumberNode<T>::NodeType() const
 }
 
 template<typename T>
-T NumberNode<T>::calc(AST<T>* node, const Variables<T>& vars)
+T NumberNode<T>::calc(AST<T>*, const Variables<T>&)
 {
     return this->number;
 }
 
 template<typename T>
-void NumberNode<T>::diff(AST<T>* node, const std::string& var_name)
+void NumberNode<T>::diff(AST<T>* node, const std::string&)
 {
     *node = AST(T());
 }
 
 template<typename T>
-void NumberNode<T>::simplify(AST<T>* node) {}
+void NumberNode<T>::simplify(AST<T>*) {}
 
 template<typename T>
 std::ostream& operator<<(std::ostream& os, const std::shared_ptr<ASTNode<T>>& obj)
@@ -1310,7 +1315,7 @@ struct is_complex<std::complex<T>> : public std::true_type {};
 
 constexpr std::uint32_t hash(char const* str)
 {
-    return ((*str ? hash(str + 1) : 2166136261U) ^ *str) * 16777619U;
+    return ((*str ? hash(str + 1) : 2166136261U) ^ static_cast<std::uint32_t>(*str)) * 16777619U;
 }
 
 } // namespace
@@ -1319,7 +1324,7 @@ template<typename T>
 AST<T>::Error AST<T>::parseNumber(const std::string& str, size_t* pos)
 {
     size_t end_pos = 0;
-    auto value = static_cast<T>(std::stod(str.substr(*pos), &end_pos));
+    auto value = static_cast<T>(std::stof(str.substr(*pos), &end_pos));
     *pos += end_pos;
 
     if constexpr (is_complex<T>())
@@ -1428,6 +1433,7 @@ const char* AST<T>::FunctionName(FunctionNode<T>::Type func_type)
     case FunctionNode<T>::Type::SQRT:    return "sqrt";
     case FunctionNode<T>::Type::TAN:     return "tan";
     case FunctionNode<T>::Type::TANH:    return "tanh";
+    default: break;
     }
 
     return nullptr;

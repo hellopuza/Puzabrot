@@ -6,6 +6,8 @@
 #include "UI/InputBox.h"
 #include "UI/SwitchButton.h"
 
+#include <memory>
+
 class UI : public Vidget
 {
 public:

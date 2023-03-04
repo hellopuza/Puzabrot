@@ -3,12 +3,6 @@ cmake_minimum_required(VERSION 3.9)
 set(EXEC_NAME Puzabrot)
 project(${EXEC_NAME} VERSION 1.4 DESCRIPTION "Escape-time fractals viewer")
 
-set(CMAKE_CXX_CLANG_TIDY
-    clang-tidy;
-    --format-style=file;
-    --header-filter=*.h*;
-)
-
 file(GLOB_RECURSE SOURCES *.cpp)
 file(GLOB_RECURSE HEADERS *.h*)
 
@@ -35,5 +29,5 @@ target_link_libraries(${EXEC_NAME} PRIVATE sfml-graphics sfml-window sfml-system
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wextra -Wpedantic -Wcast-qual -Wcast-align -Wconversion \
     -Wsign-promo -Wfloat-equal -Wenum-compare -Wold-style-cast -Wredundant-decls -Wsign-conversion -Wnon-virtual-dtor \
-    -Wctor-dtor-privacy -Woverloaded-virtual -Wno-float-equal -O3"
+    -Wctor-dtor-privacy -Woverloaded-virtual -Wno-float-equal -Wno-error=restrict -O3"
 )

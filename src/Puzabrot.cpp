@@ -2,7 +2,6 @@
 #include "Utils.h"
 
 #include <cstring>
-#include <format>
 
 #define COND_RETURN(cond, ret) \
     if (cond)                  \
@@ -10,26 +9,26 @@
         return (ret);          \
     } //
 
-constexpr double LIMIT = 100.0;
-constexpr double FREQUENCY = 5.0;
-constexpr double UPPER_BORDER = 1.3;
-constexpr double ZOOMING_RATIO = 0.2;
+constexpr float LIMIT = 100.0F;
+constexpr float FREQUENCY = 5.0F;
+constexpr float UPPER_BORDER = 1.3F;
+constexpr float ZOOMING_RATIO = 0.2F;
 constexpr size_t MAX_ITERATION = 500;
-constexpr double GRID_FONT_SIZE = 14.0;
-constexpr double UI_FONT_SIZE = 16.0;
+constexpr float GRID_FONT_SIZE = 14.0F;
+constexpr float UI_FONT_SIZE = 16.0F;
 constexpr size_t SCREENSHOT_WIDTH = 7680;
 
 static const char* TITLE_STRING = "Puzabrot";
 static const char* FONT_LOCATION = "assets/consola.ttf";
-static const vec2i WINDOW_SIZE = { 640, 480 };
-static const vec2d INPUT_BUTTON_POS = { 10.0, 10.0 };
-static const vec2d INPUT_BOX_POS = { 10.0, 35.0 };
-static const vec2d RENDER_BUTTON_POS = { 10.0, 125.0 };
-static const vec2d GRID_BUTTON_POS = { 10.0, 150.0 };
-static const vec2d SOUND_BUTTON_POS = { 10.0, 175.0 };
-static const vec2d ITERATION_BUTTON_POS = { 10.0, 200.0 };
-static const vec2d PARAMETER_BUTTON_POS = { 10.0, 225.0 };
-static const vec2d COLOR_BUTTON_POS = { 10.0, 250.0 };
+static const vec2u WINDOW_SIZE = { 640, 480 };
+static const vec2f INPUT_BUTTON_POS = { 10.0F, 10.0F };
+static const vec2f INPUT_BOX_POS = { 10.0F, 35.0F };
+static const vec2f RENDER_BUTTON_POS = { 10.0F, 125.0F };
+static const vec2f GRID_BUTTON_POS = { 10.0F, 150.0F };
+static const vec2f SOUND_BUTTON_POS = { 10.0F, 175.0F };
+static const vec2f ITERATION_BUTTON_POS = { 10.0F, 200.0F };
+static const vec2f PARAMETER_BUTTON_POS = { 10.0F, 225.0F };
+static const vec2f COLOR_BUTTON_POS = { 10.0F, 250.0F };
 
 #define INPUT_BUTTON static_cast<SwitchButton*>(ui_.getVidget("input_button"))
 #define INPUT_X static_cast<InputBox*>(ui_.getVidget("input_x"))
@@ -42,7 +41,7 @@ static const vec2d COLOR_BUTTON_POS = { 10.0, 250.0 };
 #define PARAMETER_BUTTON static_cast<Button*>(ui_.getVidget("parameter_button"))
 #define COLOR_BUTTON static_cast<SwitchButton*>(ui_.getVidget("color_button"))
 
-#define SET_INPUT_Y_POS INPUT_Y->setPosition(INPUT_X->getPosition() + vec2d(0.0, INPUT_X->getSize().y + 3.0))
+#define SET_INPUT_Y_POS INPUT_Y->setPosition(INPUT_X->getPosition() + vec2f(0.0F, INPUT_X->getSize().y + 3.0F))
 
 #define SET_INPUT_VISIBIITY if (options_.input_mode == XY_INPUT) \
                             { INPUT_X->show(); INPUT_Y->show(); INPUT_Z->hide(); } \
@@ -60,7 +59,7 @@ Puzabrot::Puzabrot() :
     params_.itrn_max = MAX_ITERATION;
 
     setZoomingRatio(ZOOMING_RATIO);
-    setBorders(-UPPER_BORDER, UPPER_BORDER, 0.5);
+    setBorders(-UPPER_BORDER, UPPER_BORDER, 0.5F);
 
     ui_.addVidget("input_button", new SwitchButton(getFont(), UI_FONT_SIZE, INPUT_BUTTON_POS));
     INPUT_BUTTON->addText("Z");
@@ -223,7 +222,7 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
         params_.limit = LIMIT;
         params_.frequency = FREQUENCY;
         params_.itrn_max = MAX_ITERATION;
-        setBorders(-UPPER_BORDER, UPPER_BORDER, 0.5);
+        setBorders(-UPPER_BORDER, UPPER_BORDER, 0.5F);
         makeShader();
         render();
     }
@@ -262,7 +261,7 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
     // Change max iterations
     else if ((event.type == sf::Event::MouseWheelMoved) && (ITERATION_BUTTON->pressed()))
     {
-        size_t new_itrn = static_cast<size_t>(static_cast<double>(params_.itrn_max) * pow(1.03, static_cast<float>(event.mouseWheel.delta)));
+        size_t new_itrn = static_cast<size_t>(static_cast<float>(params_.itrn_max) * std::pow(1.03F, static_cast<float>(event.mouseWheel.delta)));
         params_.itrn_max = (new_itrn == params_.itrn_max) ? params_.itrn_max + 1 : new_itrn;
         params_.itrn_max = (params_.itrn_max < 1) ? 1 : params_.itrn_max;
         render();
@@ -276,7 +275,7 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
         case DEFAULT:
         case TRACER:
         {
-            params_.limit *= pow(2.0, static_cast<float>(event.mouseWheel.delta));
+            params_.limit *= std::pow(2.0F, static_cast<float>(event.mouseWheel.delta));
             break;
         }
         case COMPLEX_DOMAIN:
@@ -285,7 +284,7 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
         }
         case KALI:
         {
-            params_.frequency *= pow(1.005, static_cast<float>(event.mouseWheel.delta));
+            params_.frequency *= std::pow(1.005F, static_cast<float>(event.mouseWheel.delta));
             break;
         }
         }
@@ -356,7 +355,7 @@ void Puzabrot::activity()
         params_.orbit = PointTrace(params_.orbit, params_.c_point);
     }
 
-    ITERATION_BUTTON->setText(std::format("ITERATION {}", params_.itrn_max));
+    ITERATION_BUTTON->setText(std::string("ITERATION ") + std::to_string(params_.itrn_max));
 
     switch (options_.rendering_mode)
     {
@@ -364,7 +363,7 @@ void Puzabrot::activity()
     case TRACER:
     {
         PARAMETER_BUTTON->show();
-        PARAMETER_BUTTON->setText(std::format("LIMIT {:.3g}", params_.limit));
+        PARAMETER_BUTTON->setText(std::string("LIMIT ") + std::to_string(params_.limit));
         COLOR_BUTTON->hide();
         break;
     }
@@ -377,7 +376,7 @@ void Puzabrot::activity()
     case KALI:
     {
         PARAMETER_BUTTON->show();
-        PARAMETER_BUTTON->setText(std::format("FREQUENCY {:.3g}", params_.frequency));
+        PARAMETER_BUTTON->setText(std::string("FREQUENCY ") + std::to_string(params_.frequency));
         COLOR_BUTTON->hide();
         break;
     }
@@ -393,17 +392,17 @@ void Puzabrot::postrun()
     synth_->stop();
 }
 
-vec2d Puzabrot::PointTrace(const vec2d& point, const vec2d& c_point)
+vec2f Puzabrot::PointTrace(const vec2f& point, const vec2f& c_point)
 {
-    vec2d c = (options_.fractal_mode == MAIN) ? c_point : params_.julia_point;
-    vec2d point1 = point;
-    vec2d point2;
+    vec2f c = (options_.fractal_mode == MAIN) ? c_point : params_.julia_point;
+    vec2f point1 = point;
+    vec2f point2;
 
     for (size_t i = 0; i < params_.itrn_max; ++i)
     {
         point2 = Mapping(expr_trees_, c, point1);
 
-        if (sqrt(pow(point2.x, 2.0) + pow(point2.y, 2.0)) > params_.limit)
+        if (point2.magnitute() > params_.limit)
         {
             break;
         }
@@ -421,22 +420,23 @@ vec2d Puzabrot::PointTrace(const vec2d& point, const vec2d& c_point)
     return point1;
 }
 
-vec2d Puzabrot::Mapping(ExprTrees& expr_trees, const vec2d& c, vec2d& z) const
+vec2f Puzabrot::Mapping(ExprTrees& expr_trees, const vec2f& c, vec2f& z) const
 {
     switch (options_.input_mode)
     {
     case Z_INPUT:
     {
         auto result = expr_trees.z({ {"c", {c.x, c.y}}, {"z", {z.x, z.y}} });
-        return vec2d(real(result), imag(result));
+        return vec2f(real(result), imag(result));
     }
     case XY_INPUT:
     {
         auto result_x = expr_trees.x({ {"cx", c.x}, {"cy", c.y}, {"x", z.x}, {"y", z.y} });
         auto result_y = expr_trees.y({ {"cx", c.x}, {"cy", c.y}, {"x", z.x}, {"y", z.y} });
-        return vec2d(result_x, result_y);
+        return vec2f(result_x, result_y);
     }
     }
+    return vec2f();
 }
 
 void Puzabrot::savePicture()
@@ -507,7 +507,7 @@ void Puzabrot::render()
 
     shader_.setUniform("itrn_max", static_cast<int>(params_.itrn_max));
     shader_.setUniform("limit", static_cast<float>(params_.limit));
-    shader_.setUniform("frequency", static_cast<float>(1.0 / (1.0 + std::exp(-params_.frequency))));
+    shader_.setUniform("frequency", static_cast<float>(1.0F / (1.0F + std::exp(-params_.frequency))));
     shader_.setUniform("julia_point", sf::Glsl::Vec2(sf::Vector2f(vec(params_.julia_point))));
 
     render_texture_.draw(sprite_, &shader_);
@@ -984,11 +984,11 @@ std::string Puzabrot::writeMain() const
     return str;
 }
 
-using ASTNodez = ast::ASTNode<std::complex<double>>;
-using OperationNodez = ast::OperationNode<std::complex<double>>;
-using FunctionNodez = ast::FunctionNode<std::complex<double>>;
-using VariableNodez = ast::VariableNode<std::complex<double>>;
-using NumberNodez = ast::NumberNode<std::complex<double>>;
+using ASTNodez = ast::ASTNode<std::complex<float>>;
+using OperationNodez = ast::OperationNode<std::complex<float>>;
+using FunctionNodez = ast::FunctionNode<std::complex<float>>;
+using VariableNodez = ast::VariableNode<std::complex<float>>;
+using NumberNodez = ast::NumberNode<std::complex<float>>;
 
 int Puzabrot::Tree2GLSL(const ASTz& node, std::string* str) const
 {
@@ -1003,6 +1003,7 @@ int Puzabrot::Tree2GLSL(const ASTz& node, std::string* str) const
         case OperationNodez::Type::MUL: *str += "cmul("; break;
         case OperationNodez::Type::DIV: *str += "cdiv("; break;
         case OperationNodez::Type::POW: *str += "cpow("; break;
+        default: break;
         }
 
         if (node.branches_num() < 2)
@@ -1047,16 +1048,17 @@ int Puzabrot::Tree2GLSL(const ASTz& node, std::string* str) const
         *str += "vec2(" + std::to_string(real(number)) + ", " + std::to_string(imag(number)) + ")";
         break;
     }
+    default: break;
     }
 
     return 0;
 }
 
-using ASTNodex = ast::ASTNode<double>;
-using OperationNodex = ast::OperationNode<double>;
-using FunctionNodex = ast::FunctionNode<double>;
-using VariableNodex = ast::VariableNode<double>;
-using NumberNodex = ast::NumberNode<double>;
+using ASTNodex = ast::ASTNode<float>;
+using OperationNodex = ast::OperationNode<float>;
+using FunctionNodex = ast::FunctionNode<float>;
+using VariableNodex = ast::VariableNode<float>;
+using NumberNodex = ast::NumberNode<float>;
 
 int Puzabrot::Tree2GLSL(const ASTx& node, std::string* str) const
 {
@@ -1071,6 +1073,7 @@ int Puzabrot::Tree2GLSL(const ASTx& node, std::string* str) const
         case OperationNodex::Type::MUL: *str += "cmul("; break;
         case OperationNodex::Type::DIV: *str += "cdiv("; break;
         case OperationNodex::Type::POW: *str += "cpow("; break;
+        default: break;
         }
 
         if (node.branches_num() < 2)
@@ -1115,6 +1118,7 @@ int Puzabrot::Tree2GLSL(const ASTx& node, std::string* str) const
         *str += "vec2(" + std::to_string(number) + ", 0.0)";
         break;
     }
+    default: break;
     }
 
     return 0;
@@ -1129,6 +1133,7 @@ const char* Puzabrot::ASTStringError(const AST::Error& err)
     case AST::Error::UNIDENTIFIED_OPERATION: return "unidentified operation";
     case AST::Error::UNIDENTIFIED_FUNCTION: return "unidentified function";
     case AST::Error::UNIDENTIFIED_VARIABLE: return "unidentified variable";
+    default: break;
     }
     return "";
 }
@@ -1139,7 +1144,7 @@ Puzabrot::Synth::Synth(const Puzabrot* application) : audio_reset(true), audio_p
     setLoop(true);
 }
 
-void Puzabrot::Synth::setPoint(const vec2d& point)
+void Puzabrot::Synth::setPoint(const vec2f& point)
 {
     new_point_ = point;
 
@@ -1166,11 +1171,11 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
         prev_point_ = new_point_;
         mean_ = new_point_;
 
-        mag_ = 0.0;
-        pmag_ = 0.0;
-        phase_ = 0.0;
+        mag_ = 0.0F;
+        pmag_ = 0.0F;
+        phase_ = 0.0F;
 
-        volume_ = 8000.0;
+        volume_ = 8000.0F;
 
         audio_reset = false;
     }
@@ -1189,7 +1194,7 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
             prev_point_ = point_;
             point_ = application_->Mapping(expr_trees_, c_point_, point_);
 
-            if (sqrt(pow(point_.x, 2.0) + pow(point_.y, 2.0)) > application_->params_.limit)
+            if (point_.magnitute() > application_->params_.limit)
             {
                 audio_pause = true;
                 return true;
@@ -1198,30 +1203,30 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
             d_  = point_ - mean_;
             dp_ = prev_point_ - mean_;
 
-            pmag_ = sqrt(1e-12 + dp_.x * dp_.x + dp_.y * dp_.y);
-            mag_  = sqrt(1e-12 + d_.x * d_.x + d_.y * d_.y);
+            pmag_ = std::sqrt(1e-12F + dp_.magnitute());
+            mag_  = std::sqrt(1e-12F + d_.magnitute());
 
-            mean_ = mean_ * 0.99 + point_ * 0.01;
+            mean_ = mean_ * 0.99F + point_ * 0.01F;
 
-            double m = d_.magnitute2();
-            if (m > 2.0)
+            float m = d_.magnitute2();
+            if (m > 2.0F)
             {
-                d_ *= 2.0 / m;
+                d_ *= 2.0F / m;
             }
 
             m = dp_.magnitute2();
-            if (m > 2.0)
+            if (m > 2.0F)
             {
-                dp_ *= 2.0 / m;
+                dp_ *= 2.0F / m;
             }
         }
 
-        double t = double(j) / double(steps);
-        t = 0.5 - 0.5 * std::cos(t * std::atan(1.0) * 4.0);
-        vec2d w = t * d_ + (1.0 - t) * dp_;
+        float t = float(j) / float(steps);
+        t = 0.5F - 0.5F * std::cos(t * std::atan(1.0F) * 4.0F);
+        vec2f w = t * d_ + (1.0F - t) * dp_;
 
-        m_samples_[i] = static_cast<int16_t>(std::min(std::max(w.x * volume_, -32000.0), 32000.0));
-        m_samples_[i + 1] = static_cast<int16_t>(std::min(std::max(w.y * volume_, -32000.0), 32000.0));
+        m_samples_[i] = static_cast<int16_t>(std::min(std::max(w.x * volume_, -32000.0F), 32000.0F));
+        m_samples_[i + 1] = static_cast<int16_t>(std::min(std::max(w.y * volume_, -32000.0F), 32000.0F));
 
         m_audio_time_ += 1;
     }

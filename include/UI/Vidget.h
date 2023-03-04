@@ -7,12 +7,12 @@
 class Vidget : public sf::Drawable, public Eventable
 {
 public:
-    Vidget(const vec2d& position);
+    Vidget(const vec2f& position);
 
-    vec2d getPosition() const;
-    vec2d getSize() const;
+    vec2f getPosition() const;
+    vec2f getSize() const;
 
-    void setPosition(const vec2d& position);
+    void setPosition(const vec2f& position);
     void hide();
     void show();
 
