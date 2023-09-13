@@ -5,8 +5,10 @@
 #include <cmath>
 #include <sstream>
 
+constexpr size_t ANTI_ALIASING = 4;
+
 Engine2D::Engine2D(const vec2u& size, const char* title) :
-    sf::RenderWindow(sf::VideoMode(size.x, size.y), title, sf::Style::Default), Base2D(size),
+    sf::RenderWindow(sf::VideoMode(size.x, size.y), title, sf::Style::Default, sf::ContextSettings(0, 0, ANTI_ALIASING)), Base2D(size),
     default_size_(size), title_(title), style_(sf::Style::Default)
 {}
 
@@ -143,13 +145,13 @@ void Engine2D::toggleFullScreen()
     if (style_ & sf::Style::Fullscreen)
     {
         style_ &= static_cast<sf::Uint32>(~sf::Style::Fullscreen);
-        create(sf::VideoMode(default_size_.x, default_size_.y), title_, style_);
+        create(sf::VideoMode(default_size_.x, default_size_.y), title_, style_, sf::ContextSettings(0, 0, ANTI_ALIASING));
         updateSize(default_size_);
     }
     else
     {
         style_ |= static_cast<sf::Uint32>(sf::Style::Fullscreen);
-        create(sf::VideoMode::getDesktopMode(), title_, style_);
+        create(sf::VideoMode::getDesktopMode(), title_, style_, sf::ContextSettings(0, 0, ANTI_ALIASING));
         updateSize(vec2u(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height));
     }
 }

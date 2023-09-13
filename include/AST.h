@@ -1138,6 +1138,7 @@ AST<T>& AST<T>::simplify()
         LBRANCH(this)->simplify();
         SIMPLIFY(LBRANCH(this));
     }
+    SIMPLIFY(this);
     return *this;
 }
 

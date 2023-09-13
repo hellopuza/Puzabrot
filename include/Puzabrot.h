@@ -45,13 +45,12 @@ private:
         size_t fractal_mode = MAIN;
         size_t input_mode = Z_INPUT;
         size_t rendering_mode = DEFAULT;
-        size_t color_mode = 0;
+        size_t antialiasing = 0;
         bool sound_mode = false;
         bool showing_grid = false;
         bool showing_trace = false;
         bool julia_dragging = false;
         bool right_pressed = false;
-        bool was_screenshot = false;
     } options_;
 
     struct Parameters

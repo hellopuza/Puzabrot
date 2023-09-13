@@ -122,32 +122,32 @@ struct vec2 final
         return vec2<TYPE>(static_cast<TYPE>(x), static_cast<TYPE>(y));
     }
 
-    T magnitute2() const
+    T magnitude2() const
     {
         return x * x + y * y;
     }
 
-    T magnitute() const
+    T magnitude() const
     {
-        return std::sqrt(magnitute2());
+        return std::sqrt(magnitude2());
     }
 
     vec2& normalize()
     {
-        if (x == 0 && y == 0)
+        if ((x == 0) && (y == 0))
         {
             return *this;
         }
-        return *this /= magnitute();
+        return *this /= magnitude();
     }
 
     vec2 normalized() const
     {
-        if (x == 0 && y == 0)
+        if ((x == 0) && (y == 0))
         {
             return *this;
         }
-        return *this / magnitute();
+        return *this / magnitude();
     }
 };
 
@@ -174,12 +174,8 @@ inline T dot (const vec2<T>& u, const vec2<T>& v)
 template <typename T>
 inline vec2<T> sign(const vec2<T>& v)
 {
-    constexpr T ZERO    = static_cast<T>(0);
-    constexpr T POS_ONE = static_cast<T>(+1);
-    constexpr T NEG_ONE = static_cast<T>(-1);
-
-    return vec2<T>((v.x > ZERO) ? POS_ONE : (v.x < ZERO) ? NEG_ONE : ZERO,
-                   (v.y > ZERO) ? POS_ONE : (v.y < ZERO) ? NEG_ONE : ZERO);
+    return vec2<T>((v.x > 0) ? +1 : (v.x < 0) ? -1 : 0,
+                   (v.y > 0) ? +1 : (v.y < 0) ? -1 : 0);
 }
 
 template <typename T>
@@ -216,8 +212,22 @@ inline vec2<T> clamp(const vec2<T>& v, const vec2<T>& min, const vec2<T>& max)
 template <typename T>
 inline vec2<T> step(const vec2<T>& edge, const vec2<T>& v)
 {
-    return vec2<T>(v.x < edge.x ? 0.0F : 1.0F,
-                   v.y < edge.y ? 0.0F : 1.0F);
+    return vec2<T>(v.x < edge.x ? 0 : 1,
+                   v.y < edge.y ? 0 : 1);
+}
+
+template <typename T>
+inline vec2<T> min(const vec2<T>& v1, const vec2<T>& v2)
+{
+    return vec2<T>(v1.x < v2.x ? v1.x : v2.x,
+                   v1.y < v2.y ? v1.y : v2.y);
+}
+
+template <typename T>
+inline vec2<T> max(const vec2<T>& v1, const vec2<T>& v2)
+{
+    return vec2<T>(v1.x > v2.x ? v1.x : v2.x,
+                   v1.y > v2.y ? v1.y : v2.y);
 }
 
 typedef vec2<int32_t>  vec2i;

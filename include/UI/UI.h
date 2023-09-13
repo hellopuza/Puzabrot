@@ -2,6 +2,7 @@
 #define UI_UI_H
 
 #include "UI/Button.h"
+#include "UI/FPS.h"
 #include "UI/Label.h"
 #include "UI/InputBox.h"
 #include "UI/SwitchButton.h"

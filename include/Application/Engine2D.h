@@ -1,6 +1,8 @@
 #ifndef APPLICATION_ENGINE2D_H
 #define APPLICATION_ENGINE2D_H
 
+#define SFML_DEFINE_DISCRETE_GPU_PREFERENCE
+
 #include "Application/Base2D.h"
 #include "Eventable.h"
 

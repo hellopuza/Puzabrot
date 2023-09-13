@@ -45,3 +45,8 @@ vec2i Base2D::Base2Screen(const vec2f& point) const
         static_cast<int>((borders_.top - point.y) / (borders_.top - borders_.bottom) * static_cast<float>(size_.y))
     };
 }
+
+vec2u Base2D::ScreenSize() const
+{
+    return size_;
+}

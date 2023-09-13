@@ -28,7 +28,7 @@ static const vec2f GRID_BUTTON_POS = { 10.0F, 150.0F };
 static const vec2f SOUND_BUTTON_POS = { 10.0F, 175.0F };
 static const vec2f ITERATION_BUTTON_POS = { 10.0F, 200.0F };
 static const vec2f PARAMETER_BUTTON_POS = { 10.0F, 225.0F };
-static const vec2f COLOR_BUTTON_POS = { 10.0F, 250.0F };
+static const vec2f ANTI_ALIASING_BUTTON_POS = { 10.0F, 250.0F };
 
 #define INPUT_BUTTON static_cast<SwitchButton*>(ui_.getVidget("input_button"))
 #define INPUT_X static_cast<InputBox*>(ui_.getVidget("input_x"))
@@ -39,7 +39,7 @@ static const vec2f COLOR_BUTTON_POS = { 10.0F, 250.0F };
 #define SOUND_BUTTON static_cast<Button*>(ui_.getVidget("sound_button"))
 #define ITERATION_BUTTON static_cast<Button*>(ui_.getVidget("iteration_button"))
 #define PARAMETER_BUTTON static_cast<Button*>(ui_.getVidget("parameter_button"))
-#define COLOR_BUTTON static_cast<SwitchButton*>(ui_.getVidget("color_button"))
+#define ANTI_ALIASING_BUTTON static_cast<SwitchButton*>(ui_.getVidget("antialiasing_button"))
 
 #define SET_INPUT_Y_POS INPUT_Y->setPosition(INPUT_X->getPosition() + vec2f(0.0F, INPUT_X->getSize().y + 3.0F))
 
@@ -95,9 +95,11 @@ Puzabrot::Puzabrot() :
     ui_.addVidget("iteration_button", new Button(getFont(), UI_FONT_SIZE, ITERATION_BUTTON_POS));
     ui_.addVidget("parameter_button", new Button(getFont(), UI_FONT_SIZE, PARAMETER_BUTTON_POS));
 
-    ui_.addVidget("color_button", new SwitchButton(getFont(), UI_FONT_SIZE, COLOR_BUTTON_POS));
-    COLOR_BUTTON->addText("COLOR 0");
-    COLOR_BUTTON->addText("COLOR 1");
+    ui_.addVidget("antialiasing_button", new SwitchButton(getFont(), UI_FONT_SIZE, ANTI_ALIASING_BUTTON_POS));
+    ANTI_ALIASING_BUTTON->addText("NO ANTI ALIASING");
+    ANTI_ALIASING_BUTTON->addText("ANTI ALIASING x4");
+    ANTI_ALIASING_BUTTON->addText("ANTI ALIASING x9");
+    ANTI_ALIASING_BUTTON->addText("ANTI ALIASING x16");
 }
 
 void Puzabrot::prerun()
@@ -111,7 +113,7 @@ void Puzabrot::prerun()
 void Puzabrot::handleAppEvent(const sf::Event& event)
 {
     // Handle UI events
-    if (ui_.handleEvent(event))
+    if (ui_.is_visible && ui_.handleEvent(event))
     {
         INPUT_Y->is_visible = INPUT_X->is_visible;
 
@@ -200,10 +202,10 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
             synth_->pause();
         }
 
-        // Toggle color mode
-        if (options_.color_mode != COLOR_BUTTON->value())
+        // Toggle antialiasing level
+        if (options_.antialiasing != ANTI_ALIASING_BUTTON->value())
         {
-            options_.color_mode = COLOR_BUTTON->value();
+            options_.antialiasing = ANTI_ALIASING_BUTTON->value();
             makeShader();
             render();
         }
@@ -228,10 +230,9 @@ void Puzabrot::handleAppEvent(const sf::Event& event)
     }
 
     // Take a screenshot
-    else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Space) && !options_.was_screenshot && !TEXT_ENTERING)
+    else if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Space) && !TEXT_ENTERING)
     {
         savePicture();
-        options_.was_screenshot = true;
     }
 
     // Julia set drawing
@@ -364,20 +365,17 @@ void Puzabrot::activity()
     {
         PARAMETER_BUTTON->show();
         PARAMETER_BUTTON->setText(std::string("LIMIT ") + std::to_string(params_.limit));
-        COLOR_BUTTON->hide();
         break;
     }
     case COMPLEX_DOMAIN:
     {
         PARAMETER_BUTTON->hide();
-        COLOR_BUTTON->hide();
         break;
     }
     case KALI:
     {
         PARAMETER_BUTTON->show();
         PARAMETER_BUTTON->setText(std::string("FREQUENCY ") + std::to_string(params_.frequency));
-        COLOR_BUTTON->hide();
         break;
     }
     }
@@ -402,7 +400,7 @@ vec2f Puzabrot::PointTrace(const vec2f& point, const vec2f& c_point)
     {
         point2 = Mapping(expr_trees_, c, point1);
 
-        if (point2.magnitute() > params_.limit)
+        if (point2.magnitude() > params_.limit)
         {
             break;
         }
@@ -603,14 +601,14 @@ std::string Puzabrot::writeFunctions() const
         "    return cmul(a, conj(b)) / norm(b);\n"
         "}\n"
         "\n"
-        "vec2 cln(vec2 a)\n"
+        "vec2 clog(vec2 a)\n"
         "{\n"
         "    return vec2(log(a.x * a.x + a.y * a.y) * 0.5, arg(a));\n"
         "}\n"
         "\n"
-        "vec2 clg(vec2 a)\n"
+        "vec2 clog10(vec2 a)\n"
         "{\n"
-        "    return cln(a) / log(10.0);\n"
+        "    return clog(a) / log(10.0);\n"
         "}\n"
         "\n"
         "vec2 cexp(vec2 a)\n"
@@ -620,7 +618,7 @@ std::string Puzabrot::writeFunctions() const
         "\n"
         "vec2 cpow(vec2 a, vec2 b)\n"
         "{\n"
-        "    return cexp(cmul(b, cln(a)));\n"
+        "    return cexp(cmul(b, clog(a)));\n"
         "}\n"
         "\n"
         "vec2 csqrt(vec2 a)\n"
@@ -654,22 +652,22 @@ std::string Puzabrot::writeFunctions() const
         "\n"
         "vec2 carcsin(vec2 a)\n"
         "{\n"
-        "    return cmul(vec2(0.0, -1.0), cln(cadd(cmul(I, a), csqrt(csub(ONE, cmul(a, a))))));\n"
+        "    return cmul(vec2(0.0, -1.0), clog(cadd(cmul(I, a), csqrt(csub(ONE, cmul(a, a))))));\n"
         "}\n"
         "\n"
         "vec2 carccos(vec2 a)\n"
         "{\n"
-        "    return cmul(vec2(0.0, -1.0), cln(cadd(a, csqrt(csub(cmul(a, a), ONE)))));\n"
+        "    return cmul(vec2(0.0, -1.0), clog(cadd(a, csqrt(csub(cmul(a, a), ONE)))));\n"
         "}\n"
         "\n"
         "vec2 carctan(vec2 a)\n"
         "{\n"
-        "    return cmul(vec2(0.0, 0.5), csub(cln(cadd(I, a)), cln(csub(I, a))));\n"
+        "    return cmul(vec2(0.0, 0.5), csub(clog(cadd(I, a)), clog(csub(I, a))));\n"
         "}\n"
         "\n"
         "vec2 carccot(vec2 a)\n"
         "{\n"
-        "    return csub(vec2(PI / 2, 0.0), cmul(vec2(0.0, 0.5), csub(cln(cadd(I, a)), cln(csub(I, a)))));\n"
+        "    return csub(vec2(PI / 2, 0.0), cmul(vec2(0.0, 0.5), csub(clog(cadd(I, a)), clog(csub(I, a)))));\n"
         "}\n"
         "\n"
         "vec2 csinh(vec2 a)\n"
@@ -698,22 +696,22 @@ std::string Puzabrot::writeFunctions() const
         "\n"
         "vec2 carcsinh(vec2 a)\n"
         "{\n"
-        "    return cln(cadd(a, csqrt(cadd(cmul(a, a), ONE))));\n"
+        "    return clog(cadd(a, csqrt(cadd(cmul(a, a), ONE))));\n"
         "}\n"
         "\n"
         "vec2 carccosh(vec2 a)\n"
         "{\n"
-        "    return cln(cadd(a, csqrt(csub(cmul(a, a), ONE))));\n"
+        "    return clog(cadd(a, csqrt(csub(cmul(a, a), ONE))));\n"
         "}\n"
         "\n"
         "vec2 carctanh(vec2 a)\n"
         "{\n"
-        "    return cmul(vec2(0.5, 0.0), csub(cln(cadd(ONE, a)), cln(csub(ONE, a))));\n"
+        "    return cmul(vec2(0.5, 0.0), csub(clog(cadd(ONE, a)), clog(csub(ONE, a))));\n"
         "}\n"
         "\n"
         "vec2 carccoth(vec2 a)\n"
         "{\n"
-        "    return cmul(vec2(0.5, 0.0), csub(cln(cadd(ONE, a)), cln(csub(ONE, a))));\n"
+        "    return cmul(vec2(0.5, 0.0), csub(clog(cadd(ONE, a)), clog(csub(ONE, a))));\n"
         "}\n";
 }
 
@@ -749,7 +747,7 @@ std::string Puzabrot::writeColorFunction() const
         str += (options_.rendering_mode == DEFAULT) ?
             "return vec3(0.0, 0.0, 0.0);\n"
             "}\n" :
-            "return sin(abs(sum / itrn_max * 5.0)) * 0.45 + 0.5;\n"
+            "return sin(abs(sum / itrn_max * 5.0)) * 0.5 + 0.5;\n"
             "}\n";
         break;
     }
@@ -933,11 +931,24 @@ std::string Puzabrot::writeMain() const
 
     std::string str_checking = writeChecking();
 
-    std::string str =
+    std::string str;
+    switch (options_.antialiasing)
+    {
+    case 0: str += "const int AA = 1;\n"; break;
+    case 1: str += "const int AA = 2;\n"; break;
+    case 2: str += "const int AA = 3;\n"; break;
+    case 3: str += "const int AA = 4;\n"; break;
+    }
+
+    str +=
         "void main()\n"
         "{\n"
-        "float re0 = borders.left + (borders.right - borders.left) * gl_FragCoord.x / winsizes.x;\n"
-        "float im0 = borders.top - (borders.top - borders.bottom) * gl_FragCoord.y / winsizes.y;\n"
+        "vec3 col = vec3(0.0);\n"
+        "for (int sx = 0; sx < AA; sx++)\n"
+        "for (int sy = 0; sy < AA; sy++)\n"
+        "{\n"
+        "float re0 = borders.left + (borders.right - borders.left) * (gl_FragCoord.x + float(sx) / float(AA)) / winsizes.x;\n"
+        "float im0 = borders.top  - (borders.top - borders.bottom) * (gl_FragCoord.y + float(sy) / float(AA)) / winsizes.y;\n"
         "\n"
             + str_initialization +
         "int itrn;\n"
@@ -953,32 +964,33 @@ std::string Puzabrot::writeMain() const
     case DEFAULT:
     {
         str +=
-            "vec3 col = getColor(itrn);\n";
+            "col += getColor(itrn);\n";
         break;
     }
     case TRACER:
     {
         str +=
-            "vec3 col = getColor(itrn, sum);\n";
+            "col += getColor(itrn, sum);\n";
         break;
     }
     case COMPLEX_DOMAIN:
     {
         str += (options_.input_mode == Z_INPUT) ?
-            "vec3 col = getColor(z);\n" :
-            "vec3 col = getColor(vec2(x, y));\n";
+            "col += getColor(z);\n" :
+            "col += getColor(vec2(x, y));\n";
         break;
     }
     case KALI:
     {
         str +=
-            "vec3 col = getColor(sum);\n";
+            "col += getColor(sum);\n";
         break;
     }
     }
 
     str +=
-        "gl_FragColor = vec4(col, 1.0);\n"
+        "}\n"
+        "gl_FragColor = vec4(col / float(AA * AA), 1.0);\n"
         "}";
 
     return str;
@@ -1009,6 +1021,9 @@ int Puzabrot::Tree2GLSL(const ASTz& node, std::string* str) const
         if (node.branches_num() < 2)
         {
             *str += "vec2(0.0, 0.0), ";
+
+            int err = Tree2GLSL(*static_cast<const ASTz*>(&(node[0])), str);
+            COND_RETURN(err, err);
         }
         else
         {
@@ -1016,10 +1031,10 @@ int Puzabrot::Tree2GLSL(const ASTz& node, std::string* str) const
             COND_RETURN(err, err);
 
             *str += ", ";
-        }
 
-        int err = Tree2GLSL(*static_cast<const ASTz*>(&(node[1])), str);
-        COND_RETURN(err, err);
+            err = Tree2GLSL(*static_cast<const ASTz*>(&(node[1])), str);
+            COND_RETURN(err, err);
+        }
 
         *str += ")";
         break;
@@ -1079,6 +1094,9 @@ int Puzabrot::Tree2GLSL(const ASTx& node, std::string* str) const
         if (node.branches_num() < 2)
         {
             *str += "vec2(0.0, 0.0), ";
+
+            int err = Tree2GLSL(*static_cast<const ASTx*>(&(node[0])), str);
+            COND_RETURN(err, err);
         }
         else
         {
@@ -1086,10 +1104,10 @@ int Puzabrot::Tree2GLSL(const ASTx& node, std::string* str) const
             COND_RETURN(err, err);
 
             *str += ", ";
-        }
 
-        int err = Tree2GLSL(*static_cast<const ASTx*>(&(node[1])), str);
-        COND_RETURN(err, err);
+            err = Tree2GLSL(*static_cast<const ASTx*>(&(node[1])), str);
+            COND_RETURN(err, err);
+        }
 
         *str += ")";
         break;
@@ -1194,7 +1212,7 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
             prev_point_ = point_;
             point_ = application_->Mapping(expr_trees_, c_point_, point_);
 
-            if (point_.magnitute() > application_->params_.limit)
+            if (point_.magnitude() > application_->params_.limit)
             {
                 audio_pause = true;
                 return true;
@@ -1203,18 +1221,18 @@ bool Puzabrot::Synth::onGetData(Chunk& data)
             d_  = point_ - mean_;
             dp_ = prev_point_ - mean_;
 
-            pmag_ = std::sqrt(1e-12F + dp_.magnitute());
-            mag_  = std::sqrt(1e-12F + d_.magnitute());
+            pmag_ = std::sqrt(1e-12F + dp_.magnitude());
+            mag_  = std::sqrt(1e-12F + d_.magnitude());
 
             mean_ = mean_ * 0.99F + point_ * 0.01F;
 
-            float m = d_.magnitute2();
+            float m = d_.magnitude2();
             if (m > 2.0F)
             {
                 d_ *= 2.0F / m;
             }
 
-            m = dp_.magnitute2();
+            m = dp_.magnitude2();
             if (m > 2.0F)
             {
                 dp_ *= 2.0F / m;

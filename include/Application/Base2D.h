@@ -26,6 +26,7 @@ public:
 
     vec2f Screen2Base(const vec2i& pixel) const;
     vec2i Base2Screen(const vec2f& point) const;
+    vec2u ScreenSize() const;
 
 protected:
     Borders borders_;
