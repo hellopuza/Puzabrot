@@ -20,7 +20,7 @@ void FPS::draw(sf::RenderTarget& target, sf::RenderStates states) const
     }
 }
 
-bool FPS::handleEvent(const sf::Event& event)
+bool FPS::handleEvent(const sf::Event&)
 {
     return false;
 }
